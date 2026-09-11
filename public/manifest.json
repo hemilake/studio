@@ -1,7 +1,7 @@
 {
-  "name": "CloudCLI UI",
-  "short_name": "CloudCLI UI",
-  "description": "CloudCLI UI web application",
+  "name": "Hemisphere",
+  "short_name": "Hemisphere",
+  "description": "Hemisphere, your personal AI workspace",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

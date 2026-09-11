@@ -3,8 +3,7 @@ import type { TFunction } from 'i18next';
 
 import { IS_PLATFORM } from '@/shared/utils';
 import type { ReleaseInfo } from '@/shared/types';
-
-const GITHUB_REPO_URL = 'https://github.com/siteboon/claudecodeui';
+import { BRAND_NAME, UPSTREAM_NAME, UPSTREAM_REPO_URL } from '@/shared/constants';
 
 // Fork: the update banner and the Report Issue / Discord links are not rendered.
 // The props stay in the type so callers are untouched (see docs/fork/CHANGES.md).
@@ -57,12 +56,12 @@ export default function SidebarFooter({ restartRequired, currentVersion, onShowS
       {!IS_PLATFORM && (
         <div className="hidden px-3 py-2 text-center md:block">
           <a
-            href={GITHUB_REPO_URL}
+            href={UPSTREAM_REPO_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="text-[10px] text-muted-foreground/40 transition-colors hover:text-muted-foreground"
           >
-            CloudCLI v{currentVersion} – {t('branding.openSource')}
+            {BRAND_NAME} · {UPSTREAM_NAME} v{currentVersion}
           </a>
         </div>
       )}

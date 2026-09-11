@@ -472,7 +472,7 @@
     },
     "managed": {
       "badge": "관리됨",
-      "hint": "CloudCLI가 관리합니다."
+      "hint": "Hemisphere가 관리합니다."
     },
     "help": {
       "title": "Codex MCP 정보",

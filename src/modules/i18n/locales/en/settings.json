@@ -498,7 +498,7 @@
     },
     "managed": {
       "badge": "Managed",
-      "hint": "Managed by CloudCLI."
+      "hint": "Managed by Hemisphere."
     },
     "help": {
       "title": "About Codex MCP",
@@ -777,7 +777,7 @@
     "unknownError": "Unknown error"
   },
   "about": {
-    "tagline": "Open-source AI coding assistant interface",
+    "tagline": "Your personal AI workspace, built on CloudCLI",
     "starOnGitHub": "Star on GitHub",
     "docs": "Docs",
     "hostedTitle": "Try CloudCLI Hosted",

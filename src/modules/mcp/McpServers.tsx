@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { McpProject, McpProvider, McpScope, ProviderMcpServer } from '@/shared/types';
 import { IS_PLATFORM } from '@/shared/utils';
 import { ActionMenu, Badge, Button } from '@/shared/ui';
-import { MCP_GLOBAL_SUPPORTED_TRANSPORTS, MCP_PROVIDER_NAMES } from '@/shared/constants';
+import { BRAND_NAME, MCP_GLOBAL_SUPPORTED_TRANSPORTS, MCP_PROVIDER_NAMES } from '@/shared/constants';
 import { useMcpServers } from '@/modules/mcp/hooks/useMcpServers';
 import { maskSecret } from '@/modules/mcp/utils/mcpFormatting';
 import McpServerFormModal from '@/modules/mcp/McpServerFormModal';
@@ -243,7 +243,7 @@ export default function McpServers({ selectedProvider, currentProjects }: McpSer
                     {managed && (
                       <div className="text-xs text-muted-foreground">
                         {t('mcpServers.managed.hint', {
-                          defaultValue: 'Managed by CloudCLI.',
+                          defaultValue: `Managed by ${BRAND_NAME}.`,
                         })}
                       </div>
                     )}

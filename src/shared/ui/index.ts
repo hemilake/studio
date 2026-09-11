@@ -26,6 +26,7 @@ export { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, Command
 export { DarkModeToggle } from '@/shared/ui/DarkModeToggle';
 export { Dialog, DialogTrigger, DialogContent, DialogTitle } from '@/shared/ui/Dialog';
 export { Input } from '@/shared/ui/Input';
+export { BrandMark } from '@/shared/ui/BrandMark';
 export { LLMProviderLogo } from '@/shared/ui/LLMProviderLogo';
 export { PillBar, Pill } from '@/shared/ui/PillBar';
 export { ScrollArea } from '@/shared/ui/ScrollArea';

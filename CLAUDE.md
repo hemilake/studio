@@ -2,6 +2,8 @@
 
 This is Pablo's customized fork of [siteboon/claudecodeui](https://github.com/siteboon/claudecodeui) (CloudCLI UI). It runs the CloudCLI instances on his machine and carries a small set of patches on top of upstream.
 
+The UI is branded **Hemisphere** (see the BRANDING section of `src/shared/constants.ts`): that is the product name users see, and the fork is where Hemisphere features get built. The repository, the npm package, the `cloudcli` CLI and the server keep upstream's name. Use `BRAND_NAME` instead of hard-coding either name in user-facing text.
+
 Read `AGENTS.md` first: upstream's architecture rules for `server/` and `src/` still apply here. Then read `docs/fork/README.md` for the branch model and the upstream sync procedure.
 
 ## Branches and remotes

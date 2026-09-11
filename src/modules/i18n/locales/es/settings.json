@@ -481,7 +481,7 @@
     },
     "managed": {
       "badge": "Gestionado",
-      "hint": "Gestionado por CloudCLI."
+      "hint": "Gestionado por Hemisphere."
     },
     "help": {
       "title": "Acerca de MCP en Codex",
@@ -583,5 +583,8 @@
     "installAriaLabel": "URL del repositorio git del plugin",
     "tab": "pestaña",
     "runningStatus": "en ejecución"
+  },
+  "about": {
+    "tagline": "Tu espacio de trabajo personal con IA, construido sobre CloudCLI"
   }
 }

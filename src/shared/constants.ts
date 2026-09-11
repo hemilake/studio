@@ -26,6 +26,19 @@ type GitStatusFileGroup = 'modified' | 'added' | 'deleted' | 'untracked';
 export const CLOUDCLI_WORDMARK_FONT_FAMILY =
   'ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji';
 
+/**
+ * Fork: the product name shown in the UI. The repository, the npm package and
+ * the `cloudcli` CLI keep upstream's name; only what the user sees is branded.
+ */
+export const BRAND_NAME = 'Hemisphere';
+
+/** Upstream project this UI is built on, shown next to the version for sync reference. */
+export const UPSTREAM_NAME = 'CloudCLI';
+export const UPSTREAM_REPO_URL = 'https://github.com/siteboon/claudecodeui';
+
+/** This fork's repository. */
+export const FORK_REPO_URL = 'https://github.com/pmoncadaisla/cloudcli';
+
 // ---------------------------
 
 //----------------- APPLICATION VERSION ------------

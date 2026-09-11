@@ -1,11 +1,10 @@
 import { Activity, Archive, Folder, FolderPlus, MessageSquare, Plus, RefreshCw, Search, X, PanelLeftClose } from 'lucide-react';
 import type { TFunction } from 'i18next';
 
-import { Button, Input, Tooltip } from '@/shared/ui';
+import { BrandMark, Button, Input, Tooltip } from '@/shared/ui';
 import { CLOUDCLI_WORDMARK_FONT_FAMILY } from '@/shared/constants';
 import { IS_PLATFORM,cn } from '@/shared/utils';
 import type { SidebarSearchMode } from '@/shared/types';
-import GitHubStarBadge from '@/modules/sidebar/GitHubStarBadge';
 
 const MOD_KEY =
   typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl';
@@ -35,9 +34,7 @@ function LogoBlock({ t }: { t: TFunction }) {
   return (
     <div className="flex min-w-0 items-center gap-2.5">
       <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-primary/90 shadow-sm">
-        <svg className="h-3.5 w-3.5 text-primary-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-        </svg>
+        <BrandMark className="h-4 w-4 text-primary-foreground" />
       </div>
       <h1
         className="truncate text-sm font-bold tracking-tight text-foreground"
@@ -135,7 +132,6 @@ export default function SidebarHeader({
           </div>
         </div>
 
-        <GitHubStarBadge />
 
         {/* Search bar */}
         {showSearchTools && (

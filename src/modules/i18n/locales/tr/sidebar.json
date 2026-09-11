@@ -20,7 +20,7 @@
     "runClaudeCli": "Başlamak için bir proje dizininde Claude CLI çalıştır"
   },
   "app": {
-    "title": "CloudCLI",
+    "title": "Hemisphere",
     "subtitle": "AI kodlama asistanı arayüzü"
   },
   "sessions": {
