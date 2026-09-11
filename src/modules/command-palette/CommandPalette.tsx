@@ -190,6 +190,10 @@ function CommandPalette({
 
             {showActions && (
               <CommandGroup heading={t('commandPalette.groupActions')}>
+                <CommandItem value={`${t('commandPalette.openChat')} open chat`} onSelect={() => run(() => ops.openChat())}>
+                  <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                  <span className="flex-1">{t('commandPalette.openChat')}</span>
+                </CommandItem>
                 <CommandItem
                   value={`${t('commandPalette.startNewChat')} new chat`}
                   disabled={startNewChatDisabled}

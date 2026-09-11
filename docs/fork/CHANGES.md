@@ -2,6 +2,23 @@
 
 One entry per customization, newest first. Keep the file list accurate: it is the conflict checklist for upstream merges.
 
+## "Chat" shortcut: one click to a fixed chat workspace
+
+- **Since:** 2026-09-11, on top of upstream v1.37.3.
+- **Branch:** `main` only for now. Could be proposed upstream later; it is self-contained enough.
+- **Why:** Pablo uses the UI a lot as a plain chat, the way Claude Desktop separates Chat from Code. Upstream always makes you pick a project first. This adds a shortcut that lands in the same workspace every time, so a chat is one click (or one key chord) away.
+- **What:** a "Chat" button under the sidebar header (desktop and mobile), an icon in the collapsed rail, an "Open chat" command in the palette and the `Ctrl/Cmd+Shift+O` shortcut. All of them run the same action: resolve the chat workspace path, make sure a project exists there (creating the folder and the project with display name "Chat" on first use, or looking it up again on a 409), refresh the list if it was new, and start a new session in it through the existing `handleNewSession`. The workspace path is the `chatWorkspacePath` user preference, editable in Settings > Appearance > Chat. When empty it defaults to `<workspace root>/chat`, where the root comes from the browse-filesystem endpoint (the server home unless `WORKSPACES_ROOT` is set), so each instance gets its own folder. The chat project stays visible in the project list like any other.
+- **Files:**
+  - `src/modules/chat-workspace/` (new module: `chatWorkspace.ts` path resolution and project lookup/creation, `useOpenChat.ts` action hook and keyboard shortcut, `ChatShortcut.tsx` sidebar and rail buttons, `index.ts`, `tests/chatWorkspace.test.ts`)
+  - `src/modules/settings/tabs/ChatWorkspaceSettings.tsx` (new: the settings row)
+  - `src/modules/settings/tabs/AppearanceSettingsTab.tsx` (renders the row)
+  - `src/modules/sidebar/Sidebar.tsx` (wires the hook, registers the palette op and the shortcut)
+  - `src/modules/sidebar/SidebarContent.tsx`, `src/modules/sidebar/SidebarCollapsed.tsx` (render the buttons, three new props each)
+  - `src/modules/command-palette/context/PaletteOpsContext.tsx` (new `openChat` op), `src/modules/command-palette/CommandPalette.tsx` (new action item)
+  - `src/shared/userSettings.ts` (new `chatWorkspacePath` preference key)
+  - `src/modules/i18n/locales/{en,es}/{sidebar,common,settings}.json` (new strings; other locales fall back to English)
+- **Verified:** vitest (chat-workspace, sidebar and command-palette suites), typecheck, lint, build, and end to end in the Beatriz instance with Playwright: first click created `/home/pmoncadaisla/beatriz/chat` and the "Chat" project, opened a new session in it; second click reused the project (one DB row); the palette shows "Open chat".
+
 ## Hide the update banner and community links in the sidebar
 
 - **Since:** 2026-09-11, on top of upstream v1.37.3.

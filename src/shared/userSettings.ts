@@ -28,6 +28,8 @@ export type UserPreferences = {
   codeEditorSettings: unknown;
   uiPreferences: unknown;
   selectedProvider: string;
+  /** Fork: folder the sidebar "Chat" shortcut opens; null/empty means `<workspace root>/chat`. */
+  chatWorkspacePath: string | null;
 };
 
 export type UserPreferenceKey = keyof UserPreferences;
@@ -67,6 +69,8 @@ const LEGACY_STORAGE_KEYS: Record<UserPreferenceKey, string> = {
   codeEditorSettings: '',
   uiPreferences: 'uiPreferences',
   selectedProvider: 'selected-provider',
+  // Fork: never had a localStorage form; an empty key skips the migration read.
+  chatWorkspacePath: '',
 };
 
 const PREFERENCE_KEYS = Object.keys(LEGACY_STORAGE_KEYS) as UserPreferenceKey[];

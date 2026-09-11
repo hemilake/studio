@@ -149,5 +149,11 @@
     "deleteAllData": "Eliminar todos los datos permanentemente",
     "allConversationsDeleted": "El proyecto se quitará de la barra lateral. Tus archivos, memorias y datos de sesión se conservarán.",
     "cannotUndo": "Puedes volver a añadir el proyecto más tarde."
+  },
+  "chat": {
+    "open": "Chat",
+    "opening": "Abriendo chat…",
+    "openTooltip": "Abrir un chat ({{shortcut}})",
+    "error": "No se pudo abrir el espacio de chat"
   }
 }

@@ -1,6 +1,8 @@
 import { Settings, PanelLeftOpen, AlertTriangle } from 'lucide-react';
 import type { TFunction } from 'i18next';
 
+import { ChatShortcutRailButton } from '@/modules/chat-workspace';
+
 // Fork: the update indicator and the Report Issue / Discord links are not rendered.
 // The props stay in the type so callers are untouched (see docs/fork/CHANGES.md).
 type SidebarCollapsedProps = {
@@ -9,11 +11,20 @@ type SidebarCollapsedProps = {
   updateAvailable: boolean;
   restartRequired: boolean;
   onShowVersionModal: () => void;
+  onOpenChat: () => void;
+  isOpeningChat: boolean;
   t: TFunction;
 };
 
 /** Rendered by Sidebar instead of SidebarContent when the panel is collapsed to its icon rail. */
-export default function SidebarCollapsed({ onExpand, onShowSettings, restartRequired, t }: SidebarCollapsedProps) {
+export default function SidebarCollapsed({
+  onExpand,
+  onShowSettings,
+  restartRequired,
+  onOpenChat,
+  isOpeningChat,
+  t,
+}: SidebarCollapsedProps) {
   return (
     <div className="flex h-full w-12 flex-col items-center gap-1 bg-background/80 py-3 backdrop-blur-sm">
       {/* Expand button with brand logo */}
@@ -27,6 +38,9 @@ export default function SidebarCollapsed({ onExpand, onShowSettings, restartRequ
       </button>
 
       <div className="nav-divider my-1 w-6" />
+
+      {/* Chat shortcut (fork) */}
+      <ChatShortcutRailButton onOpenChat={onOpenChat} isOpening={isOpeningChat} t={t} />
 
       {/* Settings */}
       <button

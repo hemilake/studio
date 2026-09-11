@@ -315,7 +315,8 @@
     "browseAllFiles": "Browse all files ({{count}})",
     "browseAllCommits": "Browse all commits ({{count}})",
     "browseAllBranches": "Browse all branches ({{count}})",
-    "switchTo": "Switch to: {{name}}"
+    "switchTo": "Switch to: {{name}}",
+    "openChat": "Open chat"
   },
   "folderBrowser": {
     "title": "Select Folder",

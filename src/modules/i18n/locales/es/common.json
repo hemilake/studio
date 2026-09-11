@@ -266,5 +266,8 @@
       "updateAvailable": "Actualización disponible",
       "closeSidebar": "Cerrar barra lateral"
     }
+  },
+  "commandPalette": {
+    "openChat": "Abrir chat"
   }
 }

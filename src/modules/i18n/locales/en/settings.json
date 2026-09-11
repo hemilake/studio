@@ -179,6 +179,12 @@
         "label": "Font Size",
         "description": "Editor font size in pixels"
       }
+    },
+    "chatWorkspace": {
+      "title": "Chat",
+      "label": "Chat workspace",
+      "description": "Folder opened by the Chat shortcut in the sidebar and the command palette. Leave empty to use the default.",
+      "descriptionWithDefault": "Folder opened by the Chat shortcut in the sidebar and the command palette. Leave empty to use {{defaultPath}}."
     }
   },
   "mcpForm": {

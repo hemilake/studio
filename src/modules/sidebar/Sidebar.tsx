@@ -6,7 +6,8 @@ import { useVersionCheck } from '@/shared/hooks/useVersionCheck';
 import { useUiPreferences, useSetUiPreference } from '@/shared/context/UiPreferencesContext';
 import { useSidebarController } from '@/modules/sidebar/hooks/useSidebarController';
 import { useTaskMaster, useTasksSettings } from '@/modules/task-master';
-import { usePaletteOps } from '@/modules/command-palette';
+import { usePaletteOps, usePaletteOpsRegister } from '@/modules/command-palette';
+import { useOpenChat, useOpenChatShortcut } from '@/modules/chat-workspace';
 import { useBusySessionIdSet } from '@/shared/context/SessionProtectionContext';
 import type { LLMProvider, LoadingProgress, MCPServerStatus, Project, ProjectSession, SidebarProjectListProps } from '@/shared/types';
 import SidebarCollapsed from '@/modules/sidebar/SidebarCollapsed';
@@ -171,6 +172,16 @@ function Sidebar({
     void paletteOps.refreshProjects();
   };
 
+  // Fork: the "Chat" shortcut. Registered as a palette op so the command
+  // palette and the keyboard shortcut share the sidebar's implementation.
+  const { openChat, isOpening: isOpeningChat, error: openChatError } = useOpenChat({
+    projects,
+    onNewSession,
+    refreshProjects,
+  });
+  usePaletteOpsRegister({ openChat });
+  useOpenChatShortcut(openChat);
+
   // Stable so memo() on the row components can bail out; an inline arrow here
   // would give every row a new callback on each sidebar render.
   const handleSaveProjectName = useCallback((projectId: string, nextName: string) => {
@@ -253,6 +264,8 @@ function Sidebar({
           updateAvailable={updateAvailable}
           restartRequired={restartRequired}
           onShowVersionModal={() => setShowVersionModal(true)}
+          onOpenChat={openChat}
+          isOpeningChat={isOpeningChat}
           t={t}
         />
       ) : (
@@ -336,6 +349,9 @@ function Sidebar({
             currentVersion={currentVersion}
             onShowVersionModal={() => setShowVersionModal(true)}
             onShowSettings={onShowSettings}
+            onOpenChat={openChat}
+            isOpeningChat={isOpeningChat}
+            openChatError={openChatError}
             projectListProps={projectListProps}
             t={t}
           />

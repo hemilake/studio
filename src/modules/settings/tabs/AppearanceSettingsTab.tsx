@@ -7,6 +7,7 @@ import SettingsCard from '@/modules/settings/SettingsCard';
 import SettingsRow from '@/modules/settings/SettingsRow';
 import SettingsSection from '@/modules/settings/SettingsSection';
 import SettingsToggle from '@/modules/settings/SettingsToggle';
+import ChatWorkspaceSettings from '@/modules/settings/tabs/ChatWorkspaceSettings';
 
 type AppearanceSettingsTabProps = {
   projectSortOrder: ProjectSortOrder;
@@ -66,6 +67,8 @@ export default function AppearanceSettingsTab({
           </SettingsRow>
         </SettingsCard>
       </SettingsSection>
+
+      <ChatWorkspaceSettings />
 
       <SettingsSection title={t('appearanceSettings.codeEditor.title')}>
         <SettingsCard divided>

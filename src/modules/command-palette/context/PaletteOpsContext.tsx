@@ -8,6 +8,8 @@ export type PaletteOps = {
   openFileInEditor: (path: string) => void;
   openSettings: (tab?: string) => void;
   refreshProjects: () => Promise<void> | void;
+  // Fork: opens the chat workspace (registered by the sidebar).
+  openChat: () => void;
 };
 
 type Registry = MutableRefObject<Partial<PaletteOps>>;
@@ -19,6 +21,7 @@ const defaultOps: PaletteOps = {
   openFileInEditor: () => undefined,
   openSettings: () => undefined,
   refreshProjects: () => undefined,
+  openChat: () => undefined,
 };
 
 /** Mounted by the project-workspace module so CommandPalette and the chat, code-editor and sidebar modules share one set of palette operations. */
@@ -36,6 +39,7 @@ export function usePaletteOps(): PaletteOps {
         (ref?.current.openFileInEditor ?? defaultOps.openFileInEditor)(path),
       openSettings: (tab) => (ref?.current.openSettings ?? defaultOps.openSettings)(tab),
       refreshProjects: () => (ref?.current.refreshProjects ?? defaultOps.refreshProjects)(),
+      openChat: () => (ref?.current.openChat ?? defaultOps.openChat)(),
     }),
     [ref],
   );
@@ -43,7 +47,7 @@ export function usePaletteOps(): PaletteOps {
 
 export function usePaletteOpsRegister(partial: Partial<PaletteOps>) {
   const ref = useContext(PaletteOpsContext);
-  const { openFile, openFileInEditor, openSettings, refreshProjects } = partial;
+  const { openFile, openFileInEditor, openSettings, refreshProjects, openChat } = partial;
 
   useEffect(() => {
     if (!ref) return undefined;
@@ -56,11 +60,13 @@ export function usePaletteOpsRegister(partial: Partial<PaletteOps>) {
     if (openFileInEditor) registry.openFileInEditor = openFileInEditor;
     if (openSettings) registry.openSettings = openSettings;
     if (refreshProjects) registry.refreshProjects = refreshProjects;
+    if (openChat) registry.openChat = openChat;
     return () => {
       if (openFile && registry.openFile === openFile) registry.openFile = prev.openFile;
       if (openFileInEditor && registry.openFileInEditor === openFileInEditor) registry.openFileInEditor = prev.openFileInEditor;
       if (openSettings && registry.openSettings === openSettings) registry.openSettings = prev.openSettings;
       if (refreshProjects && registry.refreshProjects === refreshProjects) registry.refreshProjects = prev.refreshProjects;
+      if (openChat && registry.openChat === openChat) registry.openChat = prev.openChat;
     };
-  }, [ref, openFile, openFileInEditor, openSettings, refreshProjects]);
+  }, [ref, openFile, openFileInEditor, openSettings, refreshProjects, openChat]);
 }

@@ -7,6 +7,7 @@ import type { ArchivedProjectListItem, ArchivedSessionListItem, ConversationSear
 import { formatCompactAge, getAllSessions } from '@/modules/sidebar/utils/sidebarProjectFormatting';
 import SidebarFooter from '@/modules/sidebar/SidebarFooter';
 import SidebarHeader from '@/modules/sidebar/SidebarHeader';
+import { ChatShortcut } from '@/modules/chat-workspace';
 import SidebarProjectList from '@/modules/sidebar/SidebarProjectList';
 import SidebarRecentConversations from '@/modules/sidebar/SidebarRecentConversations';
 
@@ -125,6 +126,10 @@ type SidebarContentProps = {
   currentVersion: string;
   onShowVersionModal: () => void;
   onShowSettings: () => void;
+  // Fork: "Chat" shortcut rendered under the header.
+  onOpenChat: () => void;
+  isOpeningChat: boolean;
+  openChatError: string | null;
   projectListProps: SidebarProjectListProps;
   t: TFunction;
 };
@@ -172,6 +177,9 @@ export default function SidebarContent({
   currentVersion,
   onShowVersionModal,
   onShowSettings,
+  onOpenChat,
+  isOpeningChat,
+  openChatError,
   projectListProps,
   t,
 }: SidebarContentProps) {
@@ -208,6 +216,8 @@ export default function SidebarContent({
         onCollapseSidebar={onCollapseSidebar}
         t={t}
       />
+
+      <ChatShortcut onOpenChat={onOpenChat} isOpening={isOpeningChat} error={openChatError} t={t} />
 
       <ScrollArea className="flex-1 overflow-y-auto overscroll-contain md:px-1.5 md:py-2">
         {showConversationSearch ? (
