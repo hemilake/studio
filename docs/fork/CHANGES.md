@@ -2,6 +2,17 @@
 
 One entry per customization, newest first. Keep the file list accurate: it is the conflict checklist for upstream merges.
 
+## Hide the update banner and community links in the sidebar
+
+- **Since:** 2026-09-11, on top of upstream v1.37.3.
+- **Branch:** `main` only. Not proposed upstream: this is a preference of this fork, not a fix.
+- **Why:** the "Update available" banner, "Report Issue" and "Join Community" entries take up space at the bottom of the sidebar and are noise here. The fork tracks upstream through git, not through the in-app updater, and issues go to upstream from the fork repo, not from the running UI.
+- **What:** the JSX for those three items is removed from the expanded footer and the collapsed icon rail, on desktop and mobile. The settings button, the restart-required banner and the small version line at the bottom stay. Props such as `updateAvailable`, `releaseInfo` and `onShowVersionModal` are kept in both component types and are simply not destructured, so `Sidebar`, `SidebarContent` and `SidebarModals` are untouched. The version check hook still runs and the upgrade modal still exists; only its entry points in the sidebar are gone. The About tab in settings still shows update information.
+- **Files:**
+  - `src/modules/sidebar/SidebarFooter.tsx`
+  - `src/modules/sidebar/SidebarCollapsed.tsx`
+- **Verified:** typecheck, lint, build.
+
 ## Render workspace image paths in chat markdown
 
 - **Since:** 2026-09-08, on top of upstream v1.37.3 (commit `5e73a49b`).
