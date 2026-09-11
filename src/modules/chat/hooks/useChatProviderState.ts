@@ -11,6 +11,7 @@ import type { PendingPermissionRequest, PermissionMode,
   ProviderModelsDefinition } from '@/shared/types';
 import { DEFAULT_EFFORT_VALUE } from '@/shared/constants';
 import { readSelectedProvider, writeSelectedProvider } from '@/shared/selectedProvider';
+import { useChatWorkspaceModel } from '@/modules/chat-workspace';
 
 const FALLBACK_PROVIDER_EFFORT_VALUES: Partial<Record<LLMProvider, readonly string[]>> = {
   // Superset used only before the model catalog loads; `ultracode` belongs to the
@@ -124,7 +125,7 @@ const getSessionSelectionKey = (provider: LLMProvider, sessionId: string): strin
   `${provider}:${sessionId}`
 );
 
-export function useChatProviderState({ selectedSession, selectedProject: _selectedProject }: UseChatProviderStateArgs) {
+export function useChatProviderState({ selectedSession, selectedProject }: UseChatProviderStateArgs) {
   const [permissionMode, setPermissionMode] = useState<PermissionMode>('default');
   const [pendingPermissionRequests, setPendingPermissionRequests] = useState<PendingPermissionRequest[]>([]);
   // The provider the composer sends under. Held here rather than read from
@@ -556,6 +557,14 @@ export function useChatProviderState({ selectedSession, selectedProject: _select
     };
   }, [selectedSessionId, selectedSessionProvider]);
 
+  // Fork: new sessions in the chat workspace start with the chat model
+  // (Sonnet by default) instead of the per-provider default.
+  const { model: chatWorkspaceModel, setModel: setChatWorkspaceModel } = useChatWorkspaceModel({
+    selectedProject,
+    provider,
+    hasSession: selectedSessionId !== null,
+  });
+
   /**
    * Applies a model choice.
    *
@@ -568,9 +577,17 @@ export function useChatProviderState({ selectedSession, selectedProject: _select
     model: string,
     sessionId?: string | null,
   ) => {
+    const normalizedSessionId = typeof sessionId === 'string' ? sessionId.trim() : '';
+
+    // Fork: a pick for a fresh chat in the chat workspace stays local to that
+    // chat, so it does not overwrite the default used by every other project.
+    if (!normalizedSessionId && chatWorkspaceModel !== null && targetProvider === provider) {
+      setChatWorkspaceModel(model);
+      return { scope: 'default' as const, model };
+    }
+
     setStoredProviderModel(targetProvider, model);
 
-    const normalizedSessionId = typeof sessionId === 'string' ? sessionId.trim() : '';
     if (!normalizedSessionId) {
       return { scope: 'default' as const, model };
     }
@@ -608,7 +625,7 @@ export function useChatProviderState({ selectedSession, selectedProject: _select
       }));
     }
     return { scope: 'session' as const, model: storedModel };
-  }, [setStoredProviderModel]);
+  }, [chatWorkspaceModel, provider, setChatWorkspaceModel, setStoredProviderModel]);
 
   /**
    * Applies an effort choice optimistically and persists it for the open
@@ -689,7 +706,19 @@ export function useChatProviderState({ selectedSession, selectedProject: _select
 
   // The open session's model wins over the per-provider default, so switching
   // sessions shows (and sends) what each session actually runs with.
-  const currentProviderModel = sessionModel ?? providerModels[provider];
+  const currentProviderModel = sessionModel ?? chatWorkspaceModel ?? providerModels[provider];
+  // Fork: the provider-selection empty state reads the per-provider map and
+  // writes through its setter, so both mirror the chat model while it applies.
+  const effectiveProviderModels = useMemo(() => (
+    chatWorkspaceModel === null ? providerModels : { ...providerModels, [provider]: chatWorkspaceModel }
+  ), [chatWorkspaceModel, provider, providerModels]);
+  const setEffectiveProviderModel = useCallback((targetProvider: LLMProvider, model: string) => {
+    if (chatWorkspaceModel !== null && targetProvider === provider) {
+      setChatWorkspaceModel(model);
+      return;
+    }
+    setStoredProviderModel(targetProvider, model);
+  }, [chatWorkspaceModel, provider, setChatWorkspaceModel, setStoredProviderModel]);
   const currentProviderEffortOptions = useMemo(() => {
     return getEffortOptionsForModel(provider, currentProviderModel);
   }, [currentProviderModel, getEffortOptionsForModel, provider]);
@@ -810,8 +839,8 @@ export function useChatProviderState({ selectedSession, selectedProject: _select
   return {
     provider,
     setProvider,
-    providerModels,
-    setStoredProviderModel,
+    providerModels: effectiveProviderModels,
+    setStoredProviderModel: setEffectiveProviderModel,
     currentProviderEffort,
     currentProviderEffortOptions,
     currentProviderModel,

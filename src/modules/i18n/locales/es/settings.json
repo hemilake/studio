@@ -184,7 +184,10 @@
       "title": "Chat",
       "label": "Espacio de chat",
       "description": "Carpeta que abre el acceso directo Chat de la barra lateral y la paleta de comandos. Déjalo vacío para usar la carpeta por defecto.",
-      "descriptionWithDefault": "Carpeta que abre el acceso directo Chat de la barra lateral y la paleta de comandos. Déjalo vacío para usar {{defaultPath}}."
+      "descriptionWithDefault": "Carpeta que abre el acceso directo Chat de la barra lateral y la paleta de comandos. Déjalo vacío para usar {{defaultPath}}.",
+      "modelLabel": "Modelo por defecto en el chat",
+      "modelDescription": "Modelo con el que arranca una sesión nueva en el espacio de chat. El resto de proyectos mantiene su propio modelo por defecto.",
+      "modelLoading": "Cargando modelos…"
     }
   },
   "mcpForm": {

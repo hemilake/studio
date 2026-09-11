@@ -13,6 +13,8 @@ import type { Project } from '@/shared/types';
 
 export const CHAT_WORKSPACE_FOLDER_NAME = 'chat';
 export const CHAT_WORKSPACE_DISPLAY_NAME = 'Chat';
+/** Model a new session starts with inside the chat workspace (Claude provider only). */
+export const DEFAULT_CHAT_WORKSPACE_MODEL = 'sonnet';
 
 const stripTrailingSlashes = (value: string): string => value.replace(/[\\/]+$/, '') || value;
 
@@ -27,15 +29,67 @@ export function writeChatWorkspacePreference(value: string): void {
   writeUserPreference('chatWorkspacePath', trimmed.length > 0 ? stripTrailingSlashes(trimmed) : null);
 }
 
+/** The model preference, or the Sonnet default when unset. */
+export function readChatWorkspaceModelPreference(): string {
+  const stored = readUserPreference<unknown>('chatWorkspaceModel', '');
+  const trimmed = typeof stored === 'string' ? stored.trim() : '';
+  return trimmed.length > 0 ? trimmed : DEFAULT_CHAT_WORKSPACE_MODEL;
+}
+
+export function writeChatWorkspaceModelPreference(value: string): void {
+  const trimmed = value.trim();
+  writeUserPreference('chatWorkspaceModel', trimmed.length > 0 && trimmed !== DEFAULT_CHAT_WORKSPACE_MODEL ? trimmed : null);
+}
+
+// The default path needs a round trip; it is remembered so synchronous checks
+// (is this project the chat workspace?) can answer once anything resolved it.
+let cachedDefaultChatWorkspacePath: string | null = null;
+let defaultChatWorkspacePathRequest: Promise<string> | null = null;
+
 /** `<workspace root>/chat`, asking the server where the root is. */
 export async function fetchDefaultChatWorkspacePath(): Promise<string> {
-  const response = await api.browseFilesystem(null);
-  const data = await readApiJson<{ path?: unknown }>(response);
-  if (typeof data.path !== 'string' || data.path.length === 0) {
-    throw new Error('Workspace root is unavailable');
+  if (cachedDefaultChatWorkspacePath) {
+    return cachedDefaultChatWorkspacePath;
   }
-  const separator = data.path.includes('\\') && !data.path.includes('/') ? '\\' : '/';
-  return `${stripTrailingSlashes(data.path)}${separator}${CHAT_WORKSPACE_FOLDER_NAME}`;
+  if (!defaultChatWorkspacePathRequest) {
+    defaultChatWorkspacePathRequest = (async () => {
+      const response = await api.browseFilesystem(null);
+      const data = await readApiJson<{ path?: unknown }>(response);
+      if (typeof data.path !== 'string' || data.path.length === 0) {
+        throw new Error('Workspace root is unavailable');
+      }
+      const separator = data.path.includes('\\') && !data.path.includes('/') ? '\\' : '/';
+      const resolved = `${stripTrailingSlashes(data.path)}${separator}${CHAT_WORKSPACE_FOLDER_NAME}`;
+      cachedDefaultChatWorkspacePath = resolved;
+      return resolved;
+    })().finally(() => {
+      defaultChatWorkspacePathRequest = null;
+    });
+  }
+  return defaultChatWorkspacePathRequest;
+}
+
+/** Test seam: forget the remembered default path. */
+export function resetChatWorkspacePathCache(): void {
+  cachedDefaultChatWorkspacePath = null;
+  defaultChatWorkspacePathRequest = null;
+}
+
+/**
+ * Synchronous check used by the composer to pick the chat model. Relies on the
+ * preference or on a default path already resolved by the shortcut or by
+ * `fetchDefaultChatWorkspacePath`; before that it answers false.
+ */
+export function isChatWorkspaceProject(project: Pick<Project, 'fullPath' | 'path'> | null | undefined): boolean {
+  if (!project) {
+    return false;
+  }
+  const configured = readChatWorkspacePreference();
+  const expected = configured.length > 0 ? configured : cachedDefaultChatWorkspacePath;
+  if (!expected) {
+    return false;
+  }
+  return stripTrailingSlashes(project.fullPath ?? project.path ?? '') === stripTrailingSlashes(expected);
 }
 
 export async function resolveChatWorkspacePath(): Promise<string> {

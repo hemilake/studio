@@ -88,3 +88,34 @@ test('ensureChatProject surfaces other server errors', async () => {
 
   await assert.rejects(ensureChatProject('/etc/chat', []), /Invalid project path/);
 });
+
+test('readChatWorkspaceModelPreference defaults to sonnet', async () => {
+  const { readChatWorkspaceModelPreference } = await import('@/modules/chat-workspace/chatWorkspace');
+  readUserPreference.mockReturnValue(null);
+
+  assert.equal(readChatWorkspaceModelPreference(), 'sonnet');
+});
+
+test('isChatWorkspaceProject matches the configured path', async () => {
+  const { isChatWorkspaceProject } = await import('@/modules/chat-workspace/chatWorkspace');
+  readUserPreference.mockReturnValue('/data/notes');
+
+  assert.equal(isChatWorkspaceProject(project('/data/notes/')), true);
+  assert.equal(isChatWorkspaceProject(project('/data/other')), false);
+  assert.equal(isChatWorkspaceProject(null), false);
+});
+
+test('isChatWorkspaceProject only knows the default path once it has been resolved', async () => {
+  const { isChatWorkspaceProject, fetchDefaultChatWorkspacePath, resetChatWorkspacePathCache } = await import(
+    '@/modules/chat-workspace/chatWorkspace'
+  );
+  resetChatWorkspacePathCache();
+  readUserPreference.mockReturnValue('');
+  browseFilesystem.mockResolvedValue(jsonResponse({ path: '/home/beatriz', suggestions: [] }));
+
+  assert.equal(isChatWorkspaceProject(project('/home/beatriz/chat')), false);
+  await fetchDefaultChatWorkspacePath();
+  assert.equal(isChatWorkspaceProject(project('/home/beatriz/chat')), true);
+  assert.equal(isChatWorkspaceProject(project('/home/beatriz/general')), false);
+  resetChatWorkspacePathCache();
+});

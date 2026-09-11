@@ -30,6 +30,8 @@ export type UserPreferences = {
   selectedProvider: string;
   /** Fork: folder the sidebar "Chat" shortcut opens; null/empty means `<workspace root>/chat`. */
   chatWorkspacePath: string | null;
+  /** Fork: model new sessions start with in the chat workspace; null/empty means Sonnet. */
+  chatWorkspaceModel: string | null;
 };
 
 export type UserPreferenceKey = keyof UserPreferences;
@@ -71,6 +73,7 @@ const LEGACY_STORAGE_KEYS: Record<UserPreferenceKey, string> = {
   selectedProvider: 'selected-provider',
   // Fork: never had a localStorage form; an empty key skips the migration read.
   chatWorkspacePath: '',
+  chatWorkspaceModel: '',
 };
 
 const PREFERENCE_KEYS = Object.keys(LEGACY_STORAGE_KEYS) as UserPreferenceKey[];
