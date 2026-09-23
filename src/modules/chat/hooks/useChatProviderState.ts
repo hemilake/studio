@@ -557,9 +557,14 @@ export function useChatProviderState({ selectedSession, selectedProject }: UseCh
     };
   }, [selectedSessionId, selectedSessionProvider]);
 
-  // Fork: new sessions in the chat workspace start with the chat model
-  // (Sonnet by default) instead of the per-provider default.
-  const { model: chatWorkspaceModel, setModel: setChatWorkspaceModel } = useChatWorkspaceModel({
+  // Fork: new sessions in the chat workspace start with the chat model and
+  // effort (Opus at medium by default) instead of the per-provider defaults.
+  const {
+    model: chatWorkspaceModel,
+    setModel: setChatWorkspaceModel,
+    effort: chatWorkspaceEffort,
+    setEffort: setChatWorkspaceEffort,
+  } = useChatWorkspaceModel({
     selectedProject,
     provider,
     hasSession: selectedSessionId !== null,
@@ -637,9 +642,17 @@ export function useChatProviderState({ selectedSession, selectedProject }: UseCh
     effort: string,
     sessionId?: string | null,
   ) => {
+    const normalizedSessionId = typeof sessionId === 'string' ? sessionId.trim() : '';
+
+    // Fork: like the model, an effort pick for a fresh chat in the chat
+    // workspace stays local to that chat.
+    if (!normalizedSessionId && chatWorkspaceEffort !== null && targetProvider === provider) {
+      setChatWorkspaceEffort(effort);
+      return { scope: 'default' as const, effort };
+    }
+
     setStoredProviderEffort(targetProvider, effort);
 
-    const normalizedSessionId = typeof sessionId === 'string' ? sessionId.trim() : '';
     if (!normalizedSessionId) {
       return { scope: 'default' as const, effort };
     }
@@ -702,7 +715,7 @@ export function useChatProviderState({ selectedSession, selectedProject }: UseCh
       }
       throw error;
     }
-  }, [sessionSelection, setStoredProviderEffort]);
+  }, [chatWorkspaceEffort, provider, sessionSelection, setChatWorkspaceEffort, setStoredProviderEffort]);
 
   // The open session's model wins over the per-provider default, so switching
   // sessions shows (and sends) what each session actually runs with.
@@ -727,10 +740,11 @@ export function useChatProviderState({ selectedSession, selectedProject }: UseCh
       provider,
       currentProviderModel,
       activeSessionSelection?.effort
+        ?? chatWorkspaceEffort
         ?? providerEfforts[provider]
         ?? DEFAULT_EFFORT_VALUE,
     );
-  }, [activeSessionSelection?.effort, currentProviderModel, provider, providerEfforts, reconcileStoredEffort]);
+  }, [activeSessionSelection?.effort, chatWorkspaceEffort, currentProviderModel, provider, providerEfforts, reconcileStoredEffort]);
   const currentProviderModelOptions = useMemo(
     () => providerModelCatalog[provider]?.OPTIONS ?? [],
     [provider, providerModelCatalog],

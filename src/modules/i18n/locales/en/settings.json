@@ -187,7 +187,10 @@
       "descriptionWithDefault": "Folder opened by the Chat shortcut in the sidebar and the command palette. Leave empty to use {{defaultPath}}.",
       "modelLabel": "Default model for chats",
       "modelDescription": "Model a new session starts with in the chat workspace. Other projects keep their own default.",
-      "modelLoading": "Loading models…"
+      "modelLoading": "Loading models…",
+      "effortLabel": "Default effort for chats",
+      "effortDescription": "Reasoning effort a new session starts with in the chat workspace. It can still be changed in the composer.",
+      "effortModelDefault": "Model default"
     }
   },
   "mcpForm": {

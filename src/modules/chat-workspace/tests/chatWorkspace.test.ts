@@ -89,11 +89,20 @@ test('ensureChatProject surfaces other server errors', async () => {
   await assert.rejects(ensureChatProject('/etc/chat', []), /Invalid project path/);
 });
 
-test('readChatWorkspaceModelPreference defaults to sonnet', async () => {
+test('readChatWorkspaceModelPreference defaults to opus', async () => {
   const { readChatWorkspaceModelPreference } = await import('@/modules/chat-workspace/chatWorkspace');
   readUserPreference.mockReturnValue(null);
 
-  assert.equal(readChatWorkspaceModelPreference(), 'sonnet');
+  assert.equal(readChatWorkspaceModelPreference(), 'opus');
+});
+
+test('readChatWorkspaceEffortPreference defaults to medium and honours a stored value', async () => {
+  const { readChatWorkspaceEffortPreference } = await import('@/modules/chat-workspace/chatWorkspace');
+  readUserPreference.mockReturnValue(null);
+  assert.equal(readChatWorkspaceEffortPreference(), 'medium');
+
+  readUserPreference.mockReturnValue(' high ');
+  assert.equal(readChatWorkspaceEffortPreference(), 'high');
 });
 
 test('isChatWorkspaceProject matches the configured path', async () => {

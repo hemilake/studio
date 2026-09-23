@@ -13,8 +13,14 @@ import type { Project } from '@/shared/types';
 
 export const CHAT_WORKSPACE_FOLDER_NAME = 'chat';
 export const CHAT_WORKSPACE_DISPLAY_NAME = 'Chat';
-/** Model a new session starts with inside the chat workspace (Claude provider only). */
-export const DEFAULT_CHAT_WORKSPACE_MODEL = 'sonnet';
+/**
+ * Model a new session starts with inside the chat workspace (Claude provider only).
+ * The alias is resolved by the CLI: the local instances map `opus` to
+ * `claude-opus-5-5` through `ANTHROPIC_DEFAULT_OPUS_MODEL`.
+ */
+export const DEFAULT_CHAT_WORKSPACE_MODEL = 'opus';
+/** Reasoning effort a new chat session starts with; `default` would leave it to the model. */
+export const DEFAULT_CHAT_WORKSPACE_EFFORT = 'medium';
 
 const stripTrailingSlashes = (value: string): string => value.replace(/[\\/]+$/, '') || value;
 
@@ -29,7 +35,7 @@ export function writeChatWorkspacePreference(value: string): void {
   writeUserPreference('chatWorkspacePath', trimmed.length > 0 ? stripTrailingSlashes(trimmed) : null);
 }
 
-/** The model preference, or the Sonnet default when unset. */
+/** The model preference, or the Opus default when unset. */
 export function readChatWorkspaceModelPreference(): string {
   const stored = readUserPreference<unknown>('chatWorkspaceModel', '');
   const trimmed = typeof stored === 'string' ? stored.trim() : '';
@@ -39,6 +45,18 @@ export function readChatWorkspaceModelPreference(): string {
 export function writeChatWorkspaceModelPreference(value: string): void {
   const trimmed = value.trim();
   writeUserPreference('chatWorkspaceModel', trimmed.length > 0 && trimmed !== DEFAULT_CHAT_WORKSPACE_MODEL ? trimmed : null);
+}
+
+/** The effort preference, or the medium default when unset. */
+export function readChatWorkspaceEffortPreference(): string {
+  const stored = readUserPreference<unknown>('chatWorkspaceEffort', '');
+  const trimmed = typeof stored === 'string' ? stored.trim() : '';
+  return trimmed.length > 0 ? trimmed : DEFAULT_CHAT_WORKSPACE_EFFORT;
+}
+
+export function writeChatWorkspaceEffortPreference(value: string): void {
+  const trimmed = value.trim();
+  writeUserPreference('chatWorkspaceEffort', trimmed.length > 0 && trimmed !== DEFAULT_CHAT_WORKSPACE_EFFORT ? trimmed : null);
 }
 
 // The default path needs a round trip; it is remembered so synchronous checks

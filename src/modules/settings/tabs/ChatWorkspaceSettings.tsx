@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { api, readApiJson } from '@/shared/api';
+import { DEFAULT_EFFORT_VALUE } from '@/shared/constants';
 import { Input } from '@/shared/ui';
 import { subscribeToUserPreferences } from '@/shared/userSettings';
 import type { ProviderModelOption, ProviderModelsDefinition } from '@/shared/types';
@@ -10,8 +11,10 @@ import SettingsRow from '@/modules/settings/SettingsRow';
 import SettingsSection from '@/modules/settings/SettingsSection';
 import {
   fetchDefaultChatWorkspacePath,
+  readChatWorkspaceEffortPreference,
   readChatWorkspaceModelPreference,
   readChatWorkspacePreference,
+  writeChatWorkspaceEffortPreference,
   writeChatWorkspaceModelPreference,
   writeChatWorkspacePreference,
 } from '@/modules/chat-workspace';
@@ -19,11 +22,15 @@ import {
 const SELECT_CLASS_NAME =
   'w-full touch-manipulation rounded-lg border border-input bg-card p-2.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary sm:w-64';
 
-/** Fork. Rendered by AppearanceSettingsTab: the folder and the default model the "Chat" shortcut uses. */
+// Shown while the catalogue is loading or when the chosen model is not in it.
+const FALLBACK_EFFORT_VALUES = ['low', 'medium', 'high', 'xhigh', 'max'];
+
+/** Fork. Rendered by AppearanceSettingsTab: the folder, the default model and the default effort the "Chat" shortcut uses. */
 export default function ChatWorkspaceSettings() {
   const { t } = useTranslation('settings');
   const [draft, setDraft] = useState(readChatWorkspacePreference);
   const [model, setModel] = useState(readChatWorkspaceModelPreference);
+  const [effort, setEffort] = useState(readChatWorkspaceEffortPreference);
   const [defaultPath, setDefaultPath] = useState<string | null>(null);
   const [modelOptions, setModelOptions] = useState<ProviderModelOption[] | null>(null);
 
@@ -31,6 +38,7 @@ export default function ChatWorkspaceSettings() {
     () => subscribeToUserPreferences(() => {
       setDraft(readChatWorkspacePreference());
       setModel(readChatWorkspaceModelPreference());
+      setEffort(readChatWorkspaceEffortPreference());
     }),
     [],
   );
@@ -66,6 +74,10 @@ export default function ChatWorkspaceSettings() {
   // (a custom model removed later, or the catalogue request failing).
   const options = modelOptions ?? [];
   const hasCurrent = options.some((option) => option.value === model);
+  // Effort levels follow the chosen model; `default` leaves the choice to the model.
+  const effortValues = options.find((option) => option.value === model)?.effort?.values.map((value) => value.value)
+    ?? FALLBACK_EFFORT_VALUES;
+  const hasCurrentEffort = effort === DEFAULT_EFFORT_VALUE || effortValues.includes(effort);
 
   return (
     <SettingsSection title={t('appearanceSettings.chatWorkspace.title')}>
@@ -113,6 +125,29 @@ export default function ChatWorkspaceSettings() {
             {options.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
+              </option>
+            ))}
+          </select>
+        </SettingsRow>
+
+        <SettingsRow
+          label={t('appearanceSettings.chatWorkspace.effortLabel')}
+          description={t('appearanceSettings.chatWorkspace.effortDescription')}
+        >
+          <select
+            value={effort}
+            onChange={(event) => {
+              writeChatWorkspaceEffortPreference(event.target.value);
+              setEffort(readChatWorkspaceEffortPreference());
+            }}
+            className={SELECT_CLASS_NAME}
+            aria-label={t('appearanceSettings.chatWorkspace.effortLabel')}
+          >
+            <option value={DEFAULT_EFFORT_VALUE}>{t('appearanceSettings.chatWorkspace.effortModelDefault')}</option>
+            {!hasCurrentEffort && <option value={effort}>{effort}</option>}
+            {effortValues.map((value) => (
+              <option key={value} value={value}>
+                {value}
               </option>
             ))}
           </select>
