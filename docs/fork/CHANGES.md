@@ -2,6 +2,18 @@
 
 One entry per customization, newest first. Keep the file list accurate: it is the conflict checklist for upstream merges.
 
+## One-click reasoning effort in the composer
+
+- **Since:** 2026-09-27, on top of upstream v1.37.3.
+- **Branch:** `main` only for now. Self-contained enough to propose upstream later.
+- **Why:** changing the effort took two clicks through the model menu, and Pablo switches it often. The level should be visible and one click away.
+- **What:** `ComposerEffortPicker` sits next to the model menu. On `sm` and wider it is a segmented control with every effort the current model accepts (Low, Med, High, XHigh, Max); on phones it is one chip that steps to the next level on each tap and wraps from Max to Low. `ultracode` stays in the model menu only, because it also turns on workflow orchestration. The model menu keeps its full Reasoning list, model default included, and stops appending "· effort" to its trigger when the picker already shows that level. Selection goes through the existing `onSelectEffort`, so the chat workspace override and session persistence behave as before.
+- **Files:**
+  - `src/modules/chat/composer/ComposerEffortPicker.tsx`, `src/modules/chat/utils/composerEffort.ts`, `src/modules/chat/tests/composerEffortPicker.test.tsx` (new)
+  - `src/modules/chat/composer/ChatComposer.tsx` (renders the picker after the model menu)
+  - `src/modules/chat/composer/ComposerModelMenu.tsx` (no effort suffix for picker levels)
+- **Verified:** vitest (new suite and chatProviderModels), typecheck, lint, build, and headless Chromium against Pablo's instance at 1400 and 390 px wide: the fresh chat showed Opus (1M context) with High selected, one click on Max selected it, and a tap on the phone chip moved High to XHigh. No session was created.
+
 ## Brand the UI as Hemisphere
 
 - **Since:** 2026-09-11, on top of upstream v1.37.3.

@@ -12,6 +12,7 @@ import {
   ComposerMenuSeparator,
   ComposerMenuSurface,
 } from '@/modules/chat/composer/ComposerMenuPrimitives';
+import { getQuickEffortValues } from '@/modules/chat/utils/composerEffort';
 
 type EffortOption = NonNullable<ProviderModelOption['effort']>['values'][number];
 
@@ -60,6 +61,11 @@ function ComposerModelMenu({
     [effortOptions],
   );
   const effortLabel = effort === DEFAULT_EFFORT_VALUE ? defaultEffortLabel : effort;
+  // Fork: ComposerEffortPicker already shows these next to the trigger.
+  const isEffortShownByPicker = useMemo(
+    () => getQuickEffortValues(effortOptions).includes(effort),
+    [effort, effortOptions],
+  );
 
   const selectedModelOption = useMemo(
     () => modelOptions.find((option) => option.value === model) ?? null,
@@ -94,7 +100,7 @@ function ComposerModelMenu({
         title={ariaLabel}
       >
         <span className="truncate">{triggerLabel}</span>
-        {hasModelSection && hasEffortSection && effort !== DEFAULT_EFFORT_VALUE && (
+        {hasModelSection && hasEffortSection && effort !== DEFAULT_EFFORT_VALUE && !isEffortShownByPicker && (
           <span className="hidden shrink-0 capitalize text-muted-foreground sm:inline">· {effortLabel}</span>
         )}
       </button>
