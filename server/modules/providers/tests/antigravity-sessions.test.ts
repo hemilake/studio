@@ -267,3 +267,49 @@ test('Antigravity history restores clipped assistant text and hides the wait con
     await rm(tempRoot, { recursive: true, force: true });
   }
 });
+
+test('Antigravity history pairs tool calls with their results from transcript_full.jsonl', async () => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'antigravity-history-full-'));
+  try {
+    const logsDir = path.join(tempRoot, 'logs');
+    await mkdir(logsDir, { recursive: true });
+    const rows = [
+      { step_index: 0, source: 'USER_EXPLICIT', type: 'USER_INPUT', status: 'DONE', content: '<USER_REQUEST>\nList files\n</USER_REQUEST>' },
+      {
+        step_index: 1,
+        source: 'MODEL',
+        type: 'PLANNER_RESPONSE',
+        status: 'DONE',
+        thinking: '**Listing** I will run ls.',
+        tool_calls: [
+          { name: 'run_command', args: { CommandLine: 'ls' } },
+          { name: 'manage_task', args: { Action: 'kill' } },
+        ],
+      },
+      { step_index: 2, source: 'MODEL', type: 'GENERIC', status: 'DONE', content: 'Created At: x\nCompleted At: y\n\nThe command exited with code 0.\nOutput:\na.txt' },
+      { step_index: 3, source: 'MODEL', type: 'GENERIC', status: 'ERROR', error: 'cannot kill task', content: 'Created At: x\nCompleted At: y\nEncountered error in step execution: cannot kill task' },
+      { step_index: 4, source: 'MODEL', type: 'PLANNER_RESPONSE', status: 'DONE', content: 'One file: a.txt.' },
+    ];
+    await writeFile(path.join(logsDir, 'transcript.jsonl'), '');
+    await writeFile(path.join(logsDir, 'transcript_full.jsonl'), `${rows.map((row) => JSON.stringify(row)).join('\n')}\n`);
+
+    const history = await new AntigravitySessionsProvider().fetchHistory('app-full', {
+      providerSessionId: 'agy-full',
+      jsonlPath: path.join(logsDir, 'transcript.jsonl'),
+    });
+
+    assert.deepEqual(
+      history.messages.map((message) => message.kind),
+      ['text', 'thinking', 'tool_use', 'tool_use', 'tool_result', 'tool_result', 'text'],
+    );
+    const [, , ls, kill, lsResult, killResult] = history.messages;
+    assert.equal(ls.toolName, 'run_command');
+    assert.deepEqual(ls.toolInput, { CommandLine: 'ls' });
+    assert.equal(lsResult.toolId, ls.toolId);
+    assert.equal(lsResult.content, 'The command exited with code 0.\nOutput:\na.txt');
+    assert.equal(killResult.toolId, kill.toolId);
+    assert.equal(killResult.isError, true);
+  } finally {
+    await rm(tempRoot, { recursive: true, force: true });
+  }
+});

@@ -1,5 +1,9 @@
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
+import { appendFileSync, mkdirSync } from 'node:fs';
+import { mkdtemp, rm } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import { PassThrough } from 'node:stream';
 import test from 'node:test';
 
@@ -365,4 +369,42 @@ test('Antigravity emits one terminal lifecycle when the CLI cannot spawn', async
 
   assert.equal(messages.filter((message) => message.kind === 'error').length, 1);
   assert.equal(messages.filter((message) => message.kind === 'complete').length, 1);
+});
+
+test('Antigravity forwards the reasoning AGY writes to the transcript before the tool call', { concurrency: false }, async () => {
+  const brainDir = await mkdtemp(path.join(os.tmpdir(), 'agy-brain-'));
+  const previousBrainDir = process.env.ANTIGRAVITY_BRAIN_DIR;
+  process.env.ANTIGRAVITY_BRAIN_DIR = brainDir;
+  const logsDir = path.join(brainDir, 'agy-think', '.system_generated', 'logs');
+  try {
+    const { child } = createScriptedProcess(() => {
+      // The planner row is in the transcript by the time its step ends.
+      mkdirSync(logsDir, { recursive: true });
+      appendFileSync(
+        path.join(logsDir, 'transcript_full.jsonl'),
+        `${JSON.stringify({ step_index: 1, source: 'MODEL', type: 'PLANNER_RESPONSE', thinking: 'I should list the files.' })}\n`,
+      );
+      return [
+        { event: 'init', conversation_id: 'agy-think' },
+        step('agy-think', { step_index: 1, state: 'DONE', step_type: 'agent_response' }),
+        step('agy-think', { step_index: 2, state: 'ACTIVE', step_type: 'tool', tool_name: 'run_command', tool_info: { parameters: { CommandLine: 'ls' } } }),
+        result('agy-think'),
+      ];
+    });
+    const runtime = createAntigravityRuntime({ spawnProcess: () => child as never });
+    const { writer, messages } = createWriter();
+
+    await runtime.run('List', { sessionId: 'app-think' }, writer, createRuntimeContext());
+
+    const kinds = messages.map((message) => message.kind).filter((kind) => kind !== 'status');
+    assert.deepEqual(kinds, ['session_created', 'thinking', 'stream_end', 'tool_use', 'complete']);
+    assert.equal(messages.find((message) => message.kind === 'thinking')?.content, 'I should list the files.');
+  } finally {
+    if (previousBrainDir === undefined) {
+      delete process.env.ANTIGRAVITY_BRAIN_DIR;
+    } else {
+      process.env.ANTIGRAVITY_BRAIN_DIR = previousBrainDir;
+    }
+    await rm(brainDir, { recursive: true, force: true });
+  }
 });

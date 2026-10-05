@@ -1,3 +1,7 @@
+import { open, stat } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+
 import crossSpawn from 'cross-spawn';
 
 import { notifyRunFailed, notifyRunStopped } from '@/modules/notifications/index.js';
@@ -22,6 +26,9 @@ import {
  * `step_update` per model step, tool call and text delta, and one `result` per
  * turn. One process serves a whole chat: later turns are written to its stdin,
  * and it exits when stdin closes after an idle period.
+ *
+ * The stream carries no reasoning text. AGY writes it to the conversation's
+ * transcript_full.jsonl, which the runtime tails while the turn runs.
  */
 
 type AntigravityProcess = ReturnType<typeof crossSpawn>;
@@ -59,6 +66,9 @@ type LiveProcess = {
   exited: boolean;
   stderr: string;
   idleTimer: NodeJS.Timeout | null;
+  /** Read position in transcript_full.jsonl and the partial line after it. */
+  transcriptOffset: number;
+  transcriptRemainder: string;
 };
 
 const NOT_INSTALLED_MESSAGE = 'Antigravity CLI is not installed. Install it from https://antigravity.google/cli/install.sh';
@@ -125,6 +135,90 @@ function buildTokenBudget(usage: AnyRecord) {
     cacheTokens: cacheReadTokens,
     breakdown: { input: inputTokens, output: outputTokens },
   };
+}
+
+/** Where AGY keeps a conversation's full transcript (with reasoning). */
+function resolveFullTranscriptPath(conversationId: string): string | null {
+  if (!/^[\w-]+$/.test(conversationId)) {
+    return null;
+  }
+  const brainDir = process.env.ANTIGRAVITY_BRAIN_DIR
+    || path.join(os.homedir(), '.gemini', 'antigravity-cli', 'brain');
+  return path.join(brainDir, conversationId, '.system_generated', 'logs', 'transcript_full.jsonl');
+}
+
+/** Bytes appended to a file since `offset`, or null when it does not exist yet. */
+async function readAppended(filePath: string, offset: number): Promise<{ text: string; size: number } | null> {
+  let handle;
+  try {
+    handle = await open(filePath, 'r');
+  } catch {
+    return null;
+  }
+  try {
+    const { size } = await handle.stat();
+    if (size <= offset) {
+      return { text: '', size };
+    }
+    const buffer = Buffer.alloc(size - offset);
+    await handle.read(buffer, 0, buffer.length, offset);
+    return { text: buffer.toString('utf8'), size };
+  } finally {
+    await handle.close();
+  }
+}
+
+/** Forwards the reasoning AGY has written to the transcript since the last read. */
+async function forwardNewThinking(live: LiveProcess): Promise<void> {
+  const transcriptPath = live.conversationId ? resolveFullTranscriptPath(live.conversationId) : null;
+  if (!transcriptPath) {
+    return;
+  }
+  const appended = await readAppended(transcriptPath, live.transcriptOffset);
+  if (!appended?.text) {
+    return;
+  }
+  live.transcriptOffset = appended.size;
+  const lines = `${live.transcriptRemainder}${appended.text}`.split('\n');
+  live.transcriptRemainder = lines.pop() ?? '';
+  for (const line of lines) {
+    let step: AnyRecord;
+    try {
+      step = JSON.parse(line) as AnyRecord;
+    } catch {
+      continue;
+    }
+    const thinking = typeof step.thinking === 'string' ? step.thinking.trim() : '';
+    if (step.source !== 'MODEL' || step.type !== 'PLANNER_RESPONSE' || !thinking) {
+      continue;
+    }
+    live.writer.send(createNormalizedMessage({
+      id: `${live.conversationId}-${String(step.step_index)}-thinking`,
+      sessionId: live.conversationId,
+      provider: 'antigravity',
+      kind: 'thinking',
+      role: 'assistant',
+      content: thinking,
+    }));
+  }
+}
+
+/**
+ * Starts tailing the transcript. A resumed conversation starts from the
+ * current end so earlier turns are not replayed; a new one from the start.
+ */
+async function startTranscriptTail(live: LiveProcess, resumed: boolean): Promise<void> {
+  live.transcriptOffset = 0;
+  live.transcriptRemainder = '';
+  const transcriptPath = resumed && live.conversationId ? resolveFullTranscriptPath(live.conversationId) : null;
+  if (!transcriptPath) {
+    return;
+  }
+  try {
+    live.transcriptOffset = (await stat(transcriptPath)).size;
+  } catch {
+    // Not written yet.
+  }
 }
 
 /** Runs one chat turn, reusing the chat's AGY process when it can. */
@@ -194,6 +288,8 @@ async function runAntigravity(
       exited: false,
       stderr: '',
       idleTimer: null,
+      transcriptOffset: 0,
+      transcriptRemainder: '',
     };
     attachProcess(live, liveProcesses, processKey);
   }
@@ -264,6 +360,7 @@ async function runAntigravity(
 function attachProcess(live: LiveProcess, liveProcesses: Map<string, LiveProcess>, processKey: string): void {
   liveProcesses.set(processKey, live);
   let buffered = '';
+  let eventQueue: Promise<void> = Promise.resolve();
 
   const finishTurn = (outcome: TurnOutcome) => {
     const turn = live.turn;
@@ -271,13 +368,17 @@ function attachProcess(live: LiveProcess, liveProcesses: Map<string, LiveProcess
     turn?.settle(outcome);
   };
 
-  const handleEvent = (event: AnyRecord) => {
+  const handleEvent = async (event: AnyRecord) => {
     const sessionId = live.conversationId ?? live.fallbackSessionId;
     switch (event.event) {
       case 'init': {
         const conversationId = typeof event.conversation_id === 'string' ? event.conversation_id : null;
+        const resumed = Boolean(live.conversationId);
         if (conversationId && !live.conversationId) {
           live.conversationId = conversationId;
+        }
+        await startTranscriptTail(live, resumed);
+        if (conversationId && !resumed) {
           live.writer.setSessionId?.(conversationId);
           live.writer.send(createNormalizedMessage({
             kind: 'session_created',
@@ -290,6 +391,11 @@ function attachProcess(live: LiveProcess, liveProcesses: Map<string, LiveProcess
       }
       case 'step_update': {
         const step = event.step_update as AnyRecord | undefined;
+        // A planner step's reasoning lands in the transcript around the time
+        // the step ends; read it before the tool calls it led to.
+        if (step?.step_type === 'tool' || (step?.step_type === 'agent_response' && step.state === 'DONE')) {
+          await forwardNewThinking(live).catch(() => {});
+        }
         for (const message of live.context.normalizeMessage(step, sessionId)) {
           live.writer.send(message);
         }
@@ -305,6 +411,7 @@ function attachProcess(live: LiveProcess, liveProcesses: Map<string, LiveProcess
         return;
       }
       case 'result': {
+        await forwardNewThinking(live).catch(() => {});
         const result = (event.result ?? {}) as AnyRecord;
         if (result.status === 'SUCCESS') {
           finishTurn({ code: 0 });
@@ -337,7 +444,10 @@ function attachProcess(live: LiveProcess, liveProcesses: Map<string, LiveProcess
         continue;
       }
       if (event && typeof event === 'object') {
-        handleEvent(event as AnyRecord);
+        // Events are handled one after another: reading the transcript is async.
+        eventQueue = eventQueue.then(() => handleEvent(event as AnyRecord)).catch((error) => {
+          console.warn('[Antigravity] Failed to handle a stream event:', error instanceof Error ? error.message : error);
+        });
       }
     }
   });
@@ -380,8 +490,8 @@ function attachProcess(live: LiveProcess, liveProcesses: Map<string, LiveProcess
     finishTurn({ code: code === 0 || code === null ? 1 : code, error });
   };
 
-  live.child.once('close', (code: number | null) => { void onExit(code); });
-  live.child.once('error', (error: Error) => { void onExit(null, error); });
+  live.child.once('close', (code: number | null) => { void eventQueue.then(() => onExit(code)); });
+  live.child.once('error', (error: Error) => { void eventQueue.then(() => onExit(null, error)); });
   // A write to a process that died before reading stdin must not crash the server.
   live.child.stdin?.on('error', () => {});
 }

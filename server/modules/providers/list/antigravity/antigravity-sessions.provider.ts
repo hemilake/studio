@@ -160,6 +160,21 @@ function resolveAntigravityTranscriptPath(options: FetchHistoryOptions): string 
   );
 }
 
+/**
+ * Reads `transcript_full.jsonl` when it sits next to the transcript: it keeps
+ * the planner's tool calls and reasoning, which `transcript.jsonl` drops.
+ */
+async function readPreferredTranscript(transcriptPath: string): Promise<string> {
+  if (path.basename(transcriptPath) === 'transcript.jsonl') {
+    try {
+      return await readFile(path.join(path.dirname(transcriptPath), 'transcript_full.jsonl'), 'utf8');
+    } catch {
+      // Older AGY builds write only transcript.jsonl.
+    }
+  }
+  return readFile(transcriptPath, 'utf8');
+}
+
 /** Removes provider metadata tags from user-facing transcript content. */
 function stripAntigravityTags(content: string): string {
   return content
@@ -180,8 +195,25 @@ function parseAntigravityTimestamp(value: unknown): string | undefined {
   return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
 }
 
-/** Maps one AGY JSONL step into zero or more shared history messages. */
-function normalizeAntigravityHistoryStep(rawStep: unknown, sessionId: string | null): NormalizedMessage[] {
+/** Drops the timing header AGY puts at the top of every tool result. */
+function stripAntigravityToolHeader(content: string): string {
+  return content.replace(/^(?:(?:Created|Completed) At: [^\n]*\n)+\n?/, '').trim();
+}
+
+/**
+ * Maps one AGY JSONL step into zero or more shared history messages.
+ *
+ * `transcript_full.jsonl` puts a planner step's tool calls in `tool_calls` and
+ * their results in the MODEL steps that follow, in the same order;
+ * `pendingToolIds` carries the open calls from one step to the next so each
+ * result attaches to its call. `transcript.jsonl` has no `tool_calls`, and its
+ * results stay unpaired as before.
+ */
+function normalizeAntigravityHistoryStep(
+  rawStep: unknown,
+  sessionId: string | null,
+  pendingToolIds: string[] = [],
+): NormalizedMessage[] {
   const raw = readObjectRecord(rawStep);
   if (!raw) {
     return [];
@@ -207,23 +239,54 @@ function normalizeAntigravityHistoryStep(rawStep: unknown, sessionId: string | n
   }
 
   if (source === 'MODEL' && type === 'PLANNER_RESPONSE') {
-    const text = content ?? readOptionalString(raw.thinking);
-    if (!text?.trim() || WAITING_FOR_EVENTS.test(text.trim())) {
-      return [];
+    const messages: NormalizedMessage[] = [];
+    const thinking = readOptionalString(raw.thinking)?.trim();
+    if (thinking) {
+      messages.push(createNormalizedMessage({
+        id: `${baseId}-thinking`,
+        sessionId,
+        timestamp,
+        provider: PROVIDER,
+        kind: 'thinking',
+        role: 'assistant',
+        content: thinking,
+      }));
     }
-
-    return [createNormalizedMessage({
-      id: baseId,
-      sessionId,
-      timestamp,
-      provider: PROVIDER,
-      kind: readOptionalString(raw.thinking) && !content ? 'thinking' : 'text',
-      role: 'assistant',
-      content: text.trim(),
-    })];
+    const text = content?.trim();
+    if (text && !WAITING_FOR_EVENTS.test(text)) {
+      messages.push(createNormalizedMessage({
+        id: baseId,
+        sessionId,
+        timestamp,
+        provider: PROVIDER,
+        kind: 'text',
+        role: 'assistant',
+        content: text,
+      }));
+    }
+    const toolCalls = Array.isArray(raw.tool_calls) ? raw.tool_calls : [];
+    toolCalls.forEach((call, index) => {
+      const record = readObjectRecord(call);
+      const toolId = `${baseId}-call-${index}`;
+      pendingToolIds.push(toolId);
+      messages.push(createNormalizedMessage({
+        id: toolId,
+        sessionId,
+        timestamp,
+        provider: PROVIDER,
+        kind: 'tool_use',
+        toolName: readOptionalString(record?.name) ?? 'Antigravity Tool',
+        toolInput: record?.args ?? {},
+        toolId,
+      }));
+    });
+    return messages;
   }
 
-  if (source === 'MODEL' && content?.trim()) {
+  if (source === 'MODEL' && (content?.trim() || readOptionalString(raw.error))) {
+    const pairedId = pendingToolIds.shift();
+    const isError = type === 'ERROR_MESSAGE' || raw.status === 'ERROR';
+    const body = content?.trim() ? stripAntigravityToolHeader(content) : '';
     return [createNormalizedMessage({
       id: baseId,
       sessionId,
@@ -232,9 +295,9 @@ function normalizeAntigravityHistoryStep(rawStep: unknown, sessionId: string | n
       kind: 'tool_result',
       role: 'assistant',
       toolName: type || 'Antigravity Tool',
-      toolId: baseId,
-      content: content.trim(),
-      isError: type === 'ERROR_MESSAGE',
+      toolId: pairedId ?? baseId,
+      content: body || readOptionalString(raw.error) || '',
+      isError,
     })];
   }
 
@@ -360,9 +423,10 @@ export class AntigravitySessionsProvider implements IProviderSessions {
     }
 
     const normalized: NormalizedMessage[] = [];
+    const pendingToolIds: string[] = [];
     let lastTranscriptStepIndex = -1;
     try {
-      const lines = (await readFile(transcriptPath, 'utf8')).split(/\r?\n/);
+      const lines = (await readPreferredTranscript(transcriptPath)).split(/\r?\n/);
       for (const line of lines) {
         const trimmed = line.trim();
         if (!trimmed) {
@@ -391,7 +455,7 @@ export class AntigravitySessionsProvider implements IProviderSessions {
             );
             if (restored !== null) raw.content = restored;
           }
-          normalized.push(...normalizeAntigravityHistoryStep(raw ?? step, sessionId));
+          normalized.push(...normalizeAntigravityHistoryStep(raw ?? step, sessionId, pendingToolIds));
         } catch {
           // A live transcript can end with a partially written JSONL record.
           // Preserve every complete entry instead of hiding the whole history.
