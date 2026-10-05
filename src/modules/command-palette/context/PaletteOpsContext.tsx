@@ -5,7 +5,9 @@ export type PaletteOps = {
   openFile: (path: string) => void;
   // Opens a file in the editor side panel without changing the active tab
   // (used by in-chat file links so they behave like the inline edit view).
-  openFileInEditor: (path: string) => void;
+  openFileInEditor: (path: string, line?: number | null) => void;
+  // Directories cannot be read as text: they open in the file tree instead.
+  openDirectory: (path: string) => void;
   openSettings: (tab?: string) => void;
   refreshProjects: () => Promise<void> | void;
   // Fork: opens the chat workspace (registered by the sidebar).
@@ -19,6 +21,7 @@ const PaletteOpsContext = createContext<Registry | null>(null);
 const defaultOps: PaletteOps = {
   openFile: () => undefined,
   openFileInEditor: () => undefined,
+  openDirectory: () => undefined,
   openSettings: () => undefined,
   refreshProjects: () => undefined,
   openChat: () => undefined,
@@ -35,8 +38,9 @@ export function usePaletteOps(): PaletteOps {
   return useMemo<PaletteOps>(
     () => ({
       openFile: (path) => (ref?.current.openFile ?? defaultOps.openFile)(path),
-      openFileInEditor: (path) =>
-        (ref?.current.openFileInEditor ?? defaultOps.openFileInEditor)(path),
+      openFileInEditor: (path, line) =>
+        (ref?.current.openFileInEditor ?? defaultOps.openFileInEditor)(path, line),
+      openDirectory: (path) => (ref?.current.openDirectory ?? defaultOps.openDirectory)(path),
       openSettings: (tab) => (ref?.current.openSettings ?? defaultOps.openSettings)(tab),
       refreshProjects: () => (ref?.current.refreshProjects ?? defaultOps.refreshProjects)(),
       openChat: () => (ref?.current.openChat ?? defaultOps.openChat)(),
@@ -47,7 +51,7 @@ export function usePaletteOps(): PaletteOps {
 
 export function usePaletteOpsRegister(partial: Partial<PaletteOps>) {
   const ref = useContext(PaletteOpsContext);
-  const { openFile, openFileInEditor, openSettings, refreshProjects, openChat } = partial;
+  const { openFile, openFileInEditor, openDirectory, openSettings, refreshProjects, openChat } = partial;
 
   useEffect(() => {
     if (!ref) return undefined;
@@ -58,15 +62,17 @@ export function usePaletteOpsRegister(partial: Partial<PaletteOps>) {
     const prev = { ...registry };
     if (openFile) registry.openFile = openFile;
     if (openFileInEditor) registry.openFileInEditor = openFileInEditor;
+    if (openDirectory) registry.openDirectory = openDirectory;
     if (openSettings) registry.openSettings = openSettings;
     if (refreshProjects) registry.refreshProjects = refreshProjects;
     if (openChat) registry.openChat = openChat;
     return () => {
       if (openFile && registry.openFile === openFile) registry.openFile = prev.openFile;
       if (openFileInEditor && registry.openFileInEditor === openFileInEditor) registry.openFileInEditor = prev.openFileInEditor;
+      if (openDirectory && registry.openDirectory === openDirectory) registry.openDirectory = prev.openDirectory;
       if (openSettings && registry.openSettings === openSettings) registry.openSettings = prev.openSettings;
       if (refreshProjects && registry.refreshProjects === refreshProjects) registry.refreshProjects = prev.refreshProjects;
       if (openChat && registry.openChat === openChat) registry.openChat = prev.openChat;
     };
-  }, [ref, openFile, openFileInEditor, openSettings, refreshProjects, openChat]);
+  }, [ref, openFile, openFileInEditor, openDirectory, openSettings, refreshProjects, openChat]);
 }

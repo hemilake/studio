@@ -16,6 +16,7 @@ import path from 'node:path';
 import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
 
+import crossSpawn from 'cross-spawn';
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 
 import { parseFrontMatter } from '@/shared/frontmatter.js';
@@ -1126,7 +1127,181 @@ export function flattenPromptForWindowsShell(prompt: string): string {
 }
 
 // ---------------------------
+//----------------- PROVIDER CLI ENVIRONMENT UTILITIES ------------
+/**
+ * Resolves an operator-configured provider executable without invoking a
+ * shell. Antigravity auth, model discovery, and runtime adapters share this
+ * so every provider subprocess uses the same executable override. Matching
+ * outer quotes are removed to support values copied from shell-style env files.
+ */
+export function resolveConfiguredCliExecutable(
+  configuredPath: string | undefined,
+  defaultCommand: string,
+): string {
+  const trimmedPath = configuredPath?.trim();
+  if (!trimmedPath) {
+    return defaultCommand;
+  }
+
+  const quote = trimmedPath[0];
+  if (
+    trimmedPath.length >= 2
+    && (quote === '"' || quote === "'")
+    && trimmedPath.at(-1) === quote
+  ) {
+    return trimmedPath.slice(1, -1).trim() || defaultCommand;
+  }
+
+  return trimmedPath;
+}
+
+function readEnvValue(env: NodeJS.ProcessEnv, key: string): string | undefined {
+  const resolvedKey = Object.keys(env).find((envKey) => envKey.toLowerCase() === key.toLowerCase());
+  return resolvedKey ? env[resolvedKey] : undefined;
+}
+
+function getPathEnvKey(env: NodeJS.ProcessEnv): string {
+  return Object.keys(env).find((key) => key.toLowerCase() === 'path') || 'PATH';
+}
+
+function uniquePathEntries(entries: string[]): string[] {
+  const seen = new Set<string>();
+  return entries.filter((entry) => {
+    const normalized = os.platform() === 'win32' ? entry.toLowerCase() : entry;
+    if (!entry || seen.has(normalized)) {
+      return false;
+    }
+
+    seen.add(normalized);
+    return true;
+  });
+}
+
+function getUserExecutablePathCandidates(env: NodeJS.ProcessEnv): string[] {
+  const home = os.homedir();
+  const npmPrefix = readEnvValue(env, 'npm_config_prefix');
+  const appData = readEnvValue(env, 'APPDATA');
+
+  return [
+    npmPrefix ? path.join(npmPrefix, 'bin') : '',
+    appData ? path.join(appData, 'npm') : '',
+    os.platform() === 'win32' ? path.join(home, 'AppData', 'Roaming', 'npm') : '',
+    path.join(home, '.local', 'bin'),
+    path.join(home, '.npm-global', 'bin'),
+    path.join(home, '.bun', 'bin'),
+    path.join(home, '.cargo', 'bin'),
+    path.join(home, 'go', 'bin'),
+  ];
+}
+
+/**
+ * Builds the subprocess environment used by provider CLI adapters.
+ *
+ * Antigravity's runtime, auth probe, and model discovery use this helper so
+ * user-level executable directories remain discoverable when CloudCLI starts
+ * outside an interactive login shell. Existing variables and PATH ordering
+ * are preserved after the deduplicated user-directory prefix.
+ */
+export function buildProviderCliEnv(env: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+  const nextEnv = { ...env };
+  const pathKey = getPathEnvKey(nextEnv);
+  const currentPath = nextEnv[pathKey] || '';
+  const pathEntries = currentPath.split(path.delimiter).filter(Boolean);
+
+  nextEnv[pathKey] = uniquePathEntries([
+    ...getUserExecutablePathCandidates(nextEnv),
+    ...pathEntries,
+  ]).join(path.delimiter);
+
+  return nextEnv;
+}
+
+/**
+ * Runs a short-lived provider CLI probe without blocking the Node.js event loop.
+ *
+ * The Antigravity auth and model adapters use this for installation,
+ * authentication, and model discovery checks. Failures are returned as data so
+ * those adapters can expose their normal fallback status instead of throwing.
+ */
+export function runProviderCliCommand(
+  command: string,
+  args: string[],
+  options: { env?: NodeJS.ProcessEnv; timeoutMs?: number } = {},
+): Promise<{
+  exitCode: number | null;
+  signal: NodeJS.Signals | null;
+  stdout: string;
+  stderr: string;
+  error: Error | null;
+}> {
+  return new Promise((resolve) => {
+    let stdout = '';
+    let stderr = '';
+    let settled = false;
+
+    const child = crossSpawn(command, args, {
+      env: options.env ?? buildProviderCliEnv(),
+      stdio: ['ignore', 'pipe', 'pipe'],
+      timeout: options.timeoutMs,
+    });
+
+    const finish = (
+      exitCode: number | null,
+      signal: NodeJS.Signals | null,
+      error: Error | null,
+    ) => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      resolve({ exitCode, signal, stdout, stderr, error });
+    };
+
+    child.stdout?.setEncoding('utf8');
+    child.stdout?.on('data', (chunk: string) => {
+      stdout += chunk;
+    });
+    child.stderr?.setEncoding('utf8');
+    child.stderr?.on('data', (chunk: string) => {
+      stderr += chunk;
+    });
+    child.once('error', (error) => finish(null, null, error));
+    child.once('close', (exitCode, signal) => finish(exitCode, signal, null));
+  });
+}
+
+// ---------------------------
 //----------------- TERMINAL OUTPUT UTILITIES ------------
+/**
+ * Matches the escape sequences a CLI emits when it believes it is writing to a
+ * terminal, in the three shapes those tools actually produce:
+ * - OSC (`ESC ]` … terminated by BEL or ST), used for titles and hyperlinks.
+ * - CSI (`ESC [`, or the 8-bit `\u009B` introducer that stands in for both
+ *   bytes), used for SGR colors and cursor control.
+ * - any other ECMA-48 escape sequence: `ESC`, optional intermediate bytes
+ *   (`0x20`-`0x2F`), one final byte (`0x30`-`0x7E`), such as `ESC ( B`.
+ *
+ * OSC and CSI are listed first so their terminators are consumed by the
+ * specific alternative rather than by the generic one.
+ */
+const ANSI_ESCAPE_SEQUENCE_REGEX =
+  /\u001B\][^\u0007\u001B]*(?:\u0007|\u001B\\)|(?:\u001B\[|\u009B)[0-?]*[ -/]*[@-~]|\u001B[ -/]*[0-~]/g;
+
+/**
+ * Removes ANSI escape sequences from text captured off a CLI's stdout or
+ * stderr. Provider runtimes, session readers, and the shell WebSocket share
+ * this because every one of them forwards captured process output to a web
+ * client that renders plain text: left in, the escapes show up verbatim
+ * (`[93m[1m!`) instead of as styling.
+ *
+ * The result can be empty when the input was styling only, so callers that
+ * forward the text should re-check for emptiness after cleaning.
+ */
+export function stripAnsiSequences(value: string): string {
+  return value.replace(ANSI_ESCAPE_SEQUENCE_REGEX, '');
+}
+
 const ANSI_TERMINAL_STYLES = {
   reset: '\x1b[0m',
   bright: '\x1b[1m',

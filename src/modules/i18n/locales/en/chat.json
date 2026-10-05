@@ -18,7 +18,8 @@
     "claude": "Claude",
     "cursor": "Cursor",
     "codex": "Codex",
-    "opencode": "OpenCode"
+    "opencode": "OpenCode",
+    "antigravity": "Antigravity"
   },
   "tools": {
     "settings": "Tool Settings",
@@ -166,6 +167,7 @@
       "cursor": "Ready to use Cursor with {{model}}. Start typing your message below.",
       "codex": "Ready to use Codex with {{model}}. Start typing your message below.",
       "opencode": "Ready to use OpenCode with {{model}}. Start typing your message below.",
+      "antigravity": "Ready to use Antigravity with {{model}}. Start typing your message below.",
       "default": "Select a provider above to begin"
     },
     "pressToSearch": "Press <kbd>{{shortcut}}</kbd> to search sessions, files, and commits",
@@ -348,6 +350,8 @@
     "choiceSavedDefault": "Your choice becomes the default model for new chats.",
     "tokensUsed_one": "{{count}} token used",
     "tokensUsed_other": "{{count}} tokens used",
+    "compacted": "Compacted",
+    "compactionSummary": "full summary",
     "expandImage": "Expand {{name}}",
     "tokensLabel_one": "token",
     "tokensLabel_other": "tokens",
