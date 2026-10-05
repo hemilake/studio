@@ -252,11 +252,77 @@ function normalizeAntigravityHistoryStep(rawStep: unknown, sessionId: string | n
   return [];
 }
 
+/**
+ * Maps one stream-json `step_update` to live messages.
+ *
+ * Text arrives as `text_delta` chunks of an `agent_response` step, which ends
+ * with state DONE; that closes the streamed bubble so tool calls that follow
+ * render after it. A tool step arrives ACTIVE (call) and then DONE (result).
+ */
+function normalizeAntigravityStreamStep(step: Record<string, unknown>, sessionId: string | null): NormalizedMessage[] {
+  const stepType = readOptionalString(step.step_type);
+  const state = readOptionalString(step.state);
+  const conversationId = readOptionalString(step.conversation_id) ?? sessionId ?? 'antigravity';
+  const stepId = `${conversationId}-${typeof step.step_index === 'number' ? step.step_index : generateMessageId('antigravity')}`;
+  const messages: NormalizedMessage[] = [];
+
+  if (stepType === 'agent_response') {
+    const delta = typeof step.text_delta === 'string' ? step.text_delta : '';
+    if (delta && !WAITING_FOR_EVENTS.test(delta.trim())) {
+      messages.push(createNormalizedMessage({ sessionId, provider: PROVIDER, kind: 'stream_delta', content: delta }));
+    }
+    if (state === 'DONE') {
+      messages.push(createNormalizedMessage({ sessionId, provider: PROVIDER, kind: 'stream_end' }));
+    }
+    return messages;
+  }
+
+  if (stepType === 'tool') {
+    const info = readObjectRecord(step.tool_info);
+    const toolName = readOptionalString(step.tool_name) ?? readOptionalString(info?.name) ?? 'Antigravity Tool';
+    if (state === 'ACTIVE') {
+      return [createNormalizedMessage({
+        id: `${stepId}-call`,
+        sessionId,
+        provider: PROVIDER,
+        kind: 'tool_use',
+        toolName,
+        toolInput: info?.parameters ?? {},
+        toolId: stepId,
+      })];
+    }
+    const output = info?.output;
+    return [createNormalizedMessage({
+      id: `${stepId}-result`,
+      sessionId,
+      provider: PROVIDER,
+      kind: 'tool_result',
+      toolId: stepId,
+      content: typeof output === 'string' ? output : output === undefined ? '' : JSON.stringify(output),
+      isError: state !== 'DONE',
+    })];
+  }
+
+  if (state === 'ERROR' || state === 'FAILED') {
+    const error = readOptionalString(step.error) ?? readOptionalString(step.text_delta);
+    if (error) {
+      messages.push(createNormalizedMessage({ id: stepId, sessionId, provider: PROVIDER, kind: 'error', content: error }));
+    }
+  }
+  return messages;
+}
+
 /** Antigravity transcript reader and message normalizer used by session services. */
 export class AntigravitySessionsProvider implements IProviderSessions {
-  /** Normalizes a live AGY output chunk for websocket and SSE consumers. */
+  /**
+   * Normalizes a live AGY event for websocket and SSE consumers: a stream-json
+   * `step_update` payload, or a plain text chunk.
+   */
   normalizeMessage(rawMessage: unknown, sessionId: string | null): NormalizedMessage[] {
     const raw = readObjectRecord(rawMessage);
+    if (raw && typeof raw.step_type === 'string') {
+      return normalizeAntigravityStreamStep(raw, sessionId);
+    }
     const content = typeof rawMessage === 'string'
       ? rawMessage
       : readOptionalString(raw?.content) ?? readOptionalString(raw?.text) ?? '';
