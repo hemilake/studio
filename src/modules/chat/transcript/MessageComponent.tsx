@@ -1,6 +1,6 @@
 import { memo, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { GitBranchIcon, PencilIcon } from 'lucide-react';
+import { GitBranchIcon, PencilIcon, Swords } from 'lucide-react';
 
 import type { ChatMessage, ClaudePermissionSuggestion, PermissionGrantResult, LLMProvider,DiffLine,Project } from '@/shared/types';
 import { formatUsageLimitText, stripProposedPlanEnvelope } from '@/modules/chat/utils/chatFormatting';
@@ -15,6 +15,7 @@ import MessageCopyControl from '@/modules/chat/transcript/MessageCopyControl';
 import MessageSpeakControl from '@/modules/chat/transcript/MessageSpeakControl';
 import { useIsExportingTranscript } from '@/modules/chat/context/TranscriptRenderContext';
 import { MemoryCitations } from '@/modules/chat/transcript/MemoryCitations';
+import { adversaryLabel } from '@/modules/chat/utils/adversarialMode';
 
 type MessageComponentProps = {
   message: ChatMessage;
@@ -120,6 +121,16 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
                   </Markdown>
                 </div>
                 <div className="mt-1 flex items-center justify-end gap-1 text-xs text-muted-foreground">
+                  {message.adversaries && message.adversaries.length > 0 && (
+                    /* Fork: this turn ran in adversarial mode */
+                    <span
+                      className="mr-auto inline-flex items-center gap-1 rounded-md bg-rose-50 px-1.5 py-0.5 text-[11px] font-medium text-rose-700 dark:bg-rose-900/20 dark:text-rose-300"
+                      title={t('message.adversarialReview', { defaultValue: 'Adversarial mode' })}
+                    >
+                      <Swords className="h-3 w-3" />
+                      {message.adversaries.map(adversaryLabel).join(' + ')}
+                    </span>
+                  )}
                   {onEditMessage && message.transcriptAnchorId && (
                     <button
                       type="button"

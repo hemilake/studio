@@ -20,6 +20,7 @@ import type {
   ProviderRuntimeWriter,
 } from '@/shared/types.js';
 import { parseIncomingJsonObject } from '@/shared/utils.js';
+import { appendAdversarialReviewTag } from '@/shared/adversarial-review.js';
 
 /**
  * Trust boundary for client-supplied image attachments: chat.send options come
@@ -238,7 +239,16 @@ async function dispatchRun(
   }
 
   const clientOptions = (data.options ?? {}) as AnyRecord;
-  const command = typeof data.content === 'string' ? data.content : '';
+  const typedCommand = typeof data.content === 'string' ? data.content : '';
+  // Fork: adversarial mode asks Claude to consult the other agents' CLIs. Only
+  // Claude orchestrates; its history adapter strips the block again.
+  const command = provider === 'claude'
+    ? appendAdversarialReviewTag(
+      typedCommand,
+      clientOptions.adversaries,
+      String(clientOptions.cwd ?? session.project_path ?? clientOptions.projectPath ?? ''),
+    )
+    : typedCommand;
 
   // Record what this turn runs with so reopening the session later restores the
   // same model and reasoning effort, and so the resume path has a

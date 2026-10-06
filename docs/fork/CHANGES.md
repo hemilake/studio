@@ -2,6 +2,21 @@
 
 One entry per customization, newest first. Keep the file list accurate: it is the conflict checklist for upstream merges.
 
+## Adversarial mode in the composer
+
+- **Since:** 2026-10-06, on top of upstream v1.37.3.
+- **Branch:** `main` only. The commands assume this machine's `agy` and `codex` CLIs and accounts.
+- **Why:** Pablo often asks Opus for something and tells it to weigh what Antigravity (Gemini), Codex (GPT) or both say. Typing that every time is slow; a button makes it one click.
+- **What:** a swords icon before the permission menu, shown only when Claude is the provider. One click turns adversarial mode on with the saved selection (Antigravity by default); the chevron next to it opens the list of adversaries, and at least one stays selected. The selection is the `adversaries` user preference; the on/off state lives in memory, so a reload starts with the mode off. While it is on, every turn sends `options.adversaries`. `dispatchRun` (shared by `chat.send`, `chat.edit-send` and queued dispatch) appends an `<adversarial_review>` block to Claude's prompt: write a self-contained brief in a scratch directory, run each adversary in the background read-only (`agy --mode plan`, `codex exec -s read-only`), wait for the `<id>.done` file each command writes with its exit code, check their claims, and end with an "Adversarial review" section. The `.done` markers are there because the first live test waited with `pgrep -f "agy -p"`, which matched its own wait loop and hung until the Bash timeout. The block sits before the `<files_input>` tag. Claude's history adapter strips it like the files tag and puts the list on the message, so the user bubble shows the typed text plus a chip with the adversaries. Models and commands live in `server/shared/adversarial-review.ts`; the ids must match `src/modules/chat/utils/adversarialMode.ts`.
+- **Files:**
+  - `server/shared/adversarial-review.ts`, `server/shared/tests/adversarial-review.test.ts` (new), `.oxlintrc.json` (registers it as a shared util)
+  - `server/modules/websocket/services/chat-websocket.service.ts` (appends the block for Claude), `server/modules/providers/list/claude/claude-sessions.provider.ts` (strips it), `server/shared/types.ts` (`adversaries` on `NormalizedMessage`)
+  - `src/modules/chat/composer/ComposerAdversarialToggle.tsx`, `src/modules/chat/hooks/useAdversarialMode.ts`, `src/modules/chat/utils/adversarialMode.ts`, `src/modules/chat/tests/composerAdversarialToggle.test.tsx` (new)
+  - `src/modules/chat/ChatInterface.tsx`, `src/modules/chat/composer/ChatComposer.tsx`, `src/modules/chat/hooks/useChatComposerState.ts` (sends the option, echo carries the chip), `src/modules/chat/hooks/useChatSessionState.ts`, `src/modules/chat/hooks/useChatMessages.ts`, `src/modules/chat/transcript/MessageComponent.tsx` (chip)
+  - `src/shared/types.ts`, `src/shared/userSettings.ts` (`adversaries` preference), `src/modules/i18n/locales/{en,es}/chat.json`
+- **Verified:** node tests (new suite; the 4 `claude-cli-path` failures exist on the previous HEAD too), vitest (chat and shared suites), typecheck, lint, build, headless Chromium against the Beatriz instance at 1400 and 390 px (toggle on, Codex added from the menu, count badge), and a real `claude -p` turn (Opus, both adversaries, 102 s, $0.27) in a scratch project: it wrote the brief, ran both CLIs in parallel, waited on the markers and ended with the review section.
+- **Known limit:** on think, Codex's `read-only` sandbox cannot run any command. Ubuntu's `kernel.apparmor_restrict_unprivileged_userns=1` stops bubblewrap from creating a user namespace (`bwrap: loopback: Failed RTM_NEWADDR`), so Codex answers without reading files and says so. Antigravity is unaffected. Fixing it needs an AppArmor profile that grants `userns` to `/usr/bin/bwrap`.
+
 ## Automatic runs in their own recents tab
 
 - **Since:** 2026-10-06, on top of upstream v1.37.3.

@@ -299,6 +299,8 @@ export type ChatMessage = {
   timestamp: string | number | Date;
   images?: ChatImage[];
   files?: ChatAttachment[];
+  /** Fork: adversaries this user turn asked Claude to consult (adversarial mode). */
+  adversaries?: string[];
   reasoning?: string;
   /**
    * The provider's identifier for the transcript row behind this message, when
@@ -477,6 +479,8 @@ export type NormalizedMessage = {
   compact?: CompactionInfo;
   images?: Array<{ path?: string; data?: string; name?: string }>;
   files?: Array<{ path?: string; name?: string; mimeType?: string; size?: number }>;
+  /** Fork: adversaries a user turn asked Claude to consult; the server strips the prompt block. */
+  adversaries?: string[];
   toolName?: string;
   toolInput?: unknown;
   toolId?: string;

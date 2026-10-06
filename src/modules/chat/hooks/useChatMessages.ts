@@ -354,6 +354,7 @@ export function normalizedToChatMessages(messages: NormalizedMessage[]): ChatMes
               timestamp: msg.timestamp,
               images,
               files,
+              adversaries: msg.adversaries,
               ...sharedMetadata,
             });
           }

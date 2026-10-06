@@ -318,6 +318,8 @@ export type NormalizedMessage = {
   images?: unknown;
   /** Non-image files attached to a user turn after provider history normalization. */
   files?: unknown;
+  /** Fork: adversaries the user asked this turn to consult (adversarial mode); the prompt block is stripped. */
+  adversaries?: string[];
   toolName?: string;
   toolInput?: unknown;
   toolId?: string;

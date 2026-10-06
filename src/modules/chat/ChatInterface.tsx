@@ -19,6 +19,7 @@ import { useScheduledMessages } from '@/modules/chat/composer/useScheduledMessag
 import { useChatSessionState } from '@/modules/chat/hooks/useChatSessionState';
 import { useChatRealtimeHandlers } from '@/modules/chat/hooks/useChatRealtimeHandlers';
 import { useChatComposerState } from '@/modules/chat/hooks/useChatComposerState';
+import { useAdversarialMode } from '@/modules/chat/hooks/useAdversarialMode';
 import { useSessionStore } from '@/modules/chat/hooks/useSessionStore';
 import {
   useProcessingSessions,
@@ -114,6 +115,14 @@ function ChatInterface({
     selectedSession,
     selectedProject,
   });
+
+  // Fork: Claude is the only orchestrator; the toggle hides for other providers.
+  const adversarialMode = useAdversarialMode();
+  const canUseAdversaries = provider === 'claude';
+  const turnAdversaries = useMemo(
+    () => (canUseAdversaries && adversarialMode.enabled ? adversarialMode.selection : []),
+    [adversarialMode.enabled, adversarialMode.selection, canUseAdversaries],
+  );
 
   const {
     chatMessages,
@@ -229,6 +238,7 @@ function ChatInterface({
     cyclePermissionMode,
     currentProviderModel,
     currentProviderEffort,
+    adversaries: turnAdversaries,
     isLoading: isProcessing,
     processingSessions,
     canAbortSession,
@@ -492,6 +502,12 @@ function ChatInterface({
           effort={currentProviderEffort}
           availableEffortOptions={currentProviderEffortOptions}
           onSelectEffort={handleSelectComposerEffort}
+          adversarialMode={canUseAdversaries ? {
+            enabled: adversarialMode.enabled,
+            selection: adversarialMode.selection,
+            onToggle: adversarialMode.toggle,
+            onChangeSelection: adversarialMode.changeSelection,
+          } : undefined}
           model={currentProviderModel}
           availableModelOptions={currentProviderModelOptions}
           onSelectModel={handleSelectComposerModel}

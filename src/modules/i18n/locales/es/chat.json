@@ -142,7 +142,11 @@
       "title": "Reemplazando un mensaje anterior",
       "filesNotReverted": "los archivos ya modificados no se revierten",
       "cancel": "Cancelar"
-    }
+    },
+    "adversaries": "Adversarios",
+    "adversariesHeading": "¿A quién pide Claude una segunda opinión?",
+    "adversarialOn": "Modo adversarial activo: {{names}}",
+    "adversarialOff": "Modo adversarial: preguntar también a {{names}}"
   },
   "providerSelection": {
     "title": "Elige tu asistente de IA",
@@ -248,7 +252,8 @@
   },
   "message": {
     "editAndResend": "Editar y reenviar",
-    "forkFromHere": "Bifurcar desde aquí"
+    "forkFromHere": "Bifurcar desde aquí",
+    "adversarialReview": "Modo adversarial"
   },
   "export": {
     "trigger": "Exportar conversación",

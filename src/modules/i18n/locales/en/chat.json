@@ -150,7 +150,11 @@
       "title": "Replacing an earlier message",
       "filesNotReverted": "files the agent already changed are not reverted",
       "cancel": "Cancel"
-    }
+    },
+    "adversaries": "Adversaries",
+    "adversariesHeading": "Who should Claude ask for a second opinion?",
+    "adversarialOn": "Adversarial mode on: {{names}}",
+    "adversarialOff": "Adversarial mode: ask {{names}} too"
   },
   "providerSelection": {
     "title": "Choose Your AI Assistant",
@@ -265,7 +269,8 @@
   },
   "message": {
     "editAndResend": "Edit and resend",
-    "forkFromHere": "Fork from here"
+    "forkFromHere": "Fork from here",
+    "adversarialReview": "Adversarial mode"
   },
   "export": {
     "trigger": "Export conversation",

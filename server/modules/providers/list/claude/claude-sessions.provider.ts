@@ -14,6 +14,7 @@ import type {
   SubagentInfo,
 } from '@/shared/types.js';
 import { parseFilesInputTag } from '@/shared/image-attachments.js';
+import { parseAdversarialReviewTag } from '@/shared/adversarial-review.js';
 import { prepareTranscriptMessages } from '@/shared/message-unification.js';
 import {
   createNormalizedMessage,
@@ -792,9 +793,11 @@ export class ClaudeSessionsProvider implements IProviderSessions {
           } else if (part.type === 'text') {
             const text = part.text || '';
             const parsedFiles = parseFilesInputTag(text);
+            // Fork: the dispatcher appends this block before the files tag.
+            const parsedReview = parseAdversarialReviewTag(parsedFiles.text);
             if (
-              (parsedFiles.text || parsedFiles.attachments.length > 0)
-              && !isInternalContent(parsedFiles.text)
+              (parsedReview.text || parsedFiles.attachments.length > 0)
+              && !isInternalContent(parsedReview.text)
             ) {
               messages.push(createNormalizedMessage({
                 id: `${baseId}_text_${partIndex}`,
@@ -803,7 +806,8 @@ export class ClaudeSessionsProvider implements IProviderSessions {
                 provider: PROVIDER,
                 kind: 'text',
                 role: 'user',
-                content: parsedFiles.text,
+                content: parsedReview.text,
+                adversaries: parsedReview.adversaries.length > 0 ? parsedReview.adversaries : undefined,
                 images: !imagesAttached && imageAttachments.length > 0 ? imageAttachments : undefined,
                 files: !filesAttached && parsedFiles.attachments.length > 0
                   ? parsedFiles.attachments
@@ -926,9 +930,10 @@ export class ClaudeSessionsProvider implements IProviderSessions {
         }
 
         const parsedFiles = parseFilesInputTag(text);
+        const parsedReview = parseAdversarialReviewTag(parsedFiles.text);
         if (
-          (parsedFiles.text || parsedFiles.attachments.length > 0)
-          && !isInternalContent(parsedFiles.text)
+          (parsedReview.text || parsedFiles.attachments.length > 0)
+          && !isInternalContent(parsedReview.text)
         ) {
           messages.push(createNormalizedMessage({
             id: baseId,
@@ -937,7 +942,8 @@ export class ClaudeSessionsProvider implements IProviderSessions {
             provider: PROVIDER,
             kind: 'text',
             role: 'user',
-            content: parsedFiles.text,
+            content: parsedReview.text,
+            adversaries: parsedReview.adversaries.length > 0 ? parsedReview.adversaries : undefined,
             files: parsedFiles.attachments.length > 0 ? parsedFiles.attachments : undefined,
           }));
         }

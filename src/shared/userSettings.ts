@@ -35,6 +35,8 @@ export type UserPreferences = {
   chatWorkspaceModel: string | null;
   /** Fork: reasoning effort new chat sessions start with; null/empty means medium. */
   chatWorkspaceEffort: string | null;
+  /** Fork: adversaries the composer's adversarial mode consults; null/empty means Antigravity. */
+  adversaries: string[] | null;
 };
 
 export type UserPreferenceKey = keyof UserPreferences;
@@ -79,6 +81,7 @@ const LEGACY_STORAGE_KEYS: Record<UserPreferenceKey, string> = {
   chatWorkspacePath: '',
   chatWorkspaceModel: '',
   chatWorkspaceEffort: '',
+  adversaries: '',
 };
 
 const PREFERENCE_KEYS = Object.keys(LEGACY_STORAGE_KEYS) as UserPreferenceKey[];

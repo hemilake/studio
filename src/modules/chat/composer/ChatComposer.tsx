@@ -37,6 +37,7 @@ import { ScheduledMessageList } from '@/modules/chat/composer/ScheduledMessageLi
 import ComposerModelMenu from '@/modules/chat/composer/ComposerModelMenu';
 import ComposerEffortPicker from '@/modules/chat/composer/ComposerEffortPicker';
 import ComposerPermissionMenu from '@/modules/chat/composer/ComposerPermissionMenu';
+import ComposerAdversarialToggle from '@/modules/chat/composer/ComposerAdversarialToggle';
 
 type MentionableFile = {
   name: string;
@@ -60,6 +61,13 @@ type ChatComposerProps = {
   effort: string;
   availableEffortOptions: NonNullable<ProviderModelOption['effort']>['values'];
   onSelectEffort: (effort: string) => void;
+  /** Fork: adversarial mode toggle; absent when the provider cannot orchestrate adversaries. */
+  adversarialMode?: {
+    enabled: boolean;
+    selection: string[];
+    onToggle: () => void;
+    onChangeSelection: (ids: string[]) => void;
+  };
   model: string;
   availableModelOptions: ProviderModelOption[];
   onSelectModel: (model: string) => void;
@@ -135,6 +143,7 @@ export default function ChatComposer({
   effort,
   availableEffortOptions,
   onSelectEffort,
+  adversarialMode,
   model,
   availableModelOptions,
   onSelectModel,
@@ -494,6 +503,15 @@ export default function ChatComposer({
               effortOptions={availableEffortOptions}
               onSelectEffort={onSelectEffort}
             />
+
+            {adversarialMode && (
+              <ComposerAdversarialToggle
+                enabled={adversarialMode.enabled}
+                selection={adversarialMode.selection}
+                onToggle={adversarialMode.onToggle}
+                onChangeSelection={adversarialMode.onChangeSelection}
+              />
+            )}
 
             <ComposerPermissionMenu
               permissionMode={permissionMode}

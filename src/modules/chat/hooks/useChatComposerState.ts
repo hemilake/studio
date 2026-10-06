@@ -44,6 +44,8 @@ type UseChatComposerStateArgs = {
    */
   currentProviderModel: string;
   currentProviderEffort: string;
+  /** Fork: adversaries the next turn asks Claude to consult; empty when adversarial mode is off. */
+  adversaries?: string[];
   isLoading: boolean;
   processingSessions?: SessionActivityMap;
   canAbortSession: boolean;
@@ -175,6 +177,7 @@ export function useChatComposerState({
   resolvePermissionModeForProvider,
   currentProviderModel,
   currentProviderEffort,
+  adversaries,
   isLoading,
   canAbortSession,
   tokenBudget,
@@ -641,8 +644,10 @@ export function useChatComposerState({
       toolsSettings,
       skipPermissions: toolsSettings?.skipPermissions || false,
       sessionSummary: getNotificationSessionSummary(selectedSession, currentInput),
+      ...(adversaries && adversaries.length > 0 ? { adversaries } : {}),
     };
   }, [
+    adversaries,
     currentProviderEffort,
     currentProviderModel,
     permissionMode,
@@ -855,11 +860,16 @@ export function useChatComposerState({
       }
 
       const attachmentRecords = uploadedAttachments as ChatAttachment[];
+      // A queued turn keeps the adversaries it was composed with, like its other options.
+      const turnOptions = queuedSubmission?.options ?? buildSendOptions(messageContent);
+      const turnAdversaries = Array.isArray(turnOptions.adversaries) ? (turnOptions.adversaries as string[]) : [];
       const userMessage: ChatMessage = {
         type: 'user',
         content: currentInput,
         images: attachmentRecords.filter(isImageAttachment),
         files: attachmentRecords.filter((attachment) => !isImageAttachment(attachment)),
+        // Fork: the chip shows at once; the server copy carries the same list.
+        ...(turnAdversaries.length > 0 ? { adversaries: turnAdversaries } : {}),
         timestamp: new Date(),
         // Tags this echo as the replacement, so the truncation the server
         // broadcasts a moment later cuts the turns being replaced without
@@ -891,7 +901,7 @@ export function useChatComposerState({
         ...(editingAnchorId ? { anchorId: editingAnchorId } : {}),
         content: messageContent,
         options: {
-          ...(queuedSubmission?.options ?? buildSendOptions(messageContent)),
+          ...turnOptions,
           attachments: uploadedAttachments,
         },
       });
