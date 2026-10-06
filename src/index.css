@@ -23,38 +23,44 @@
 
 @layer base {
   :root {
-    --background: 44 22% 96%;
-    --foreground: 36 25% 4%;
+    --background: 37.5 31% 95%;          /* #F6F3EE paper */
+    --foreground: 36 9% 11%;             /* #1F1D1A ink */
     --card: 0 0% 100%;
-    --card-foreground: 36 25% 4%;
+    --card-foreground: 36 9% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 36 25% 4%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 44 15% 91%;
-    --secondary-foreground: 36 15% 18%;
-    --muted: 44 15% 91%;
-    --muted-foreground: 40 5% 44%;
-    --accent: 44 15% 91%;
-    --accent-foreground: 36 15% 18%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 44 14% 87%;
-    --input: 44 14% 87%;
-    --ring: 221.2 83.2% 53.3%;
+    --popover-foreground: 36 9% 11%;
+    --primary: 36 9% 11%;                /* actions are ink, not blue */
+    --primary-foreground: 37.5 31% 95%;
+    --secondary: 36 32% 91%;             /* #EFE9E0 */
+    --secondary-foreground: 37 12% 21%;  /* #3D3830 */
+    --muted: 36 32% 91%;
+    --muted-foreground: 35 10% 33%;      /* #5C554B */
+    --accent: 36 32% 91%;
+    --accent-foreground: 37 12% 21%;
+    --destructive: 7 60% 34%;            /* #8A2E22 brick */
+    --destructive-foreground: 37.5 31% 95%;
+    --border: 37.5 23% 86%;              /* #E4DED4 */
+    --input: 37.5 23% 86%;
+    --ring: 22 51% 47%;                  /* #B5673B copper: focus */
     --radius: 0.5rem;
 
-    /* Nav design tokens */
-    --nav-glass-bg: 44 22% 96% / 0.7;
-    --nav-glass-blur: 20px;
-    --nav-glass-saturate: 1.8;
-    --nav-tab-glow: 221.2 83.2% 53.3% / 0.18;
-    --nav-tab-ring: 221.2 83.2% 53.3% / 0.10;
-    --nav-float-shadow: 0 0% 0% / 0.06;
-    --nav-float-ring: 44 14% 87% / 0.5;
-    --nav-divider-color: 44 14% 87% / 0.5;
-    --nav-input-bg: 44 15% 91% / 0.5;
-    --nav-input-focus-ring: 221.2 83.2% 53.3% / 0.22;
+    --hemi-copper: 22 51% 47%;           /* state: running, unread, queued, badges */
+    --hemi-copper-text: 22 57% 35%;      /* #8A4A26 copper text and links on paper (AA) */
+    --hemi-copper-tint: 25 60% 96%;      /* #FBF4EF queued box, warning button */
+    --hemi-ok: 100 15% 35%;              /* #4E6B45 Connected, Active */
+    --hemi-ok-tint: 100 22% 92%;         /* #E8EFE4 */
+
+    /* glass and glow off: tabs are card on muted with a hairline */
+    --nav-glass-bg: 37.5 31% 95% / 0.92;
+    --nav-glass-blur: 0px;
+    --nav-glass-saturate: 1;
+    --nav-tab-glow: 0 0% 0% / 0;
+    --nav-tab-ring: 37.5 23% 86% / 1;
+    --nav-float-shadow: 36 9% 11% / 0.06;
+    --nav-float-ring: 37.5 23% 86% / 1;
+    --nav-divider-color: 37.5 23% 86% / 1;
+    --nav-input-bg: 37.5 31% 95% / 1;
+    --nav-input-focus-ring: 22 51% 47% / 0.28;
 
     /* Safe area CSS variables */
     --safe-area-inset-top: env(safe-area-inset-top);
@@ -85,37 +91,42 @@
   }
 
   .dark {
-    --background: 0 0% 8%;
-    --foreground: 40 8% 93%;
-    --card: 0 0% 12%;
-    --card-foreground: 40 8% 93%;
-    --popover: 0 0% 12%;
-    --popover-foreground: 40 8% 93%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 0 0% 8%;
-    --secondary: 0 0% 17%;
-    --secondary-foreground: 40 8% 93%;
-    --muted: 0 0% 17%;
-    --muted-foreground: 0 0% 60%;
-    --accent: 0 0% 17%;
-    --accent-foreground: 40 8% 93%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 40 8% 93%;
-    --border: 0 0% 17%;
-    --input: 0 0% 23%;
-    --ring: 217.2 91.2% 59.8%;
+    --background: 30 8% 9%;              /* #181614 */
+    --foreground: 37.5 31% 95%;
+    --card: 30 7% 12%;                   /* #211F1C */
+    --card-foreground: 37.5 31% 95%;
+    --popover: 30 7% 12%;
+    --popover-foreground: 37.5 31% 95%;
+    --primary: 37.5 31% 95%;             /* paper buttons on dark */
+    --primary-foreground: 36 9% 11%;
+    --secondary: 30 6% 17%;
+    --secondary-foreground: 37 15% 85%;
+    --muted: 30 6% 17%;
+    --muted-foreground: 36 8% 64%;
+    --accent: 30 6% 17%;
+    --accent-foreground: 37 15% 85%;
+    --destructive: 7 55% 55%;
+    --destructive-foreground: 36 9% 11%;
+    --border: 30 6% 20%;
+    --input: 30 6% 23%;
+    --ring: 22 61% 60%;                  /* #D8895C copper on ink */
 
-    /* Nav design tokens — dark overrides */
-    --nav-glass-bg: 0 0% 12% / 0.55;
-    --nav-glass-blur: 24px;
-    --nav-glass-saturate: 1.6;
-    --nav-tab-glow: 217.2 91.2% 59.8% / 0.25;
-    --nav-tab-ring: 217.2 91.2% 59.8% / 0.15;
+    --hemi-copper: 22 61% 60%;
+    --hemi-copper-text: 22 61% 60%;
+    --hemi-copper-tint: 22 30% 16%;
+    --hemi-ok: 100 20% 62%;
+    --hemi-ok-tint: 100 12% 18%;
+
+    --nav-glass-bg: 30 7% 12% / 0.92;
+    --nav-glass-blur: 0px;
+    --nav-glass-saturate: 1;
+    --nav-tab-glow: 0 0% 0% / 0;
+    --nav-tab-ring: 30 6% 20% / 1;
     --nav-float-shadow: 0 0% 0% / 0.35;
-    --nav-float-ring: 0 0% 17% / 0.3;
-    --nav-divider-color: 0 0% 17% / 0.5;
-    --nav-input-bg: 0 0% 17% / 0.5;
-    --nav-input-focus-ring: 217.2 91.2% 59.8% / 0.25;
+    --nav-float-ring: 30 6% 20% / 1;
+    --nav-divider-color: 30 6% 20% / 1;
+    --nav-input-bg: 30 6% 17% / 1;
+    --nav-input-focus-ring: 22 61% 60% / 0.3;
   }
 }
 
@@ -129,7 +140,7 @@
   body {
     @apply bg-background text-foreground;
 
-    font-family: "Encode Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     margin: 0;
@@ -390,7 +401,7 @@
   
   /* Ensure checkbox styling is preserved */
   input[type="checkbox"] {
-    @apply accent-blue-600;
+    accent-color: hsl(var(--primary));
     opacity: 1;
   }
   
@@ -402,38 +413,38 @@
   
   /* Fix checkbox appearance in dark mode */
   .dark input[type="checkbox"] {
-    background-color: rgb(31 41 55); /* gray-800 */
-    border-color: rgb(75 85 99); /* gray-600 */
-    color: rgb(37 99 235); /* blue-600 */
+    background-color: hsl(var(--card));
+    border-color: hsl(var(--input));
+    color: hsl(var(--primary));
     color-scheme: dark;
   }
   
   .dark input[type="checkbox"]:checked {
-    background-color: rgb(37 99 235); /* blue-600 */
-    border-color: rgb(37 99 235); /* blue-600 */
+    background-color: hsl(var(--primary));
+    border-color: hsl(var(--primary));
   }
   
   .dark input[type="checkbox"]:focus {
-    --tw-ring-color: rgb(59 130 246); /* blue-500 */
-    --tw-ring-offset-color: rgb(31 41 55); /* gray-800 */
+    --tw-ring-color: hsl(var(--ring));
+    --tw-ring-offset-color: hsl(var(--card));
   }
   
   /* Fix radio button appearance in dark mode */
   .dark input[type="radio"] {
-    background-color: rgb(31 41 55); /* gray-800 */
-    border-color: rgb(75 85 99); /* gray-600 */
-    color: rgb(37 99 235); /* blue-600 */
+    background-color: hsl(var(--card));
+    border-color: hsl(var(--input));
+    color: hsl(var(--primary));
     color-scheme: dark;
   }
   
   .dark input[type="radio"]:checked {
-    background-color: rgb(37 99 235); /* blue-600 */
-    border-color: rgb(37 99 235); /* blue-600 */
+    background-color: hsl(var(--primary));
+    border-color: hsl(var(--primary));
   }
   
   .dark input[type="radio"]:focus {
-    --tw-ring-color: rgb(59 130 246); /* blue-500 */
-    --tw-ring-offset-color: rgb(31 41 55); /* gray-800 */
+    --tw-ring-color: hsl(var(--ring));
+    --tw-ring-offset-color: hsl(var(--card));
   }
   
   /* Ensure textarea text is always visible in dark mode */
@@ -442,122 +453,122 @@
   }
   
   .dark textarea {
-    color: rgb(243 244 246) !important; /* gray-100 */
-    -webkit-text-fill-color: rgb(243 244 246) !important;
-    caret-color: rgb(243 244 246) !important;
+    color: hsl(var(--foreground)) !important;
+    -webkit-text-fill-color: hsl(var(--foreground)) !important;
+    caret-color: hsl(var(--foreground)) !important;
   }
   
   /* Fix for focus state in dark mode */
   .dark textarea:focus {
-    color: rgb(243 244 246) !important;
-    -webkit-text-fill-color: rgb(243 244 246) !important;
+    color: hsl(var(--foreground)) !important;
+    -webkit-text-fill-color: hsl(var(--foreground)) !important;
   }
   
   /* Fix for iOS/Safari dark mode textarea issues */
   @supports (-webkit-touch-callout: none) {
     .dark textarea {
       background-color: transparent !important;
-      color: rgb(243 244 246) !important;
-      -webkit-text-fill-color: rgb(243 244 246) !important;
+      color: hsl(var(--foreground)) !important;
+      -webkit-text-fill-color: hsl(var(--foreground)) !important;
     }
     
     .dark textarea:focus {
       background-color: transparent !important;
-      color: rgb(243 244 246) !important;
-      -webkit-text-fill-color: rgb(243 244 246) !important;
+      color: hsl(var(--foreground)) !important;
+      -webkit-text-fill-color: hsl(var(--foreground)) !important;
     }
   }
   
   /* Ensure parent container doesn't override textarea styles */
   .dark .bg-gray-800 textarea {
-    color: rgb(243 244 246) !important;
-    -webkit-text-fill-color: rgb(243 244 246) !important;
+    color: hsl(var(--foreground)) !important;
+    -webkit-text-fill-color: hsl(var(--foreground)) !important;
   }
   
   /* Fix focus-within container issues in dark mode */
   .dark .focus-within\:ring-2:focus-within {
-    background-color: rgb(20 20 20) !important;
+    background-color: hsl(var(--card)) !important;
   }
   
   /* Ensure textarea remains transparent with visible text */
   .dark textarea.bg-transparent {
     background-color: transparent !important;
-    color: rgb(243 244 246) !important;
-    -webkit-text-fill-color: rgb(243 244 246) !important;
+    color: hsl(var(--foreground)) !important;
+    -webkit-text-fill-color: hsl(var(--foreground)) !important;
   }
   
   /* Fix placeholder text color to be properly gray */
   textarea::placeholder {
-    color: rgb(156 163 175) !important; /* gray-400 */
+    color: hsl(var(--muted-foreground) / 0.75) !important;
     opacity: 1 !important;
   }
   
   .dark textarea::placeholder {
-    color: rgb(75 85 99) !important; /* gray-600 - darker gray */
+    color: hsl(var(--muted-foreground) / 0.75) !important;
     opacity: 1 !important;
   }
   
   /* More specific selector for chat input textarea */
   .dark .bg-gray-800 textarea::placeholder,
   .dark textarea.bg-transparent::placeholder {
-    color: rgb(75 85 99) !important; /* gray-600 - darker gray */
+    color: hsl(var(--muted-foreground) / 0.75) !important;
     opacity: 1 !important;
-    -webkit-text-fill-color: rgb(75 85 99) !important;
+    -webkit-text-fill-color: hsl(var(--muted-foreground) / 0.75) !important;
   }
   
   /* Custom class for chat input placeholder */
   .chat-input-placeholder::placeholder {
-    color: rgb(156 163 175) !important;
+    color: hsl(var(--muted-foreground) / 0.75) !important;
     opacity: 1 !important;
   }
 
   .dark .chat-input-placeholder::placeholder {
-    color: rgb(75 85 99) !important;
+    color: hsl(var(--muted-foreground) / 0.75) !important;
     opacity: 1 !important;
-    -webkit-text-fill-color: rgb(75 85 99) !important;
+    -webkit-text-fill-color: hsl(var(--muted-foreground) / 0.75) !important;
   }
 
   .chat-input-placeholder::-webkit-input-placeholder {
-    color: rgb(156 163 175) !important;
+    color: hsl(var(--muted-foreground) / 0.75) !important;
     opacity: 1 !important;
   }
 
   .dark .chat-input-placeholder::-webkit-input-placeholder {
-    color: rgb(75 85 99) !important;
+    color: hsl(var(--muted-foreground) / 0.75) !important;
     opacity: 1 !important;
-    -webkit-text-fill-color: rgb(75 85 99) !important;
+    -webkit-text-fill-color: hsl(var(--muted-foreground) / 0.75) !important;
   }
   
   /* WebKit specific placeholder styles */
   textarea::-webkit-input-placeholder {
-    color: rgb(156 163 175) !important;
+    color: hsl(var(--muted-foreground) / 0.75) !important;
     opacity: 1 !important;
   }
   
   .dark textarea::-webkit-input-placeholder {
-    color: rgb(75 85 99) !important; /* gray-600 - darker gray */
+    color: hsl(var(--muted-foreground) / 0.75) !important;
     opacity: 1 !important;
   }
   
   /* Mozilla specific placeholder styles */
   textarea::-moz-placeholder {
-    color: rgb(156 163 175) !important;
+    color: hsl(var(--muted-foreground) / 0.75) !important;
     opacity: 1 !important;
   }
   
   .dark textarea::-moz-placeholder {
-    color: rgb(75 85 99) !important; /* gray-600 - darker gray */
+    color: hsl(var(--muted-foreground) / 0.75) !important;
     opacity: 1 !important;
   }
   
   /* IE/Edge specific placeholder styles */
   textarea:-ms-input-placeholder {
-    color: rgb(156 163 175) !important;
+    color: hsl(var(--muted-foreground) / 0.75) !important;
     opacity: 1 !important;
   }
   
   .dark textarea:-ms-input-placeholder {
-    color: rgb(75 85 99) !important; /* gray-600 - darker gray */
+    color: hsl(var(--muted-foreground) / 0.75) !important;
     opacity: 1 !important;
   }
 }

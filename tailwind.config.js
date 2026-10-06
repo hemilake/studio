@@ -15,10 +15,13 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['"Encode Sans"', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif'],
-        serif: ['Merriweather', 'Georgia', 'Cambria', '"Times New Roman"', 'serif'],
+        sans: ['"IBM Plex Sans"', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Helvetica', 'Arial', 'sans-serif'],
+        mono: ['"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       colors: {
+        // Fork (Hemilake Studio): the cool grays used all over the UI become warm stone,
+        // so dark surfaces match the ink palette instead of reading blue.
+        gray: require('tailwindcss/colors').stone,
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -51,6 +54,13 @@ export default {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        hemi: {
+          copper: "hsl(var(--hemi-copper))",
+          'copper-text': "hsl(var(--hemi-copper-text))",
+          'copper-tint': "hsl(var(--hemi-copper-tint))",
+          ok: "hsl(var(--hemi-ok))",
+          'ok-tint': "hsl(var(--hemi-ok-tint))",
         },
       },
       borderRadius: {

@@ -55,7 +55,7 @@ export default function AgentConnectionsStep({
   return (
     <div className="space-y-4">
       <div className="text-center">
-        <h2 className="font-serif text-xl font-bold tracking-tight text-foreground">{t('onboarding.agentsStepTitle')}</h2>
+        <h2 className="text-xl font-bold tracking-tight text-foreground">{t('onboarding.agentsStepTitle')}</h2>
         <p className="mx-auto mt-1 max-w-sm text-sm leading-relaxed text-muted-foreground">
           {t('onboarding.agentsStepDescription')}
         </p>
