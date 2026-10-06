@@ -71,17 +71,17 @@ export const getAuthTokenRefreshDelay = (token: unknown): number | null => {
   return Math.max(0, refreshAt - Date.now());
 };
 
-export const expireAuthSession = (): void => {
+export const expireAuthSession = (reason = 'unknown'): void => {
   localStorage.removeItem('auth-token');
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new Event(AUTH_SESSION_EXPIRED_EVENT));
+    window.dispatchEvent(new CustomEvent(AUTH_SESSION_EXPIRED_EVENT, { detail: reason }));
   }
 };
 
 export const getStoredAuthToken = (): string | null => {
   const token = localStorage.getItem('auth-token');
   if (token && isAuthTokenExpired(token)) {
-    expireAuthSession();
+    expireAuthSession('stored-token-expired');
     return null;
   }
   return token;

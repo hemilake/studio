@@ -22,6 +22,12 @@ const validateApiKey = (req, res, next) => {
   next();
 };
 
+const logAuthRejection = (req, reason) => {
+  console.warn(
+    `[auth] 401 ${reason} ${req.method} ${req.originalUrl?.split('?')[0]} host=${req.headers.host} cf-ray=${req.headers['cf-ray'] || '-'}`,
+  );
+};
+
 // JWT authentication middleware
 const authenticateToken = async (req, res, next) => {
   // Platform mode:  use single database user
@@ -49,6 +55,7 @@ const authenticateToken = async (req, res, next) => {
   }
 
   if (!token) {
+    logAuthRejection(req, 'no-token');
     res.setHeader('X-Auth-Error', 'invalid-token');
     return res.status(401).json({
       error: 'Access denied. No token provided.',
@@ -62,6 +69,7 @@ const authenticateToken = async (req, res, next) => {
     // Verify user still exists and is active
     const user = userDb.getUserById(decoded.userId);
     if (!user) {
+      logAuthRejection(req, `user-not-found:${decoded.userId}`);
       res.setHeader('X-Auth-Error', 'invalid-token');
       return res.status(401).json({
         error: 'Invalid token. User not found.',
@@ -83,6 +91,7 @@ const authenticateToken = async (req, res, next) => {
     next();
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {
+      logAuthRejection(req, 'expired');
       res.setHeader('X-Auth-Error', 'session-expired');
       return res.status(401).json({
         error: 'Session expired. Please log in again.',
@@ -90,10 +99,7 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
-    console.warn(
-      'Token verification failed:',
-      error instanceof Error ? error.message : String(error),
-    );
+    logAuthRejection(req, `verify-failed:${error instanceof Error ? error.message : String(error)}`);
     res.setHeader('X-Auth-Error', 'invalid-token');
     return res.status(401).json({
       error: 'Invalid token',

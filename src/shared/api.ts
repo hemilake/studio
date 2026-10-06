@@ -42,8 +42,9 @@ export const authenticatedFetch = (
     if (refreshedToken) {
       storeAuthToken(refreshedToken);
     }
-    if (response.headers.get('X-Auth-Error')) {
-      expireAuthSession();
+    const authError = response.headers.get('X-Auth-Error');
+    if (authError) {
+      expireAuthSession(`${authError} ${response.status} ${url}`);
     }
     return response;
   });
