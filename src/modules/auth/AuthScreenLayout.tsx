@@ -28,8 +28,6 @@ export default function AuthScreenLayout({
           competing with the card content. Fixed so it stays put while the
           form scrolls on short viewports. */}
       <div aria-hidden className="pointer-events-none fixed inset-0">
-        <div className="absolute -top-40 left-1/2 h-[36rem] w-[36rem] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute -bottom-32 -left-24 h-[26rem] w-[26rem] rounded-full bg-primary/5 blur-3xl" />
         <div className="absolute inset-0 bg-[radial-gradient(hsl(var(--foreground)/0.04)_1px,transparent_1px)] opacity-60 [background-size:22px_22px]" />
       </div>
 
@@ -38,9 +36,7 @@ export default function AuthScreenLayout({
           <div className="text-center">
             <div className="mb-5 flex justify-center">
               {logo ?? (
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/80 shadow-lg shadow-primary/25 ring-1 ring-inset ring-white/20">
-                  <BrandMark className="h-9 w-9 text-primary-foreground" />
-                </div>
+                <BrandMark className="h-14 w-14 text-foreground" />
               )}
             </div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground">{title}</h1>

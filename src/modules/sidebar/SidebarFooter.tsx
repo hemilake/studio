@@ -59,9 +59,9 @@ export default function SidebarFooter({ restartRequired, currentVersion, onShowS
             href={UPSTREAM_REPO_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[10px] text-muted-foreground/40 transition-colors hover:text-muted-foreground"
+            className="font-mono text-[10.5px] text-muted-foreground/60 transition-colors hover:text-muted-foreground"
           >
-            {BRAND_NAME} · {UPSTREAM_NAME} v{currentVersion}
+            {BRAND_NAME.toLowerCase()} · {UPSTREAM_NAME} v{currentVersion}
           </a>
         </div>
       )}

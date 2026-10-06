@@ -1,8 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
-  <rect width="64" height="64" rx="16" fill="hsl(221.2 83.2% 53.3%)"/>
-  <g transform="translate(12.16 12.16) scale(1.6533333333333333)" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="12" cy="12" r="9"/>
-    <path d="M3 12a9 9 0 0 1 18 0Z" fill="white" stroke="none"/>
-    <path d="M3 12h18"/>
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 64 64" role="img" aria-label="Hemilake Studio"><path d="M32 4 A28 28 0 0 1 32 60 Z" fill="#B5673B"/><path d="M32 4 A28 28 0 0 0 32 60" fill="none" stroke="#1F1D1A" stroke-width="3" stroke-linecap="round"/></svg>

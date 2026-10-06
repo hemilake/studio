@@ -20,17 +20,10 @@ type GitStatusFileGroup = 'modified' | 'added' | 'deleted' | 'untracked';
 //----------------- BRANDING ------------
 
 /**
- * Font stack used to render the CloudCLI wordmark consistently wherever the brand name
- * appears as text. Apply it inline so the wordmark does not inherit a themed font.
- */
-export const CLOUDCLI_WORDMARK_FONT_FAMILY =
-  'ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji';
-
-/**
  * Fork: the product name shown in the UI. The repository, the npm package and
  * the `cloudcli` CLI keep upstream's name; only what the user sees is branded.
  */
-export const BRAND_NAME = 'Hemisphere';
+export const BRAND_NAME = 'Hemilake Studio';
 
 /** Upstream project this UI is built on, shown next to the version for sync reference. */
 export const UPSTREAM_NAME = 'CloudCLI';

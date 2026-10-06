@@ -1,9 +1,9 @@
 import { ExternalLink } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import { BRAND_NAME, CLOUDCLI_WORDMARK_FONT_FAMILY, FORK_REPO_URL, UPSTREAM_NAME, UPSTREAM_REPO_URL } from '@/shared/constants';
+import { BRAND_NAME, FORK_REPO_URL, UPSTREAM_NAME, UPSTREAM_REPO_URL } from '@/shared/constants';
 import { useVersionCheck } from '@/shared/hooks/useVersionCheck';
-import { BrandMark } from '@/shared/ui';
+import { BrandMark, BrandWordmark } from '@/shared/ui';
 
 const DOCS_URL = 'https://cloudcli.ai/docs/plugin-overview';
 
@@ -29,16 +29,11 @@ export default function AboutTab() {
     <div className="space-y-6">
       {/* Logo + name + version */}
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary/90 shadow-sm">
-          <BrandMark className="h-5 w-5 text-primary-foreground" />
-        </div>
+        <BrandMark className="h-10 w-10 flex-shrink-0 text-foreground" />
         <div>
           <div className="flex items-center gap-2">
-            <span
-              className="text-base font-semibold text-foreground"
-              style={{ fontFamily: CLOUDCLI_WORDMARK_FONT_FAMILY }}
-            >
-              {BRAND_NAME}
+            <span className="text-base" aria-label={BRAND_NAME}>
+              <BrandWordmark />
             </span>
             <a
               href={releasesUrl}
@@ -54,7 +49,7 @@ export default function AboutTab() {
                 href={releasesUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1 rounded-full bg-green-500/10 px-2 py-0.5 text-[10px] font-medium text-green-600 transition-colors hover:bg-green-500/20 dark:text-green-400"
+                className="flex items-center gap-1 rounded-full bg-hemi-ok-tint px-2 py-0.5 text-[10px] font-medium text-hemi-ok transition-colors hover:bg-hemi-ok-tint/70"
               >
                 {t('apiKeys.version.updateAvailable', { version: latestVersion })}
                 <ExternalLink className="h-2.5 w-2.5" />

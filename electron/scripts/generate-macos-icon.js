@@ -6,19 +6,17 @@ const assetsDir = 'electron/assets';
 const iconPath = 'electron/assets/logo-macos.png';
 const icnsPath = 'electron/assets/logo-macos.icns';
 
+// Fork (Hemilake Studio): the Hemilake symbol on an ink tile, same as the PWA icons.
 function renderSvg(entrySize) {
-  const scale = entrySize / 32;
+  const scale = (entrySize * 0.625) / 64;
+  const offset = (entrySize - 64 * scale) / 2;
   return `
 <svg xmlns="http://www.w3.org/2000/svg" width="${entrySize}" height="${entrySize}" viewBox="0 0 ${entrySize} ${entrySize}">
-  <rect width="${entrySize}" height="${entrySize}" fill="#2563eb"/>
-  <path
-    d="M${8 * scale} ${9 * scale}C${8 * scale} ${8.44772 * scale} ${8.44772 * scale} ${8 * scale} ${9 * scale} ${8 * scale}H${23 * scale}C${23.5523 * scale} ${8 * scale} ${24 * scale} ${8.44772 * scale} ${24 * scale} ${9 * scale}V${18 * scale}C${24 * scale} ${18.5523 * scale} ${23.5523 * scale} ${19 * scale} ${23 * scale} ${19 * scale}H${12 * scale}L${8 * scale} ${23 * scale}V${9 * scale}Z"
-    stroke="white"
-    stroke-width="${2 * scale}"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    fill="none"
-  />
+  <rect width="${entrySize}" height="${entrySize}" rx="${entrySize * 0.225}" fill="#1F1D1A"/>
+  <g transform="translate(${offset} ${offset}) scale(${scale})">
+    <path d="M32 4 A28 28 0 0 1 32 60 Z" fill="#D8895C"/>
+    <path d="M32 4 A28 28 0 0 0 32 60" fill="none" stroke="#F6F3EE" stroke-width="3" stroke-linecap="round"/>
+  </g>
 </svg>`;
 }
 

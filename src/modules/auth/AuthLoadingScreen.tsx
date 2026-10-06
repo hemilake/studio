@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 
-import { BRAND_NAME, CLOUDCLI_WORDMARK_FONT_FAMILY } from '@/shared/constants';
-import { BrandMark } from '@/shared/ui';
+import { BRAND_NAME } from '@/shared/constants';
+import { BrandMark, BrandWordmark } from '@/shared/ui';
 
 const loadingDotAnimationDelays = ['0s', '0.15s', '0.3s'];
 
@@ -10,29 +10,20 @@ export default function AuthLoadingScreen() {
   const { t } = useTranslation('auth');
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background p-4">
-      <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-40 left-1/2 h-[36rem] w-[36rem] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
-      </div>
-
       <div className="relative text-center" role="status" aria-live="polite">
         <div className="mb-5 flex justify-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/80 shadow-lg shadow-primary/25 ring-1 ring-inset ring-white/20">
-            <BrandMark className="h-9 w-9 text-primary-foreground" />
-          </div>
+          <BrandMark className="h-14 w-14 text-foreground" />
         </div>
 
-        <h1
-          className="mb-4 text-2xl font-bold tracking-tight text-foreground"
-          style={{ fontFamily: CLOUDCLI_WORDMARK_FONT_FAMILY }}
-        >
-          {BRAND_NAME}
+        <h1 className="mb-4 text-2xl" aria-label={BRAND_NAME}>
+          <BrandWordmark />
         </h1>
         <p className="sr-only">{t('misc.loadingState')}</p>
         <div aria-hidden className="flex items-center justify-center gap-2">
           {loadingDotAnimationDelays.map((delay) => (
             <div
               key={delay}
-              className="h-2 w-2 animate-bounce rounded-full bg-primary"
+              className="h-2 w-2 animate-bounce rounded-full bg-hemi-copper"
               style={{ animationDelay: delay }}
             />
           ))}

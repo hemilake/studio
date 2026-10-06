@@ -32,9 +32,9 @@ test('uses the selected Cursor session name as the page title', () => {
 });
 
 test('falls back to the project title when no session is selected', () => {
-  assert.equal(getPageTitle(project, null), 'My Project - Hemisphere');
+  assert.equal(getPageTitle(project, null), 'My Project - Hemilake Studio');
 });
 
 test('falls back to the app title when no project or session is selected', () => {
-  assert.equal(getPageTitle(null, null), 'Hemisphere');
+  assert.equal(getPageTitle(null, null), 'Hemilake Studio');
 });

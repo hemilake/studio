@@ -1,49 +1,67 @@
-// Fork: regenerates the Hemisphere logo, favicon and PWA icons in public/ from
+// Fork: regenerates the Hemilake Studio logo, favicon and PWA icons in public/ from
 // one SVG template, so the glyph matches src/shared/ui/BrandMark.tsx.
 //   node scripts/fork/generate-brand-icons.mjs
+// Logo and favicon sit on a light (paper) tile; PWA and home-screen icons on an ink tile.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'public');
-const BACKGROUND = 'hsl(221.2 83.2% 53.3%)'; // the app's primary colour
 
-/** Full mark: rounded background plus the glyph, scaled to `size`. */
-function markSvg(size, { rounded = true, background = BACKGROUND } = {}) {
-  const radius = rounded ? Math.round(size * 0.25) : 0;
-  const glyph = size * 0.62; // glyph box relative to the canvas
-  const offset = (size - glyph) / 2;
-  const scale = glyph / 24;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" fill="none">
-  <rect width="${size}" height="${size}" rx="${radius}" fill="${background}"/>
-  <g transform="translate(${offset} ${offset}) scale(${scale})" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="12" cy="12" r="9"/>
-    <path d="M3 12a9 9 0 0 1 18 0Z" fill="white" stroke="none"/>
-    <path d="M3 12h18"/>
-  </g>
-</svg>
+const PAPER = '#F6F3EE';
+const INK = '#1F1D1A';
+const HAIRLINE = '#E4DED4';
+const COPPER = '#B5673B';
+const COPPER_ON_INK = '#D8895C';
+
+/** The Hemilake symbol on its 64-unit grid: copper right half, open left arc. */
+function symbol({ fill, stroke }) {
+  return `<path d="M32 4 A28 28 0 0 1 32 60 Z" fill="${fill}"/><path d="M32 4 A28 28 0 0 0 32 60" fill="none" stroke="${stroke}" stroke-width="3" stroke-linecap="round"/>`;
+}
+
+/** Light tile: logo.svg and logo-*.png. */
+function lightTileSvg(size) {
+  const scale = (size * 0.625) / 64;
+  const offset = (size - 64 * scale) / 2;
+  const radius = (size * 7) / 32;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" role="img" aria-label="Hemilake Studio"><rect x="0.5" y="0.5" width="${size - 1}" height="${size - 1}" rx="${radius}" fill="${PAPER}" stroke="${HAIRLINE}" stroke-width="1"/><g transform="translate(${offset.toFixed(2)} ${offset.toFixed(2)}) scale(${scale.toFixed(4)})">${symbol({ fill: COPPER, stroke: INK })}</g></svg>
 `;
 }
 
+/** Ink tile: PWA and home-screen icons, Electron app icon. */
+function inkTileSvg(size) {
+  const scale = (size * 0.625) / 64;
+  const offset = (size - 64 * scale) / 2;
+  const radius = size * 0.225;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" role="img" aria-label="Hemilake Studio"><rect width="${size}" height="${size}" rx="${radius.toFixed(2)}" fill="${INK}"/><g transform="translate(${offset.toFixed(2)} ${offset.toFixed(2)}) scale(${scale.toFixed(4)})">${symbol({ fill: COPPER_ON_INK, stroke: PAPER })}</g></svg>
+`;
+}
+
+/** favicon.svg: the bare symbol, no tile (favicon.png keeps the light tile). */
+const faviconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 64 64" role="img" aria-label="Hemilake Studio">${symbol({ fill: COPPER, stroke: INK })}</svg>
+`;
+
 async function writePng(svg, path, size) {
-  await sharp(Buffer.from(svg)).resize(size, size).png().toFile(path);
+  await sharp(Buffer.from(svg), { density: 300 }).resize(size, size).png().toFile(path);
   console.log('wrote', path);
 }
 
 mkdirSync(join(root, 'icons'), { recursive: true });
 
-// PWA icons: square canvas, the OS rounds the corners.
 for (const size of [72, 96, 128, 144, 152, 192, 384, 512]) {
-  const svg = markSvg(size, { rounded: false });
+  const svg = inkTileSvg(size);
   writeFileSync(join(root, 'icons', `icon-${size}x${size}.svg`), svg);
   await writePng(svg, join(root, 'icons', `icon-${size}x${size}.png`), size);
 }
+writeFileSync(join(root, 'icons', 'icon-template.svg'), inkTileSvg(512));
 
-// Logo (rounded) and favicon.
-writeFileSync(join(root, 'logo.svg'), markSvg(32));
+writeFileSync(join(root, 'logo.svg'), lightTileSvg(32));
 for (const size of [32, 64, 128, 256, 512]) {
-  await writePng(markSvg(size), join(root, `logo-${size}.png`), size);
+  await writePng(lightTileSvg(size), join(root, `logo-${size}.png`), size);
 }
-writeFileSync(join(root, 'favicon.svg'), markSvg(64));
-await writePng(markSvg(64), join(root, 'favicon.png'), 64);
+writeFileSync(join(root, 'favicon.svg'), faviconSvg);
+await writePng(lightTileSvg(64), join(root, 'favicon.png'), 64);
+
+// Electron app icon (macOS uses the PNG; electron/scripts/generate-macos-icon.js builds the .icns).
+await writePng(inkTileSvg(1024), join(root, '..', 'electron', 'assets', 'logo-macos.png'), 1024);

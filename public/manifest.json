@@ -1,7 +1,7 @@
 {
-  "name": "Hemisphere",
-  "short_name": "Hemisphere",
-  "description": "Hemisphere, your personal AI workspace",
+  "name": "Hemilake Studio",
+  "short_name": "Hemilake",
+  "description": "Hemilake Studio, your personal AI workspace",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#F6F3EE",

@@ -1,8 +1,7 @@
 import { Activity, Archive, Folder, FolderPlus, MessageSquare, Plus, RefreshCw, Search, X, PanelLeftClose } from 'lucide-react';
 import type { TFunction } from 'i18next';
 
-import { BrandMark, Button, Input, Tooltip } from '@/shared/ui';
-import { CLOUDCLI_WORDMARK_FONT_FAMILY } from '@/shared/constants';
+import { BrandMark, BrandWordmark, Button, Input, Tooltip } from '@/shared/ui';
 import { IS_PLATFORM,cn } from '@/shared/utils';
 import type { SidebarSearchMode } from '@/shared/types';
 
@@ -32,15 +31,10 @@ type SidebarHeaderProps = {
 /** Module-level, not a nested render function, so the wordmark is not remounted on every SidebarHeader render. */
 function LogoBlock({ t }: { t: TFunction }) {
   return (
-    <div className="flex min-w-0 items-center gap-2.5">
-      <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-primary/90 shadow-sm">
-        <BrandMark className="h-4 w-4 text-primary-foreground" />
-      </div>
-      <h1
-        className="truncate text-sm font-bold tracking-tight text-foreground"
-        style={{ fontFamily: CLOUDCLI_WORDMARK_FONT_FAMILY }}
-      >
-        {t('app.title')}
+    <div className="flex min-w-0 items-center gap-2">
+      <BrandMark className="h-[22px] w-[22px] flex-shrink-0 text-foreground" />
+      <h1 className="truncate text-base" aria-label={t('app.title')}>
+        <BrandWordmark />
       </h1>
     </div>
   );
