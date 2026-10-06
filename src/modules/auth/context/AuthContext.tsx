@@ -192,7 +192,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setToken(nextToken);
       }
     };
-    const handleSessionExpired = () => {
+    const handleSessionExpired = (event: Event) => {
+      console.warn('[Auth] Session expired event:', (event as CustomEvent<unknown>).detail ?? 'no detail');
       clearSession();
       setError(t(AUTH_ERROR_MESSAGES.sessionExpired));
     };
@@ -226,14 +227,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       const userResponse = await api.auth.user();
       if (!userResponse.ok) {
-        clearSession();
-        return;
+        // Only the server's own verdict (401 with X-Auth-Error) ends the session.
+        // A 5xx, a proxy redirect or an Access challenge in front of the app is
+        // not a reason to throw away a valid token on refresh.
+        if (userResponse.status === 401 && userResponse.headers.get('X-Auth-Error')) {
+          console.warn('[Auth] Session rejected by server:', userResponse.headers.get('X-Auth-Error'));
+          clearSession();
+          return;
+        }
+        throw new Error(`Auth user check failed with HTTP ${userResponse.status}`);
       }
 
       const userPayload = await parseJsonSafely<AuthUserPayload>(userResponse);
       if (!userPayload?.user) {
-        clearSession();
-        return;
+        throw new Error('Auth user check returned no user payload');
       }
 
       setUser(userPayload.user);
