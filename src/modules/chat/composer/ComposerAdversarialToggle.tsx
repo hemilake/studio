@@ -49,7 +49,7 @@ function ComposerAdversarialToggle({ enabled, selection, onToggle, onChangeSelec
   };
 
   const segmentTone = enabled
-    ? 'border-rose-300/60 bg-rose-50 text-rose-700 hover:bg-rose-100 dark:border-rose-600/40 dark:bg-rose-900/15 dark:text-rose-300 dark:hover:bg-rose-900/25'
+    ? 'border-destructive/40 bg-destructive/10 text-destructive'
     : 'border-border/60 bg-muted/50 text-muted-foreground hover:bg-muted';
 
   return (
@@ -65,7 +65,7 @@ function ComposerAdversarialToggle({ enabled, selection, onToggle, onChangeSelec
         >
           <Swords className="h-4 w-4" />
           {enabled && selection.length > 1 && (
-            <span className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-rose-600 px-0.5 text-[9px] font-bold text-white">
+            <span className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-destructive px-0.5 text-[9px] font-bold text-white">
               {selection.length}
             </span>
           )}

@@ -48,7 +48,7 @@ const TodoList = memo(
         {normalized.length > 1 && (
           <div className="mb-1.5 h-0.5 overflow-hidden rounded-full bg-muted">
             <div
-              className="h-full rounded-full bg-green-500 transition-all dark:bg-green-400"
+              className="h-full rounded-full bg-hemi-ok transition-all"
               style={{ width: `${(completed / normalized.length) * 100}%` }}
             />
           </div>

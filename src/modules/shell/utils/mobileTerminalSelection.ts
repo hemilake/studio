@@ -176,7 +176,7 @@ class ShellMobileSelectionCore implements MobileTerminalSelectionManager {
     handle.style.width = `${HANDLE_SIZE_PX}px`;
     handle.style.height = `${HANDLE_SIZE_PX}px`;
     handle.style.borderRadius = '50%';
-    handle.style.background = '#3b82f6';
+    handle.style.background = 'hsl(var(--hemi-copper))';
     handle.style.border = '2px solid #fff';
     handle.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
     handle.style.display = 'none';

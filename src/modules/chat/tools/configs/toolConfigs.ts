@@ -121,11 +121,11 @@ export const TOOL_CONFIGS: Record<string, ToolDisplayConfig> = {
       style: 'terminal',
       wrapText: true,
       colorScheme: {
-        primary: 'text-green-400 font-mono',
+        primary: 'text-foreground font-mono',
         secondary: 'text-gray-400',
         background: '',
-        border: 'border-green-500 dark:border-green-400',
-        icon: 'text-green-500 dark:text-green-400'
+        border: 'border-muted-foreground/30',
+        icon: 'text-hemi-copper'
       }
     },
     result: {
@@ -147,11 +147,11 @@ export const TOOL_CONFIGS: Record<string, ToolDisplayConfig> = {
       style: 'terminal',
       wrapText: true,
       colorScheme: {
-        primary: 'text-green-400 font-mono',
+        primary: 'text-foreground font-mono',
         secondary: 'text-gray-400',
         background: '',
-        border: 'border-green-500 dark:border-green-400',
-        icon: 'text-green-500 dark:text-green-400'
+        border: 'border-muted-foreground/30',
+        icon: 'text-hemi-copper'
       }
     },
     result: {
@@ -172,8 +172,8 @@ export const TOOL_CONFIGS: Record<string, ToolDisplayConfig> = {
       action: 'none',
       colorScheme: {
         primary: 'text-gray-700 dark:text-gray-300',
-        border: 'border-sky-400 dark:border-sky-500',
-        icon: 'text-sky-500 dark:text-sky-400'
+        border: 'border-muted-foreground/30',
+        icon: 'text-hemi-copper-text'
       }
     },
     result: {
@@ -193,8 +193,8 @@ export const TOOL_CONFIGS: Record<string, ToolDisplayConfig> = {
       action: 'none',
       colorScheme: {
         primary: 'text-gray-700 dark:text-gray-300',
-        border: 'border-sky-400 dark:border-sky-500',
-        icon: 'text-sky-500 dark:text-sky-400'
+        border: 'border-muted-foreground/30',
+        icon: 'text-hemi-copper-text'
       }
     },
     result: {
@@ -219,7 +219,7 @@ export const TOOL_CONFIGS: Record<string, ToolDisplayConfig> = {
       colorScheme: {
         primary: 'text-gray-700 dark:text-gray-300',
         background: '',
-        border: 'border-gray-300 dark:border-gray-600',
+        border: 'border-muted-foreground/30',
         icon: 'text-gray-500 dark:text-gray-400'
       }
     },
@@ -312,7 +312,7 @@ export const TOOL_CONFIGS: Record<string, ToolDisplayConfig> = {
         primary: 'text-gray-700 dark:text-gray-300',
         secondary: 'text-gray-500 dark:text-gray-400',
         background: '',
-        border: 'border-gray-400 dark:border-gray-500',
+        border: 'border-muted-foreground/30',
         icon: 'text-gray-500 dark:text-gray-400'
       }
     },
@@ -345,7 +345,7 @@ export const TOOL_CONFIGS: Record<string, ToolDisplayConfig> = {
         primary: 'text-gray-700 dark:text-gray-300',
         secondary: 'text-gray-500 dark:text-gray-400',
         background: '',
-        border: 'border-gray-400 dark:border-gray-500',
+        border: 'border-muted-foreground/30',
         icon: 'text-gray-500 dark:text-gray-400'
       }
     },
@@ -415,7 +415,7 @@ export const TOOL_CONFIGS: Record<string, ToolDisplayConfig> = {
       action: 'none',
       colorScheme: {
         primary: 'text-gray-500 dark:text-gray-400',
-        border: 'border-violet-400 dark:border-violet-500'
+        border: 'border-muted-foreground/30'
       }
     },
     result: {
@@ -450,8 +450,8 @@ export const TOOL_CONFIGS: Record<string, ToolDisplayConfig> = {
       action: 'none',
       colorScheme: {
         primary: 'text-gray-700 dark:text-gray-300',
-        border: 'border-violet-400 dark:border-violet-500',
-        icon: 'text-violet-500 dark:text-violet-400'
+        border: 'border-muted-foreground/30',
+        icon: 'text-hemi-copper-text'
       }
     },
     result: {
@@ -473,8 +473,8 @@ export const TOOL_CONFIGS: Record<string, ToolDisplayConfig> = {
       action: 'none',
       colorScheme: {
         primary: 'text-gray-700 dark:text-gray-300',
-        border: 'border-violet-400 dark:border-violet-500',
-        icon: 'text-violet-500 dark:text-violet-400'
+        border: 'border-muted-foreground/30',
+        icon: 'text-hemi-copper-text'
       }
     },
     result: {
@@ -490,8 +490,8 @@ export const TOOL_CONFIGS: Record<string, ToolDisplayConfig> = {
       action: 'none',
       colorScheme: {
         primary: 'text-gray-500 dark:text-gray-400',
-        border: 'border-violet-400 dark:border-violet-500',
-        icon: 'text-violet-500 dark:text-violet-400'
+        border: 'border-muted-foreground/30',
+        icon: 'text-hemi-copper-text'
       }
     },
     result: {
@@ -513,8 +513,8 @@ export const TOOL_CONFIGS: Record<string, ToolDisplayConfig> = {
       action: 'none',
       colorScheme: {
         primary: 'text-gray-700 dark:text-gray-300',
-        border: 'border-violet-400 dark:border-violet-500',
-        icon: 'text-violet-500 dark:text-violet-400'
+        border: 'border-muted-foreground/30',
+        icon: 'text-hemi-copper-text'
       }
     },
     result: {
@@ -591,8 +591,8 @@ export const TOOL_CONFIGS: Record<string, ToolDisplayConfig> = {
         };
       },
       colorScheme: {
-        border: 'border-purple-500 dark:border-purple-400',
-        icon: 'text-purple-500 dark:text-purple-400'
+        border: 'border-muted-foreground/30',
+        icon: 'text-hemi-copper-text'
       }
     },
     result: {

@@ -21,14 +21,14 @@ export default function QueuedMessageCard({
   const { t } = useTranslation('chat');
 
   return (
-    <div className="settings-content-enter mx-auto mb-2 max-w-[54.25rem] rounded-xl rounded-t-none border border-dashed border-primary/25 bg-primary/[0.04] px-3 py-2">
+    <div className="settings-content-enter mx-auto mb-2 max-w-[54.25rem] rounded-xl rounded-t-none border border-dashed border-hemi-copper/60 bg-hemi-copper-tint px-3 py-2">
       <div className="flex items-start gap-2.5">
-        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/60" aria-hidden />
+        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-hemi-copper" aria-hidden />
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-primary/70">
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-hemi-copper-text">
             <span>{t('input.queue.label', { defaultValue: 'Queued' })}</span>
-            <span className="normal-case text-muted-foreground/60">
+            <span className="font-normal normal-case tracking-normal text-muted-foreground">
               · {t('input.queue.willSend', { defaultValue: 'Will send when this finishes' })}
             </span>
           </div>

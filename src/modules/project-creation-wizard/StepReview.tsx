@@ -73,18 +73,18 @@ export default function StepReview({
         </div>
       </div>
 
-      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
+      <div className="rounded-lg border border-border bg-muted p-4">
         {isCreating && cloneProgress ? (
           <div className="space-y-2">
-            <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+            <p className="text-sm font-medium text-foreground">
               {t('projectWizard.step3.cloningRepository', { defaultValue: 'Cloning repository...' })}
             </p>
-            <code className="block whitespace-pre-wrap break-all font-mono text-xs text-blue-700 dark:text-blue-300">
+            <code className="block whitespace-pre-wrap break-all font-mono text-xs text-hemi-copper-text">
               {cloneProgress}
             </code>
           </div>
         ) : (
-          <p className="text-sm text-blue-800 dark:text-blue-200">
+          <p className="text-sm text-foreground">
             {formState.githubUrl
               ? t('projectWizard.step3.newWithClone')
               : t('projectWizard.step3.newEmpty')}

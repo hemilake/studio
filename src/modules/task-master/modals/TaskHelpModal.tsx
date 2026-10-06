@@ -27,25 +27,25 @@ export default function TaskHelpModal({ isOpen, onClose, onCreatePrd }: TaskHelp
       index: 1,
       title: t('gettingStarted.steps.createPRD.title'),
       description: t('gettingStarted.steps.createPRD.description'),
-      accent: 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/40',
+      accent: 'border-border bg-muted',
     },
     {
       index: 2,
       title: t('gettingStarted.steps.generateTasks.title'),
       description: t('gettingStarted.steps.generateTasks.description'),
-      accent: 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40',
+      accent: 'border-hemi-ok/40 bg-hemi-ok-tint',
     },
     {
       index: 3,
       title: t('gettingStarted.steps.analyzeTasks.title'),
       description: t('gettingStarted.steps.analyzeTasks.description'),
-      accent: 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40',
+      accent: 'border-hemi-copper/40 bg-hemi-copper-tint',
     },
     {
       index: 4,
       title: t('gettingStarted.steps.startBuilding.title'),
       description: t('gettingStarted.steps.startBuilding.description'),
-      accent: 'border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/40',
+      accent: 'border-border bg-muted',
     },
   ];
 
@@ -54,8 +54,8 @@ export default function TaskHelpModal({ isOpen, onClose, onCreatePrd }: TaskHelp
       <div className="max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-900">
         <div className="flex items-center justify-between border-b border-gray-200 p-6 dark:border-gray-700">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/50">
-              <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+              <FileText className="h-5 w-5 text-hemi-copper-text" />
             </div>
             <div>
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('helpGuide.title')}</h2>
@@ -76,7 +76,7 @@ export default function TaskHelpModal({ isOpen, onClose, onCreatePrd }: TaskHelp
           {steps.map((step) => (
             <div key={step.index} className={`rounded-lg border p-4 ${step.accent}`}>
               <div className="flex gap-4">
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
                   {step.index}
                 </div>
                 <div>
@@ -89,7 +89,7 @@ export default function TaskHelpModal({ isOpen, onClose, onCreatePrd }: TaskHelp
                         onCreatePrd();
                         onClose();
                       }}
-                      className="mt-3 inline-flex items-center gap-2 rounded-lg bg-purple-100 px-3 py-1.5 text-sm text-purple-700 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:hover:bg-purple-900/50"
+                      className="mt-3 inline-flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5 text-sm text-hemi-copper-text"
                     >
                       <FileText className="h-4 w-4" />
                       {t('buttons.addPRD')}
@@ -110,14 +110,14 @@ export default function TaskHelpModal({ isOpen, onClose, onCreatePrd }: TaskHelp
             </ul>
           </div>
 
-          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950/40">
-            <h4 className="mb-2 font-medium text-blue-900 dark:text-blue-100">{t('helpGuide.learnMore.title')}</h4>
-            <p className="mb-3 text-sm text-blue-800 dark:text-blue-200">{t('helpGuide.learnMore.description')}</p>
+          <div className="rounded-lg border border-border bg-muted p-4">
+            <h4 className="mb-2 font-medium text-foreground">{t('helpGuide.learnMore.title')}</h4>
+            <p className="mb-3 text-sm text-foreground">{t('helpGuide.learnMore.description')}</p>
             <a
               href="https://github.com/eyaltoledano/claude-task-master"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             >
               {t('helpGuide.learnMore.githubButton')}
               <ExternalLink className="h-4 w-4" />

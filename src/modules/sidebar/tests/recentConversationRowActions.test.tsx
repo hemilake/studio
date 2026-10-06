@@ -137,7 +137,7 @@ test('a session needing attention gets the amber dot', () => {
     makeActions({ attentionSessionIds: new Set(['s2']) }),
   );
 
-  const dots = container.querySelectorAll('[role="status"].bg-amber-500');
+  const dots = container.querySelectorAll('[role="status"].bg-hemi-copper');
   assert.equal(dots.length, 1);
   const rows = container.querySelectorAll('[data-testid="recent-conversation-row"]');
   assert.equal(rows.length, 2);

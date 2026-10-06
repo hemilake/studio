@@ -94,7 +94,6 @@ function ToolGroupContainer({
   const showChildren = isExpanded || isExporting;
   const config = getToolConfig(group.toolName).input;
   const label = config.label || group.toolName;
-  const borderClass = config.colorScheme?.border || 'border-border';
   const iconClass = config.colorScheme?.icon || 'text-muted-foreground';
   const icon = getToolGroupIcon(config.icon, group.toolName);
 
@@ -105,7 +104,7 @@ function ToolGroupContainer({
     <div className="chat-message tool px-3 sm:px-0" data-message-timestamp={group.timestamp || undefined}>
       <button
         type="button"
-        className={`group flex w-full items-center gap-2 border-l-2 ${borderClass} rounded-r-md bg-muted/25 px-3 py-2 text-left transition-colors hover:bg-muted/40 dark:bg-muted/10 dark:hover:bg-muted/20`}
+        className={`group flex w-full items-center gap-2 rounded-r-lg border border-l-2 border-border border-l-muted-foreground/30 bg-card px-3 py-2 text-left transition-colors hover:bg-muted/40`}
         onClick={() => setIsExpanded((current) => !current)}
         aria-expanded={isExpanded}
       >
@@ -117,7 +116,7 @@ function ToolGroupContainer({
           {icon}
         </span>
         <span className="min-w-0 flex-shrink-0 text-xs font-medium text-foreground">{label}</span>
-        <span className="flex-shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+        <span className="flex-shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-[10.5px] text-muted-foreground">
           x{group.messages.length}
         </span>
         {preview && (

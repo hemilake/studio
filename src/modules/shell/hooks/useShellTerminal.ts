@@ -30,11 +30,11 @@ const TERMINAL_OPTIONS: ITerminalOptions = {
   macOptionClickForcesSelection: true,
   // Keep the runtime theme keys used by the previous JSX implementation.
   theme: {
-    background: '#1e1e1e',
-    foreground: '#d4d4d4',
-    cursor: '#ffffff',
-    cursorAccent: '#1e1e1e',
-    selectionBackground: '#264f78',
+    background: '#181614', // Fork (Hemilake Studio): ink surface; ANSI colours below stay standard
+    foreground: '#E8E2D8',
+    cursor: '#F6F3EE',
+    cursorAccent: '#181614',
+    selectionBackground: '#6B4128',
     selectionForeground: '#ffffff',
     black: '#000000',
     red: '#cd3131',

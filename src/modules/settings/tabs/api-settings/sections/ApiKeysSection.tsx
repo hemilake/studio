@@ -2,6 +2,7 @@ import { ExternalLink, Key, Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { Button, Input } from '@/shared/ui';
+import { cn } from '@/shared/utils';
 import type { ApiKeyItem } from '@/shared/types';
 
 type ApiKeysSectionProps = {
@@ -49,7 +50,7 @@ export default function ApiKeysSection({
           href="/api-docs.html"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+          className="inline-flex items-center gap-1 text-sm text-hemi-copper-text hover:underline"
         >
           {t('apiKeys.apiDocsLink')}
           <ExternalLink className="h-3 w-3" />
@@ -75,10 +76,13 @@ export default function ApiKeysSection({
 
       <div className="space-y-2">
         {apiKeys.length === 0 ? (
-          <p className="text-sm italic text-muted-foreground">{t('apiKeys.empty')}</p>
+                    <div className="rounded-[10px] border border-dashed border-border p-4">
+            <p className="text-sm font-medium text-foreground">{t('apiKeys.empty')}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{t('apiKeys.emptyHint')}</p>
+          </div>
         ) : (
           apiKeys.map((key) => (
-            <div key={key.id} className="flex items-center justify-between rounded-lg border p-3">
+            <div key={key.id} className="flex items-center justify-between rounded-[10px] border bg-card p-3">
               <div className="flex-1">
                 <div className="font-medium">{key.key_name}</div>
                 <code className="text-xs text-muted-foreground">{key.api_key}</code>
@@ -90,15 +94,21 @@ export default function ApiKeysSection({
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant={key.is_active ? 'outline' : 'secondary'}
+                <button
+                  type="button"
                   onClick={() => onToggleApiKey(key.id, key.is_active)}
+                  className={cn(
+                    'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors',
+                    key.is_active
+                      ? 'bg-hemi-ok-tint text-hemi-ok hover:bg-hemi-ok-tint/70'
+                      : 'bg-muted text-muted-foreground hover:text-foreground',
+                  )}
                 >
+                  <span className={cn('h-1.5 w-1.5 rounded-full', key.is_active ? 'bg-hemi-ok' : 'bg-muted-foreground/50')} aria-hidden />
                   {key.is_active ? t('apiKeys.status.active') : t('apiKeys.status.inactive')}
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => onDeleteApiKey(key.id)}>
-                  <Trash2 className="h-4 w-4" />
+                </button>
+                <Button size="sm" variant="outline" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => onDeleteApiKey(key.id)}>
+                  <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </div>
             </div>

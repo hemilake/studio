@@ -136,8 +136,8 @@ export default function ProjectCreationWizard({
       <div className="h-full w-full overflow-y-auto rounded-none border-0 border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800 sm:h-auto sm:max-w-2xl sm:rounded-lg sm:border">
         <div className="flex items-center justify-between border-b border-gray-200 p-6 dark:border-gray-700">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/50">
-              <FolderPlus className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
+              <FolderPlus className="h-4 w-4 text-hemi-copper-text" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               {t('projectWizard.title')}

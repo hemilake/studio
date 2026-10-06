@@ -2,6 +2,30 @@
 
 One entry per customization, newest first. Keep the file list accurate: it is the conflict checklist for upstream merges.
 
+## Hemilake theme (Hemilake Studio)
+
+- **Since:** 2026-10-06, on top of upstream v1.37.3.
+- **Branch:** `feat/hemilake-theme`, merged into `main`. Fork identity, never for upstream.
+- **Why:** the UI takes the Hemilake identity and a new name, Hemilake Studio. The design hand-off (paper and ink, copper for state, IBM Plex) asked for a theme change only: same layout, components and behaviour.
+- **What:**
+  - Tokens: the shadcn variables in `src/index.css` take the Hemilake values for `:root` and `.dark`, plus five new ones (`--hemi-copper`, `--hemi-copper-text`, `--hemi-copper-tint`, `--hemi-ok`, `--hemi-ok-tint`) exposed as the Tailwind `hemi` colour group. Primary is ink (paper on dark), ring and state are copper, success is olive, errors are brick. Nav glass, blur and tab glow are off. Form controls and the touch hover overrides read the tokens instead of hard-coded blue. Tailwind's `gray` resolves to the warm `stone` scale.
+  - Fonts: IBM Plex Sans for UI and chat prose (15px, line-height 1.65), IBM Plex Mono for code. Encode Sans, Merriweather and every `font-serif` are gone.
+  - Brand: `BRAND_NAME` is "Hemilake Studio". `BrandMark` draws the Hemilake symbol (copper half disc, open arc in the text colour) and `BrandWordmark` renders "hemilake studio". The sidebar header, auth screens and About tab use them; the footer reads "hemilake studio · CloudCLI v<version>". Logo, favicon, PWA and Electron icons come from `scripts/fork/generate-brand-icons.mjs` (paper tile for logo and favicon, ink tile for app icons) and `electron/scripts/generate-macos-icon.js`.
+  - Palette: palette classes across `src/` were remapped by role with `scripts/fork/remap-palette.py`: blue and other accents become ink actions, copper state or muted surfaces; green becomes `hemi-ok`; amber, yellow and orange become copper; red becomes `destructive`. File-type icon colours and third-party agent logos keep their own colours. Rerun the script after an upstream merge that brings new palette classes and review the diff.
+  - Component rules: sidebar on `card` with the selected row on `background` at weight 500; segmented controls are `card` on `muted` with a hairline ring; running spinner, unread dot, activity badge, queued message box and the "Analyzing" dot are copper; tool rows have a stone left rail, a copper `$`, and mono repeat chips; the Agents connection card is a plain card ("Connection", "Signed in with an auth token", olive "Connected" chip); API keys show an olive "Active" chip and empty states sit in a dashed box with what happens without one. The Settings modal is white with a paper nav; the terminal surface is ink with a copper selection (ANSI colours unchanged).
+- **Files:**
+  - `src/index.css`, `tailwind.config.js`, `index.html`, `public/manifest.json`
+  - `src/shared/constants.ts`, `src/shared/ui/BrandMark.tsx`, `src/shared/ui/index.ts`, `src/shared/tests/pageTitle.test.ts`
+  - `src/modules/sidebar/{SidebarHeader,SidebarFooter,SidebarContent,SidebarRecentConversations,SidebarSessionItem,SidebarProjectItem}.tsx`, `src/modules/sidebar/tests/recentConversationRowActions.test.tsx`
+  - `src/modules/auth/{AuthLoadingScreen,AuthScreenLayout}.tsx`, `src/modules/settings/{Settings,SettingsSidebar}.tsx`, `src/modules/settings/tabs/AboutTab.tsx`, `src/modules/settings/tabs/agents-settings/sections/{AgentSelectorSection,content/AccountContent}.tsx`, `src/modules/settings/tabs/api-settings/sections/{ApiKeysSection,GithubCredentialsSection}.tsx`
+  - `src/modules/chat/composer/{QueuedMessageCard,ActivityIndicator}.tsx`, `src/modules/chat/tools/{BashCommandDisplay,CollapsibleDisplay}.tsx`, `src/modules/chat/tools/configs/toolConfigs.ts`, `src/modules/chat/transcript/{MessageComponent,ToolGroupContainer}.tsx`, `src/modules/shell/hooks/useShellTerminal.ts`
+  - About 100 more files under `src/modules` touched only by the palette remap (class names, no logic)
+  - `src/modules/i18n/locales/*/{sidebar,auth,common,settings}.json`
+  - `public/logo*.{svg,png}`, `public/favicon.{svg,png}`, `public/icons/icon-*.{svg,png}`, `electron/assets/logo-*`
+  - `scripts/fork/generate-brand-icons.mjs`, `scripts/fork/remap-palette.py` (new), `electron/scripts/generate-macos-icon.js`
+- **Verified:** typecheck, lint (no new warnings), vitest (69 files, 462 tests, `themeContext` included), client build, and headless Chromium against the dev server proxied to Pablo's instance (writes blocked) at 1440 and 390 px, light and dark: chat, Settings › Agents and API & Tokens.
+- **Not done:** most `shadow-sm` outside the touched components stays (the rule keeps shadows only on the Settings modal and menus). The code editor keeps its own `#1e1e1e` dark surface.
+
 ## Adversarial mode in the composer
 
 - **Since:** 2026-10-06, on top of upstream v1.37.3.

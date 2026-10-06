@@ -101,7 +101,7 @@ function MetricCard({
     tone === 'primary'
       ? 'border-primary/35 bg-primary/10 text-primary'
       : tone === 'success'
-        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300'
+        ? 'border-hemi-ok/40 bg-hemi-ok-tint text-hemi-ok'
         : 'border-border/70 bg-background/75 text-muted-foreground';
 
   return (
@@ -324,7 +324,7 @@ function ModelsContent({
           <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
             <span className="break-all font-mono text-sm font-semibold text-foreground">{currentModel}</span>
             {pendingSessionModel && pendingSessionModel !== currentModel && (
-              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-500 dark:text-emerald-400">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-hemi-ok">
                 → {pendingSessionModel} next
               </span>
             )}
@@ -364,7 +364,7 @@ function ModelsContent({
                     isCurrent
                       ? 'border-primary/45 bg-primary/10'
                       : isPendingSelection
-                        ? 'border-emerald-500/35 bg-emerald-500/10'
+                        ? 'border-hemi-ok/40 bg-hemi-ok-tint'
                         : 'border-border/70 bg-background/80 hover:border-primary/30 hover:bg-background'
                   }`}
                   style={{ animationDelay: `${Math.min(index * 14, 180)}ms` }}
@@ -390,7 +390,7 @@ function ModelsContent({
                     <span className="mt-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">Current selection</span>
                   )}
                   {isPendingSelection && !isCurrent && (
-                    <span className="mt-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-500 dark:text-emerald-400">
+                    <span className="mt-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-hemi-ok">
                       Session model
                     </span>
                   )}
@@ -512,18 +512,18 @@ function StatusContent({ data }: { data: StatusCommandData }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between rounded-3xl border border-emerald-500/25 bg-emerald-500/10 p-4">
+      <div className="flex items-center justify-between rounded-3xl border border-hemi-ok/40 bg-hemi-ok-tint p-4">
         <div className="flex items-center gap-3">
           <span className="relative flex h-3 w-3">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-hemi-ok opacity-75" />
+            <span className="relative inline-flex h-3 w-3 rounded-full bg-hemi-ok" />
           </span>
           <div>
             <p className="text-sm font-semibold text-foreground">Runtime online</p>
             <p className="text-xs text-muted-foreground">Process {data.pid ? `#${data.pid}` : 'status'} is responding.</p>
           </div>
         </div>
-        <Badge className="rounded-full bg-emerald-500 text-white hover:bg-emerald-500">Healthy</Badge>
+        <Badge className="rounded-full bg-hemi-ok text-white hover:bg-hemi-ok/90">Healthy</Badge>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

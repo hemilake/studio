@@ -65,12 +65,12 @@ const PROVIDER_SKILL_PATHS: Record<Exclude<SkillsProvider, 'opencode'>, string> 
 };
 
 const SCOPE_BADGE_CLASSES: Record<SkillsScope, string> = {
-  user: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
-  plugin: 'border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300',
-  repo: 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300',
-  project: 'border-orange-500/30 bg-orange-500/10 text-orange-700 dark:text-orange-300',
-  admin: 'border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300',
-  system: 'border-slate-500/30 bg-slate-500/10 text-slate-700 dark:text-slate-300',
+  user: 'border-hemi-ok/40 bg-hemi-ok-tint text-hemi-ok',
+  plugin: 'border-border bg-muted text-hemi-copper-text',
+  repo: 'border-hemi-copper/40 bg-hemi-copper-tint text-hemi-copper-text',
+  project: 'border-hemi-copper/40 bg-hemi-copper-tint text-hemi-copper-text',
+  admin: 'border-destructive/40 bg-destructive/10 text-destructive',
+  system: 'border-gray-500/30 bg-gray-500/10 text-gray-700 dark:text-gray-300',
 };
 
 const SCOPE_ORDER: SkillsScope[] = ['user', 'plugin', 'repo', 'project', 'admin', 'system'];
@@ -606,8 +606,8 @@ export default function ProviderSkills({ selectedProvider, currentProjects }: Pr
                 <div className={cn(
                   'max-h-24 overflow-y-auto whitespace-pre-wrap rounded-lg border px-3 py-2 text-sm',
                   submitError || loadError
-                    ? 'border-red-200 bg-red-50 text-red-700 dark:border-red-800/60 dark:bg-red-900/20 dark:text-red-200'
-                    : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+                    ? 'border-destructive/40 bg-destructive/10 text-destructive'
+                    : 'border-hemi-ok/40 bg-hemi-ok-tint text-hemi-ok',
                 )}>
                   {submitError || loadError || t('skillsPage.savedSuccessfully')}
                 </div>
@@ -646,13 +646,13 @@ export default function ProviderSkills({ selectedProvider, currentProjects }: Pr
       </Dialog>
 
       {!isAddDialogOpen && (submitError || loadError) && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800/60 dark:bg-red-900/20 dark:text-red-200">
+        <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {submitError || loadError}
         </div>
       )}
 
       {justInstalled && saveStatus === 'success' && !isAddDialogOpen && (
-        <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+        <div className="inline-flex items-center gap-2 rounded-full border border-hemi-ok/40 bg-hemi-ok-tint px-3 py-1 text-xs font-medium text-hemi-ok">
           <CheckCircle2 className="h-4 w-4" />
           {t('skillsPage.savedSuccessfully')}
         </div>

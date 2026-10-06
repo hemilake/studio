@@ -331,7 +331,7 @@ export default function BrowserUsePanel({ isVisible, onShowSettings }: BrowserUs
   );
 
   const renderBrowserSurface = (fullscreen = false) => (
-    <div className={cn('flex flex-1 items-center justify-center bg-neutral-950', fullscreen ? 'min-h-[80vh]' : 'min-h-[420px]')}>
+    <div className={cn('flex flex-1 items-center justify-center bg-gray-950', fullscreen ? 'min-h-[80vh]' : 'min-h-[420px]')}>
       {selectedSession?.screenshotDataUrl ? (
         <div className="relative inline-block max-h-full">
           <img
@@ -350,9 +350,9 @@ export default function BrowserUsePanel({ isVisible, onShowSettings }: BrowserUs
         </div>
       ) : (
         <div className="px-6 text-center">
-          <MonitorPlay className="mx-auto h-9 w-9 text-neutral-500" />
-          <div className="mt-3 text-sm font-medium text-neutral-100">{selectedSession?.message || t('browserUse.waitingScreenshot')}</div>
-          <p className="mt-1 text-xs text-neutral-400">{t('browserUse.waitingScreenshotHint')}</p>
+          <MonitorPlay className="mx-auto h-9 w-9 text-gray-500" />
+          <div className="mt-3 text-sm font-medium text-gray-100">{selectedSession?.message || t('browserUse.waitingScreenshot')}</div>
+          <p className="mt-1 text-xs text-gray-400">{t('browserUse.waitingScreenshotHint')}</p>
         </div>
       )}
     </div>

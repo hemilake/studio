@@ -116,7 +116,7 @@ function SidebarSessionItem({
                 : t('tooltips.activeSessionIndicator')}
               className={cn(
                 'h-2 w-2 animate-pulse rounded-full',
-                showAttentionIndicator ? 'bg-amber-500' : 'bg-green-500',
+                showAttentionIndicator ? 'bg-hemi-copper' : 'bg-hemi-ok',
               )}
             />
           </Tooltip>
@@ -128,11 +128,11 @@ function SidebarSessionItem({
         <div
           className={cn(
             'p-2 mx-3 my-0.5 rounded-md bg-card border active:scale-[0.98] transition-all duration-150 relative',
-            isSelected ? 'bg-primary/5 border-primary/20' : '',
+            isSelected ? 'bg-background border-border' : '',
             !isSelected && isProcessing
               ? 'border-border/60 bg-muted/20'
               : !isSelected && sessionView.isActive
-              ? 'border-green-500/30 bg-green-50/5 dark:bg-green-900/5'
+              ? 'border-hemi-ok/30'
               : 'border-border/30',
           )}
           onClick={selectMobileSession}
@@ -141,7 +141,7 @@ function SidebarSessionItem({
             <div
               className={cn(
                 'w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0',
-                isSelected ? 'bg-primary/10' : 'bg-muted/50',
+                'bg-muted/50',
               )}
             >
               <LLMProviderLogo provider={session.__provider} className="h-3 w-3" />
@@ -159,7 +159,7 @@ function SidebarSessionItem({
                   <span className="ml-auto flex-shrink-0">
                     <Tooltip content={t('tooltips.processingSessionIndicator', 'Processing session')} position="top">
                       <span className="flex h-5 w-5 items-center justify-center rounded-md text-muted-foreground">
-                        <Loader2 className="h-3 w-3 animate-spin" />
+                        <Loader2 className="h-3 w-3 animate-spin text-hemi-copper" />
                       </span>
                     </Tooltip>
                   </span>
@@ -274,9 +274,9 @@ function SidebarSessionItem({
                   className={cn(
                     'flex min-h-12 w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors',
                     copyState === 'copied'
-                      ? 'border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300'
+                      ? 'border-hemi-ok/40 bg-hemi-ok-tint text-hemi-ok'
                       : copyState === 'error'
-                        ? 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300'
+                        ? 'border-destructive/40 bg-destructive/10 text-destructive'
                         : 'border-border bg-muted/35 text-foreground active:bg-muted',
                   )}
                 >
@@ -300,7 +300,7 @@ function SidebarSessionItem({
                       setMobileOptionsOpen(false);
                       requestDeleteSession();
                     }}
-                    className="flex min-h-12 w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-red-600 transition-colors active:bg-red-500/10 dark:text-red-400"
+                    className="flex min-h-12 w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-destructive transition-colors active:bg-destructive/10"
                   >
                     <Trash2 className="h-5 w-5 flex-shrink-0" />
                     <span className="text-sm font-medium">Archive or delete session</span>
@@ -334,7 +334,7 @@ function SidebarSessionItem({
             !isSelected && isProcessing
               ? 'border-border/60 bg-muted/20 hover:bg-muted/25'
               : !isSelected && sessionView.isActive
-                ? 'border-green-500/30 bg-green-50/5 hover:bg-green-50/10 dark:bg-green-900/5 dark:hover:bg-green-900/10'
+                ? 'border-hemi-ok/40 bg-hemi-ok-tint'
                 : 'hover:bg-accent/50',
           )}
           // Left-click keeps in-app navigation; Ctrl/Cmd/middle-click and the
@@ -349,7 +349,7 @@ function SidebarSessionItem({
             <div
               className={cn(
                 'flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md',
-                isSelected ? 'bg-primary/10' : 'bg-muted/50',
+                'bg-muted/50',
               )}
             >
               <LLMProviderLogo provider={session.__provider} className="h-3 w-3" />
@@ -371,7 +371,7 @@ function SidebarSessionItem({
                   >
                     <Tooltip content={t('tooltips.processingSessionIndicator', 'Processing session')} position="top">
                       <span className="flex h-5 w-5 items-center justify-center rounded-md text-muted-foreground">
-                        <Loader2 className="h-3 w-3 animate-spin" />
+                        <Loader2 className="h-3 w-3 animate-spin text-hemi-copper" />
                       </span>
                     </Tooltip>
                   </span>

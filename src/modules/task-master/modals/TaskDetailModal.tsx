@@ -48,9 +48,9 @@ function getStatusIcon(status?: string) {
 }
 
 function getPriorityBadgeClass(priority?: string): string {
-  if (priority === 'high') return 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950';
-  if (priority === 'medium') return 'text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950';
-  if (priority === 'low') return 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950';
+  if (priority === 'high') return 'text-destructive bg-destructive/10';
+  if (priority === 'medium') return 'text-hemi-copper-text bg-hemi-copper-tint';
+  if (priority === 'low') return 'text-hemi-copper-text bg-muted';
   return 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800';
 }
 
@@ -156,7 +156,7 @@ export default function TaskDetailModal({
       >
         <div className="flex items-center justify-between border-b border-gray-200 p-4 dark:border-gray-700 md:p-6">
           <div className="flex min-w-0 flex-1 items-center gap-3">
-            <StatusIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            <StatusIcon className="h-6 w-6 text-hemi-copper-text" />
             <div className="min-w-0 flex-1">
               <button
                 onClick={() => copyTextToClipboard(String(task.id))}
@@ -172,7 +172,7 @@ export default function TaskDetailModal({
                   type="text"
                   value={editableTask.title}
                   onChange={(event) => setEditableTask({ ...editableTask, title: event.target.value })}
-                  className="w-full border-b-2 border-blue-500 bg-transparent text-lg font-semibold text-gray-900 focus:outline-none dark:text-white"
+                  className="w-full border-b-2 border-hemi-copper bg-transparent text-lg font-semibold text-gray-900 focus:outline-none dark:text-white"
                 />
               ) : (
                 <h1 className="line-clamp-2 text-lg font-semibold text-gray-900 dark:text-white md:text-xl">{task.title}</h1>
@@ -186,7 +186,7 @@ export default function TaskDetailModal({
                 <button
                   onClick={handleSaveChanges}
                   disabled={isSaving}
-                  className="rounded-md p-2 text-green-600 hover:bg-green-50 disabled:opacity-50 dark:hover:bg-green-950"
+                  className="rounded-md p-2 text-hemi-ok hover:bg-hemi-ok-tint disabled:opacity-50"
                   title="Save"
                 >
                   <Save className={cn('w-5 h-5', isSaving && 'animate-spin')} />
@@ -252,7 +252,7 @@ export default function TaskDetailModal({
                     <button
                       key={String(dependency)}
                       onClick={() => onTaskClick?.({ id: dependency })}
-                      className="rounded bg-blue-100 px-2 py-1 text-sm text-blue-700 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800"
+                      className="rounded bg-muted px-2 py-1 text-sm text-hemi-copper-text"
                     >
                       <ArrowRight className="mr-1 inline h-3 w-3" />
                       {dependency}
@@ -306,7 +306,7 @@ export default function TaskDetailModal({
                 {showTestStrategy ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               </button>
               {showTestStrategy && (
-                <div className="border-t border-gray-200 bg-blue-50 p-4 dark:border-gray-700 dark:bg-blue-950/30">
+                <div className="border-t border-gray-200 bg-muted p-4 dark:border-gray-700">
                   <p className="whitespace-pre-wrap text-gray-700 dark:text-gray-300">{task.testStrategy}</p>
                 </div>
               )}

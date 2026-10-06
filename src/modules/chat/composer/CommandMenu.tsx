@@ -69,11 +69,11 @@ const namespaceIcons: Record<string, LucideIcon> = {
 };
 
 const namespaceAccentClasses: Record<string, string> = {
-  frequent: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-200',
-  builtin: 'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-400/20 dark:bg-sky-400/10 dark:text-sky-200',
-  skill: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-200',
-  project: 'border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-400/20 dark:bg-indigo-400/10 dark:text-indigo-200',
-  user: 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-400/20 dark:bg-rose-400/10 dark:text-rose-200',
+  frequent: 'border-hemi-copper/40 bg-hemi-copper-tint text-hemi-copper-text',
+  builtin: 'border-border bg-muted text-hemi-copper-text dark:text-foreground',
+  skill: 'border-hemi-ok/40 bg-hemi-ok-tint text-hemi-ok',
+  project: 'border-border bg-muted text-hemi-copper-text dark:text-foreground',
+  user: 'border-destructive/40 bg-destructive/10 text-destructive',
   other: 'border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-500/20 dark:bg-gray-500/10 dark:text-gray-200',
 };
 

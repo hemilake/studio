@@ -37,8 +37,8 @@ export default function TaskMasterSetupModal({ isOpen, project, onClose, onAfter
       <div className="flex h-[600px] w-full max-w-4xl flex-col rounded-lg border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-900">
         <div className="flex items-center justify-between border-b border-gray-200 p-4 dark:border-gray-700">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/50">
-              <Terminal className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
+              <Terminal className="h-4 w-4 text-hemi-copper-text" />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('setupModal.title')}</h2>
@@ -76,8 +76,8 @@ export default function TaskMasterSetupModal({ isOpen, project, onClose, onAfter
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-600 dark:text-gray-400">
               {isTaskMasterComplete ? (
-                <span className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                  <span className="h-2 w-2 rounded-full bg-green-500" />
+                <span className="flex items-center gap-2 text-hemi-ok">
+                  <span className="h-2 w-2 rounded-full bg-hemi-ok" />
                   {t('setupModal.completed')}
                 </span>
               ) : (
@@ -90,7 +90,7 @@ export default function TaskMasterSetupModal({ isOpen, project, onClose, onAfter
               className={cn(
                 'px-4 py-2 text-sm font-medium rounded-md transition-colors',
                 isTaskMasterComplete
-                  ? 'bg-green-600 hover:bg-green-700 text-white'
+                  ? 'bg-hemi-ok hover:bg-hemi-ok/90 text-white'
                   : 'text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600',
               )}
             >

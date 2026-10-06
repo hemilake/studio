@@ -131,14 +131,14 @@ export default function SidebarHeader({
         {showSearchTools && (
           <div className="mt-2.5 space-y-2">
             {/* Search mode toggle */}
-            <div className="flex rounded-lg bg-muted/50 p-0.5">
+            <div className="flex rounded-lg bg-muted p-0.5">
               <button
                 onClick={() => onSearchModeChange('projects')}
                 aria-pressed={searchMode === 'projects'}
                 className={cn(
                   "flex-1 flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-normal transition-all",
                   searchMode === 'projects'
-                    ? "bg-background shadow-sm text-foreground"
+                    ? "bg-card text-foreground ring-1 ring-border"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -151,7 +151,7 @@ export default function SidebarHeader({
                 className={cn(
                   "flex-1 flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-normal transition-all",
                   searchMode === 'conversations'
-                    ? "bg-background shadow-sm text-foreground"
+                    ? "bg-card text-foreground ring-1 ring-border"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -167,14 +167,14 @@ export default function SidebarHeader({
                   className={cn(
                     "flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-normal transition-all",
                     searchMode === 'running'
-                      ? "bg-background shadow-sm text-foreground ring-1 ring-emerald-500/15"
+                      ? "bg-card text-foreground ring-1 ring-border"
                       : "text-muted-foreground hover:text-foreground"
                   )}
                 >
                   <span className="relative flex h-3 w-3 items-center justify-center">
-                    <Activity className={cn("h-3 w-3", runningSessionsCount > 0 && "text-emerald-500")} />
+                    <Activity className={cn("h-3 w-3", runningSessionsCount > 0 && "text-hemi-copper")} />
                     {runningSessionsCount > 0 && (
-                      <span className="absolute -right-2.5 -top-2 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-emerald-500 px-0.5 text-[8px] font-semibold leading-none text-white shadow-sm ring-1 ring-background">
+                      <span className="absolute -right-2.5 -top-2 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-hemi-copper px-0.5 text-[8px] font-semibold leading-none text-white ring-1 ring-card">
                         {runningBadgeText}
                       </span>
                     )}
@@ -190,7 +190,7 @@ export default function SidebarHeader({
                   className={cn(
                     "flex items-center justify-center rounded-md px-2.5 py-1.5 text-xs font-normal transition-all",
                     searchMode === 'archived'
-                      ? "bg-background shadow-sm text-foreground"
+                      ? "bg-card text-foreground ring-1 ring-border"
                       : "text-muted-foreground hover:text-foreground"
                   )}
                 >
@@ -271,14 +271,14 @@ export default function SidebarHeader({
         {/* Mobile search */}
         {showSearchTools && (
           <div className="mt-2.5 space-y-2">
-            <div className="flex rounded-lg bg-muted/50 p-0.5">
+            <div className="flex rounded-lg bg-muted p-0.5">
               <button
                 onClick={() => onSearchModeChange('projects')}
                 aria-pressed={searchMode === 'projects'}
                 className={cn(
                   "flex-1 flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-normal transition-all",
                   searchMode === 'projects'
-                    ? "bg-background shadow-sm text-foreground"
+                    ? "bg-card text-foreground ring-1 ring-border"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -291,7 +291,7 @@ export default function SidebarHeader({
                 className={cn(
                   "flex-1 flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-normal transition-all",
                   searchMode === 'conversations'
-                    ? "bg-background shadow-sm text-foreground"
+                    ? "bg-card text-foreground ring-1 ring-border"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -307,14 +307,14 @@ export default function SidebarHeader({
                   className={cn(
                     "flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-normal transition-all",
                     searchMode === 'running'
-                      ? "bg-background shadow-sm text-foreground ring-1 ring-emerald-500/15"
+                      ? "bg-card text-foreground ring-1 ring-border"
                       : "text-muted-foreground hover:text-foreground"
                   )}
                 >
                   <span className="relative flex h-3 w-3 items-center justify-center">
-                    <Activity className={cn("h-3 w-3", runningSessionsCount > 0 && "text-emerald-500")} />
+                    <Activity className={cn("h-3 w-3", runningSessionsCount > 0 && "text-hemi-copper")} />
                     {runningSessionsCount > 0 && (
-                      <span className="absolute -right-2.5 -top-2 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-emerald-500 px-0.5 text-[8px] font-semibold leading-none text-white shadow-sm ring-1 ring-background">
+                      <span className="absolute -right-2.5 -top-2 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-hemi-copper px-0.5 text-[8px] font-semibold leading-none text-white ring-1 ring-card">
                         {runningBadgeText}
                       </span>
                     )}
@@ -331,7 +331,7 @@ export default function SidebarHeader({
                   className={cn(
                     "flex items-center justify-center rounded-md px-2.5 py-1.5 text-xs font-normal transition-all",
                     searchMode === 'archived'
-                      ? "bg-background shadow-sm text-foreground"
+                      ? "bg-card text-foreground ring-1 ring-border"
                       : "text-muted-foreground hover:text-foreground"
                   )}
                 >

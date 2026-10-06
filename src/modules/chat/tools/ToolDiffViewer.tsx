@@ -28,7 +28,7 @@ export const ToolDiffViewer: React.FC<ToolDiffViewerProps> = ({
   badgeColor = 'gray'
 }) => {
   const badgeClasses = badgeColor === 'green'
-    ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+    ? 'bg-hemi-ok-tint text-hemi-ok'
     : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400';
 
   const diffLines = useMemo(
@@ -48,7 +48,7 @@ export const ToolDiffViewer: React.FC<ToolDiffViewerProps> = ({
         {onFileClick ? (
           <button
             onClick={onFileClick}
-            className="cursor-pointer truncate font-mono text-[11px] text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+            className="cursor-pointer truncate font-mono text-[11px] text-hemi-copper-text transition-colors"
           >
             {filePath}
           </button>
@@ -69,8 +69,8 @@ export const ToolDiffViewer: React.FC<ToolDiffViewerProps> = ({
             <span
               className={`w-6 flex-shrink-0 select-none text-center ${
                 diffLine.type === 'removed'
-                  ? 'bg-red-50 text-red-400 dark:bg-red-950/30 dark:text-red-500'
-                  : 'bg-green-50 text-green-400 dark:bg-green-950/30 dark:text-green-500'
+                  ? 'bg-destructive/10 text-destructive'
+                  : 'bg-hemi-ok-tint text-hemi-ok'
               }`}
             >
               {diffLine.type === 'removed' ? '-' : '+'}
@@ -78,8 +78,8 @@ export const ToolDiffViewer: React.FC<ToolDiffViewerProps> = ({
             <span
               className={`flex-1 whitespace-pre-wrap px-2 ${
                 diffLine.type === 'removed'
-                  ? 'bg-red-50/50 text-red-800 dark:bg-red-950/20 dark:text-red-200'
-                  : 'bg-green-50/50 text-green-800 dark:bg-green-950/20 dark:text-green-200'
+                  ? 'bg-destructive/10 text-destructive'
+                  : 'bg-hemi-ok-tint text-hemi-ok'
               }`}
             >
               {diffLine.content}

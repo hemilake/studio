@@ -141,7 +141,7 @@ export default function PluginTabContent({
     <div className="relative h-full w-full overflow-auto">
       <div ref={containerRef} className="h-full w-full overflow-auto" />
       {loadError && (
-        <div className="absolute inset-0 p-4 text-[13px] text-red-600">
+        <div className="absolute inset-0 p-4 text-[13px] text-destructive">
           {t('common:misc.pluginLoadFailed', { error: loadError })}
         </div>
       )}

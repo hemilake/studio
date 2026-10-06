@@ -76,10 +76,9 @@ export const BashCommandDisplay: React.FC<BashCommandDisplayProps> = ({
   return (
     <div
       className={cn(
-        'group/cmd overflow-hidden rounded-lg border bg-muted/40 backdrop-blur-sm transition-all duration-200',
-        isError ? 'border-red-500/30' : 'border-border/60',
-        hasOutput && !open && 'hover:border-border hover:bg-muted/60',
-        open && 'bg-muted/50 shadow-sm',
+        'group/cmd overflow-hidden rounded-lg rounded-l-none border border-l-2 bg-card transition-colors duration-200',
+        isError ? 'border-destructive/40 border-l-destructive/60' : 'border-border border-l-muted-foreground/30',
+        hasOutput && !open && 'hover:bg-muted/40',
       )}
     >
       {/* Command header — clickable when there is output to expand */}
@@ -106,7 +105,7 @@ export const BashCommandDisplay: React.FC<BashCommandDisplayProps> = ({
             !hasOutput && 'opacity-0',
           )}
         />
-        <span className="flex-shrink-0 select-none font-mono text-xs font-semibold text-emerald-500 dark:text-emerald-400">
+        <span className="flex-shrink-0 select-none font-mono text-xs font-semibold text-hemi-copper">
           $
         </span>
         {/* Not a <code> tag: the global `.chat-message code` rule forces
@@ -122,7 +121,7 @@ export const BashCommandDisplay: React.FC<BashCommandDisplayProps> = ({
         </span>
 
         {isRunning && (
-          <span className="h-2.5 w-2.5 flex-shrink-0 animate-spin rounded-full border-[1.5px] border-muted-foreground/30 border-t-emerald-400" />
+          <span className="h-2.5 w-2.5 flex-shrink-0 animate-spin rounded-full border-[1.5px] border-muted-foreground/30 border-t-hemi-copper" />
         )}
         {status && status !== 'running' && <ToolStatusBadge status={status} className="flex-shrink-0" />}
         {!open && hasOutput && !isRunning && (
@@ -138,7 +137,7 @@ export const BashCommandDisplay: React.FC<BashCommandDisplayProps> = ({
           title={t('chat:misc.copyCommand')}
           aria-label={t('chat:misc.copyCommand')}
         >
-          {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+          {copied ? <Check className="h-3.5 w-3.5 text-hemi-ok" /> : <Copy className="h-3.5 w-3.5" />}
         </button>
       </div>
 
@@ -157,7 +156,7 @@ export const BashCommandDisplay: React.FC<BashCommandDisplayProps> = ({
           <pre
             className={cn(
               'max-h-80 overflow-auto whitespace-pre-wrap break-all px-3 py-2 font-mono text-xs leading-relaxed',
-              isError ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground',
+              isError ? 'text-destructive' : 'text-muted-foreground',
             )}
           >
             {trimmedOutput}

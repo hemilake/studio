@@ -151,7 +151,7 @@ export default function TaskBoardToolbar({
             className={cn(
               'flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors',
               showFilters
-                ? 'bg-blue-50 dark:bg-blue-900 border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300'
+                ? 'bg-muted border-border text-hemi-copper-text'
                 : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700',
             )}
           >
@@ -164,7 +164,7 @@ export default function TaskBoardToolbar({
             <>
               <button
                 onClick={onOpenHelp}
-                className="rounded-lg border border-gray-300 p-2 text-gray-600 hover:bg-gray-100 hover:text-blue-600 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-blue-400"
+                className="rounded-lg border border-gray-300 p-2 text-gray-600 hover:bg-gray-100 hover:text-hemi-copper-text dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700"
                 title={t('buttons.help')}
               >
                 <HelpCircle className="h-4 w-4" />
@@ -175,12 +175,12 @@ export default function TaskBoardToolbar({
                   <>
                     <button
                       onClick={() => setIsPrdDropdownOpen((current) => !current)}
-                      className="flex items-center gap-2 rounded-lg bg-purple-600 px-3 py-2 font-medium text-white hover:bg-purple-700"
+                      className="flex items-center gap-2 rounded-lg bg-primary px-3 py-2 font-medium text-primary-foreground hover:bg-primary/90"
                       title={t('buttons.prdsAvailable', { count: existingPrds.length })}
                     >
                       <FileText className="h-4 w-4" />
                       <span className="hidden sm:inline">{t('buttons.prds')}</span>
-                      <span className="min-w-5 rounded-full bg-purple-500 px-1.5 py-0.5 text-center text-xs">
+                      <span className="min-w-5 rounded-full bg-primary px-1.5 py-0.5 text-center text-xs">
                         {existingPrds.length}
                       </span>
                       <ChevronDown className={cn('w-3 h-3 transition-transform hidden sm:block', isPrdDropdownOpen && 'rotate-180')} />
@@ -194,7 +194,7 @@ export default function TaskBoardToolbar({
                               onCreatePrd();
                               setIsPrdDropdownOpen(false);
                             }}
-                            className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm font-medium text-purple-700 hover:bg-purple-50 dark:text-purple-300 dark:hover:bg-purple-900/30"
+                            className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm font-medium text-hemi-copper-text hover:bg-muted"
                           >
                             <Plus className="h-4 w-4" />
                             {t('buttons.createNewPRD')}
@@ -222,7 +222,7 @@ export default function TaskBoardToolbar({
                 ) : (
                   <button
                     onClick={onCreatePrd}
-                    className="flex items-center gap-2 rounded-lg bg-purple-600 px-3 py-2 font-medium text-white hover:bg-purple-700"
+                    className="flex items-center gap-2 rounded-lg bg-primary px-3 py-2 font-medium text-primary-foreground hover:bg-primary/90"
                     title={t('buttons.addPRD')}
                   >
                     <FileText className="h-4 w-4" />
@@ -234,7 +234,7 @@ export default function TaskBoardToolbar({
               {(hasTaskMasterConfigured || totalTaskCount > 0) && (
                 <button
                   onClick={onOpenCreateTask}
-                  className="flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 font-medium text-white hover:bg-blue-700"
+                  className="flex items-center gap-2 rounded-lg bg-primary px-3 py-2 font-medium text-primary-foreground hover:bg-primary/90"
                   title={t('buttons.addTask')}
                 >
                   <Plus className="h-4 w-4" />

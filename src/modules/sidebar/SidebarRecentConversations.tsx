@@ -217,7 +217,7 @@ export default function SidebarRecentConversations({
                     <div
                       role="status"
                       aria-label={t('tooltips.attentionRequiredIndicator', { defaultValue: 'Session needs attention' })}
-                      className="h-2 w-2 animate-pulse rounded-full bg-amber-500"
+                      className="h-2 w-2 animate-pulse rounded-full bg-hemi-copper"
                     />
                   </Tooltip>
                 </div>
@@ -230,19 +230,19 @@ export default function SidebarRecentConversations({
                 className={cn(
                   'flex min-w-0 items-center gap-2 rounded-lg px-2 py-2 pr-11 text-left transition-colors',
                   isSelected
-                    ? 'bg-primary/10 text-foreground'
+                    ? 'bg-background font-medium text-foreground'
                     : 'text-foreground hover:bg-accent/60',
                 )}
               >
                 <span className={cn(
                   'flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md',
-                  isSelected ? 'bg-primary/10' : 'bg-muted/60',
+                  'bg-muted/60',
                 )}>
                   <LLMProviderLogo provider={conversation.provider} className="h-3.5 w-3.5" />
                 </span>
 
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[13px] font-normal leading-4">
+                  <span className="block truncate text-[13px] leading-4">
                     {conversation.sessionTitle}
                   </span>
                   <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[10px] leading-3 text-muted-foreground">
@@ -251,7 +251,7 @@ export default function SidebarRecentConversations({
                       <>
                         <span className="flex-shrink-0 text-muted-foreground/40">·</span>
                         <Tooltip content={t('tooltips.processingSessionIndicator', 'Processing session')} position="top">
-                          <Loader2 className="h-3 w-3 flex-shrink-0 animate-spin" />
+                          <Loader2 className="h-3 w-3 flex-shrink-0 animate-spin text-hemi-copper" />
                         </Tooltip>
                       </>
                     ) : age && (

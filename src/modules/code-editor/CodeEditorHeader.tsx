@@ -87,7 +87,7 @@ export default function CodeEditorHeader({
           <div className="flex min-w-0 items-center gap-2">
             <h3 className="truncate text-sm font-medium text-gray-900 dark:text-white">{file.name}</h3>
             {file.diffInfo && (
-              <span className="shrink-0 whitespace-nowrap rounded bg-blue-100 px-1.5 py-0.5 text-[10px] text-blue-600 dark:bg-blue-900 dark:text-blue-300">
+              <span className="shrink-0 whitespace-nowrap rounded bg-muted px-1.5 py-0.5 text-[10px] text-hemi-copper-text">
                 {labels.showingChanges}
               </span>
             )}
@@ -99,7 +99,7 @@ export default function CodeEditorHeader({
               onClick={handleCopyPath}
               className={`flex shrink-0 items-center justify-center rounded p-0.5 transition-colors ${
                 pathCopied
-                  ? 'text-green-600 dark:text-green-400'
+                  ? 'text-hemi-ok'
                   : 'text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-200'
               }`}
               title={pathCopied ? labels.pathCopied : labels.copyPath}
@@ -119,7 +119,7 @@ export default function CodeEditorHeader({
             onClick={onToggleMarkdownPreview}
             className={`flex items-center justify-center rounded-md p-1.5 transition-colors ${
               markdownPreview
-                ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                ? 'bg-muted text-hemi-copper-text'
                 : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white'
             }`}
             title={markdownPreview ? labels.editMarkdown : labels.previewMarkdown}
@@ -163,7 +163,7 @@ export default function CodeEditorHeader({
           disabled={saving}
           className={`flex items-center justify-center rounded-md p-1.5 transition-colors disabled:opacity-50 ${
             saveSuccess
-              ? 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+              ? 'bg-hemi-ok-tint text-hemi-ok'
               : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white'
           }`}
           title={saveTitle}

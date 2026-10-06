@@ -39,21 +39,21 @@ function parseTaskContent(content: string): TaskItem[] {
 const statusConfig = {
   completed: {
     icon: (
-      <svg className="h-3.5 w-3.5 text-green-500 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg className="h-3.5 w-3.5 text-hemi-ok" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     ),
     textClass: 'line-through text-gray-400 dark:text-gray-500',
-    badgeClass: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800'
+    badgeClass: 'bg-hemi-ok-tint text-hemi-ok border-hemi-ok/40'
   },
   in_progress: {
     icon: (
-      <svg className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg className="h-3.5 w-3.5 text-hemi-copper-text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     ),
     textClass: 'text-gray-900 dark:text-gray-100',
-    badgeClass: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800'
+    badgeClass: 'bg-muted text-hemi-copper-text border-border'
   },
   pending: {
     icon: (
@@ -95,7 +95,7 @@ export const TaskListContent: React.FC<TaskListContentProps> = ({ content }) => 
         </span>
         <div className="h-1 flex-1 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
           <div
-            className="h-full rounded-full bg-green-500 transition-all dark:bg-green-400"
+            className="h-full rounded-full bg-hemi-ok transition-all"
             style={{ width: `${total > 0 ? (completed / total) * 100 : 0}%` }}
           />
         </div>

@@ -22,9 +22,9 @@ export default function WizardProgress({ step }: WizardProgressProps) {
               <div
                 className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ${
                   currentStep < step
-                    ? 'bg-green-500 text-white'
+                    ? 'bg-hemi-ok text-white'
                     : currentStep === step
-                      ? 'bg-blue-500 text-white'
+                      ? 'bg-primary text-primary-foreground'
                       : 'bg-gray-200 text-gray-500 dark:bg-gray-700'
                 }`}
               >
@@ -40,7 +40,7 @@ export default function WizardProgress({ step }: WizardProgressProps) {
             {currentStep < 2 && (
               <div
                 className={`mx-2 h-1 flex-1 rounded ${
-                  currentStep < step ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-700'
+                  currentStep < step ? 'bg-hemi-ok' : 'bg-gray-200 dark:bg-gray-700'
                 }`}
               />
             )}

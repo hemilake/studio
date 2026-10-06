@@ -18,7 +18,7 @@ export default function CodeEditorLoadingState({
       {isSidebar ? (
         <div className="flex h-full w-full items-center justify-center bg-background">
           <div className="flex items-center gap-3">
-            <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-blue-600" />
+            <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-hemi-copper" />
             <span className="text-gray-900 dark:text-white">{loadingText}</span>
           </div>
         </div>
@@ -26,7 +26,7 @@ export default function CodeEditorLoadingState({
         <div className="fixed inset-0 z-[9999] md:flex md:items-center md:justify-center md:bg-black/50">
           <div className="code-editor-loading flex h-full w-full items-center justify-center p-8 md:h-auto md:w-auto md:rounded-lg">
             <div className="flex items-center gap-3">
-              <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-blue-600" />
+              <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-hemi-copper" />
               <span className="text-gray-900 dark:text-white">{loadingText}</span>
             </div>
           </div>

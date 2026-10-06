@@ -52,9 +52,9 @@ export default function FileTreeUploadProgress({ upload }: FileTreeUploadProgres
       className={cn(
         'border-b px-3 py-2 transition-colors',
         isError
-          ? 'border-red-500/20 bg-red-500/10 text-red-700 dark:text-red-300'
+          ? 'border-destructive/40 bg-destructive/10 text-destructive'
           : isComplete
-          ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+          ? 'border-hemi-ok/40 bg-hemi-ok-tint text-hemi-ok'
           : 'border-primary/20 bg-primary/10 text-foreground',
       )}
     >
@@ -62,7 +62,7 @@ export default function FileTreeUploadProgress({ upload }: FileTreeUploadProgres
         <div
           className={cn(
             'flex h-7 w-7 shrink-0 items-center justify-center rounded-md',
-            isError ? 'bg-red-500/15' : isComplete ? 'bg-emerald-500/15' : 'bg-primary/15',
+            isError ? 'bg-destructive/10' : isComplete ? 'bg-hemi-ok-tint' : 'bg-primary/15',
           )}
         >
           <Icon className={cn('h-3.5 w-3.5', isUploading && 'animate-pulse')} />
@@ -81,7 +81,7 @@ export default function FileTreeUploadProgress({ upload }: FileTreeUploadProgres
         <div
           className={cn(
             'h-full rounded-full transition-[width] duration-200',
-            isError ? 'bg-red-500' : isComplete ? 'bg-emerald-500' : 'bg-primary',
+            isError ? 'bg-destructive' : isComplete ? 'bg-hemi-ok' : 'bg-primary',
           )}
           style={{ width: `${isError ? Math.max(progress, 8) : progress}%` }}
         />

@@ -24,8 +24,8 @@ export default function GenerateTasksModal({
       <div className="w-full max-w-md rounded-lg border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800">
         <div className="flex items-center justify-between border-b border-gray-200 p-6 dark:border-gray-700">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/50">
-              <Sparkles className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
+              <Sparkles className="h-4 w-4 text-hemi-copper-text" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               Generate Tasks from PRD
@@ -40,15 +40,15 @@ export default function GenerateTasksModal({
         </div>
 
         <div className="space-y-4 p-6">
-          <div className="rounded-lg border border-purple-200 bg-purple-50 p-4 dark:border-purple-800 dark:bg-purple-900/20">
-            <h4 className="mb-2 font-semibold text-purple-900 dark:text-purple-100">
+          <div className="rounded-lg border border-border bg-muted p-4">
+            <h4 className="mb-2 font-semibold text-foreground">
               Ask Claude Code directly
             </h4>
-            <p className="mb-3 text-sm text-purple-800 dark:text-purple-200">
+            <p className="mb-3 text-sm text-foreground">
               Save this PRD, then ask Claude Code in chat to parse the file and create your initial tasks.
             </p>
 
-            <div className="rounded border border-purple-200 bg-white p-3 dark:border-purple-700 dark:bg-gray-800">
+            <div className="rounded border border-border bg-white p-3 dark:bg-gray-800">
               <p className="mb-1 text-xs font-medium text-gray-600 dark:text-gray-400">Example prompt</p>
               <p className="font-mono text-xs text-gray-900 dark:text-white">
                 I have a PRD at .taskmaster/docs/{fileName}. Parse it and create the initial tasks.
@@ -61,7 +61,7 @@ export default function GenerateTasksModal({
               href={PRD_DOCS_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block text-sm font-medium text-purple-600 underline hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300"
+              className="inline-block text-sm font-medium text-hemi-copper-text underline"
             >
               View TaskMaster documentation
             </a>

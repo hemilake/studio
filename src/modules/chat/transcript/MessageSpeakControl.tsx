@@ -23,7 +23,7 @@ const MessageSpeakControl = ({ content }: { content: string }) => {
   return (
     <span className="relative inline-flex">
       {error && (
-        <span className="absolute bottom-full left-1/2 z-10 mb-1 max-w-[240px] -translate-x-1/2 whitespace-normal rounded bg-red-600 px-2 py-1 text-center text-xs text-white shadow-lg">
+        <span className="absolute bottom-full left-1/2 z-10 mb-1 max-w-[240px] -translate-x-1/2 whitespace-normal rounded bg-destructive px-2 py-1 text-center text-xs text-white shadow-lg">
           {error}
         </span>
       )}

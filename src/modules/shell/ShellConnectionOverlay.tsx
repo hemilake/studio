@@ -24,7 +24,7 @@ export default function ShellConnectionOverlay({
     return (
       <div className="absolute inset-0 z-20 flex items-center justify-center bg-gray-950/90">
         <div className="inline-flex items-center gap-2 text-sm font-medium text-gray-100">
-          <Loader2 className="h-4 w-4 animate-spin text-blue-300" aria-hidden="true" />
+          <Loader2 className="h-4 w-4 animate-spin text-hemi-copper-text" aria-hidden="true" />
           <span>{loadingLabel}</span>
         </div>
       </div>
@@ -38,7 +38,7 @@ export default function ShellConnectionOverlay({
           <button
             type="button"
             onClick={onConnect}
-            className="pointer-events-auto inline-flex min-h-12 w-full max-w-xs cursor-pointer items-center justify-center gap-2 rounded-md bg-emerald-600 px-5 py-3 text-base font-semibold text-white shadow-lg shadow-emerald-950/30 transition-colors hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:ring-offset-2 focus:ring-offset-gray-950 active:bg-emerald-700"
+            className="pointer-events-auto inline-flex min-h-12 w-full max-w-xs cursor-pointer items-center justify-center gap-2 rounded-md bg-hemi-ok px-5 py-3 text-base font-semibold text-white shadow-lg shadow-transparent transition-colors hover:bg-hemi-ok/90 focus:outline-none focus:ring-2 focus:ring-hemi-ok/40 focus:ring-offset-2 focus:ring-offset-gray-950 active:bg-hemi-ok/90"
             title={connectTitle}
           >
             <RotateCcw className="h-4 w-4" aria-hidden="true" />
@@ -53,7 +53,7 @@ export default function ShellConnectionOverlay({
   return (
     <div className="absolute inset-0 z-20 flex items-center justify-center bg-gray-950/90 p-6">
       <div className="flex w-full max-w-md flex-col items-center gap-3 text-center">
-        <div className="flex items-center justify-center gap-3 text-yellow-300">
+        <div className="flex items-center justify-center gap-3 text-hemi-copper-text">
           <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
           <span className="text-base font-medium">{connectingLabel}</span>
         </div>

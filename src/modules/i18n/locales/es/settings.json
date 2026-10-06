@@ -285,6 +285,7 @@
     },
     "newButton": "Nueva clave API",
     "empty": "Aún no se han creado claves API.",
+    "emptyHint": "Ninguna otra aplicación puede llamar a la API de esta instancia hasta que crees una.",
     "list": {
       "created": "Creada:",
       "lastUsed": "Último uso:"
@@ -308,6 +309,7 @@
         "howToCreate": "Cómo crear un token de acceso personal de GitHub →"
       },
       "empty": "Aún no se han añadido tokens de GitHub.",
+      "emptyHint": "Los repositorios públicos se clonan sin token.",
       "added": "Añadido:",
       "confirmDelete": "¿Seguro que quieres eliminar este token de GitHub?"
     },
@@ -349,6 +351,7 @@
       "disconnected": "Desconectado",
       "checkingAuth": "Comprobando el estado de autenticación...",
       "loggedInAs": "Sesión iniciada como {{email}}",
+      "signedInWithToken": "Sesión iniciada con un token de autenticación",
       "authenticatedUser": "usuario autenticado"
     },
     "account": {
@@ -365,7 +368,7 @@
         "description": "Asistente CLI OpenCode"
       }
     },
-    "connectionStatus": "Estado de la conexión",
+    "connectionStatus": "Conexión",
     "login": {
       "title": "Iniciar sesión",
       "reAuthenticate": "Volver a autenticar",

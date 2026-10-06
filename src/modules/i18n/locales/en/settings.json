@@ -302,6 +302,7 @@
     },
     "newButton": "New API Key",
     "empty": "No API keys created yet.",
+    "emptyHint": "Other applications cannot call this instance's API until you create one.",
     "list": {
       "created": "Created:",
       "lastUsed": "Last used:"
@@ -325,6 +326,7 @@
         "howToCreate": "How to create a GitHub Personal Access Token →"
       },
       "empty": "No GitHub tokens added yet.",
+      "emptyHint": "Public repositories clone without one.",
       "added": "Added:",
       "confirmDelete": "Are you sure you want to delete this GitHub token?"
     },
@@ -365,7 +367,8 @@
       "notConnected": "Not connected",
       "disconnected": "Disconnected",
       "checkingAuth": "Checking authentication status...",
-      "loggedInAs": "Logged in as {{email}}",
+      "loggedInAs": "Signed in as {{email}}",
+      "signedInWithToken": "Signed in with an auth token",
       "authenticatedUser": "authenticated user"
     },
     "account": {
@@ -385,7 +388,7 @@
         "description": "Antigravity CLI assistant"
       }
     },
-    "connectionStatus": "Connection Status",
+    "connectionStatus": "Connection",
     "login": {
       "title": "Login",
       "reAuthenticate": "Re-authenticate",

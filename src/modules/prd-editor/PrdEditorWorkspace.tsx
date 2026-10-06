@@ -67,7 +67,7 @@ export default function PrdEditorWorkspace({
         )}
       >
         {loadError && (
-          <div className="border-b border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 dark:border-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200">
+          <div className="border-b border-hemi-copper/40 bg-hemi-copper-tint px-4 py-3 text-sm text-hemi-copper-text">
             {loadError}
           </div>
         )}

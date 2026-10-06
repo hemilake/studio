@@ -48,7 +48,7 @@ export default function NotificationsSettingsTab({
     <div className="space-y-6 md:space-y-8">
       <div className="space-y-4">
         <div className="flex items-center gap-3">
-          <Bell className="h-5 w-5 text-blue-600" />
+          <Bell className="h-5 w-5 text-hemi-copper-text" />
           <h3 className="text-lg font-medium text-foreground">{t('notifications.title')}</h3>
         </div>
         <p className="text-sm text-muted-foreground">{t('notifications.description')}</p>
@@ -77,8 +77,8 @@ export default function NotificationsSettingsTab({
                   }}
                   className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
                     desktopNotifications?.enabled
-                      ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50'
-                      : 'bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600'
+                      ? 'bg-destructive/10 text-destructive'
+                      : 'bg-primary text-primary-foreground hover:bg-primary/90'
                   }`}
                 >
                   {desktopNotifications?.enabled ? (
@@ -91,13 +91,13 @@ export default function NotificationsSettingsTab({
                     : t('notifications.desktop.enable', { defaultValue: 'Enable desktop notifications' })}
                 </button>
                 {desktopNotifications?.enabled && (
-                  <span className="text-sm text-green-600 dark:text-green-400">
+                  <span className="text-sm text-hemi-ok">
                     {t('notifications.desktop.enabled', { defaultValue: 'Desktop notifications are enabled' })}
                   </span>
                 )}
               </div>
               {desktopNotifications?.lastError && (
-                <p className="text-sm text-red-600 dark:text-red-400">{desktopNotifications.lastError}</p>
+                <p className="text-sm text-destructive">{desktopNotifications.lastError}</p>
               )}
             </div>
           )}
@@ -123,8 +123,8 @@ export default function NotificationsSettingsTab({
                 }}
                 className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                   isPushSubscribed
-                    ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50'
-                    : 'bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600'
+                    ? 'bg-destructive/10 text-destructive'
+                    : 'bg-primary text-primary-foreground hover:bg-primary/90'
                 }`}
               >
                 {isPushLoading ? (
@@ -141,7 +141,7 @@ export default function NotificationsSettingsTab({
                     : t('notifications.webPush.enable')}
               </button>
               {isPushSubscribed && (
-                <span className="text-sm text-green-600 dark:text-green-400">
+                <span className="text-sm text-hemi-ok">
                   {t('notifications.webPush.enabled')}
                 </span>
               )}
@@ -154,7 +154,7 @@ export default function NotificationsSettingsTab({
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <Volume2 className="h-4 w-4 text-blue-600" />
+              <Volume2 className="h-4 w-4 text-hemi-copper-text" />
               <h4 className="font-medium text-foreground">
                 {t('notifications.sound.title', { defaultValue: 'Sound' })}
               </h4>

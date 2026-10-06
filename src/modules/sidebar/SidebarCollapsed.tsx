@@ -59,8 +59,8 @@ export default function SidebarCollapsed({
           aria-label={t('version.restartRequired')}
           title={t('version.restartRequired')}
         >
-          <AlertTriangle className="h-4 w-4 text-amber-500" />
-          <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" />
+          <AlertTriangle className="h-4 w-4 text-hemi-copper-text" />
+          <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 animate-pulse rounded-full bg-hemi-copper" />
         </div>
       )}
     </div>

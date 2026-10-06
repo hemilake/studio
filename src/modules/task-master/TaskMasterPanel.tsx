@@ -139,7 +139,7 @@ export default function TaskMasterPanel({ isVisible }: TaskMasterPanelProps) {
 
       {prdNotification && (
         <div className="animate-in slide-in-from-bottom-2 fixed bottom-4 right-4 z-50 duration-300">
-          <div className="flex items-center gap-3 rounded-lg bg-green-600 px-4 py-3 text-white shadow-lg">
+          <div className="flex items-center gap-3 rounded-lg bg-hemi-ok px-4 py-3 text-white shadow-lg">
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>

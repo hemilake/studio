@@ -62,9 +62,9 @@ function readResultText(content: unknown): string {
 }
 
 const STATUS_STYLES: Record<SubagentInfo['status'], string> = {
-  running: 'text-purple-600 dark:text-purple-300',
+  running: 'text-hemi-copper-text',
   completed: 'text-muted-foreground',
-  failed: 'text-red-600 dark:text-red-400',
+  failed: 'text-destructive',
 };
 
 /** One prose or reasoning entry from the agent's own narration. */
@@ -135,7 +135,7 @@ export const SubagentPanel = memo(({
   const hiddenCount = entries.length - visibleEntries.length;
 
   return (
-    <div className="my-1 border-l-2 border-l-purple-500 py-0.5 pl-3 dark:border-l-purple-400">
+    <div className="my-1 border-l-2 border-l-hemi-copper py-0.5 pl-3">
       <button
         type="button"
         aria-expanded={isOpen}
@@ -143,7 +143,7 @@ export const SubagentPanel = memo(({
         className="flex w-full select-none items-center gap-1.5 py-0.5 text-left text-xs text-muted-foreground transition-colors hover:text-foreground"
       >
         <ChevronRight className={cn('h-3 w-3 flex-shrink-0 transition-transform duration-150', isOpen && 'rotate-90')} />
-        <Bot className="h-3.5 w-3.5 flex-shrink-0 text-purple-500 dark:text-purple-400" />
+        <Bot className="h-3.5 w-3.5 flex-shrink-0 text-hemi-copper-text" />
         <span className="flex-shrink-0 font-medium text-foreground">{label || 'Agent'}</span>
         {description && (
           <>
@@ -157,7 +157,7 @@ export const SubagentPanel = memo(({
         <span className={cn('ml-auto flex flex-shrink-0 items-center gap-1 text-[11px]', STATUS_STYLES[status])}>
           {status === 'running' ? (
             <>
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-purple-500 dark:bg-purple-400" />
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-hemi-copper" />
               running
             </>
           ) : status === 'failed' ? (

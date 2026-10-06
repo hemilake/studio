@@ -96,10 +96,10 @@ function ClaudePermissions({
     <div className="space-y-6">
       <div className="space-y-4">
         <div className="flex items-center gap-3">
-          <AlertTriangle className="h-5 w-5 text-orange-500" />
+          <AlertTriangle className="h-5 w-5 text-hemi-copper-text" />
           <h3 className="text-lg font-medium text-foreground">{t('permissions.title')}</h3>
         </div>
-        <div className="rounded-lg border border-orange-200 bg-orange-50 p-4 dark:border-orange-800 dark:bg-orange-900/20">
+        <div className="rounded-lg border border-hemi-copper/40 bg-hemi-copper-tint p-4">
           <label className="flex items-center gap-3">
             <input
               type="checkbox"
@@ -108,10 +108,10 @@ function ClaudePermissions({
               className="h-4 w-4 rounded border-input bg-card text-primary focus:ring-2 focus:ring-primary"
             />
             <div>
-              <div className="font-medium text-orange-900 dark:text-orange-100">
+              <div className="font-medium text-hemi-copper-text">
                 {t('permissions.skipPermissions.label')}
               </div>
-              <div className="text-sm text-orange-700 dark:text-orange-300">
+              <div className="text-sm text-hemi-copper-text">
                 {t('permissions.skipPermissions.claudeDescription')}
               </div>
             </div>
@@ -121,7 +121,7 @@ function ClaudePermissions({
 
       <div className="space-y-4">
         <div className="flex items-center gap-3">
-          <Shield className="h-5 w-5 text-green-500" />
+          <Shield className="h-5 w-5 text-hemi-ok" />
           <h3 className="text-lg font-medium text-foreground">{t('permissions.allowedTools.title')}</h3>
         </div>
         <p className="text-sm text-muted-foreground">{t('permissions.allowedTools.description')}</p>
@@ -172,13 +172,13 @@ function ClaudePermissions({
 
         <div className="space-y-2">
           {allowedTools.map((tool) => (
-            <div key={tool} className="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-900/20">
-              <span className="font-mono text-sm text-green-800 dark:text-green-200">{tool}</span>
+            <div key={tool} className="flex items-center justify-between rounded-lg border border-hemi-ok/40 bg-hemi-ok-tint p-3">
+              <span className="font-mono text-sm text-hemi-ok">{tool}</span>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => onAllowedToolsChange(removeValue(allowedTools, tool))}
-                className="text-green-600 hover:text-green-700"
+                className="text-hemi-ok"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -194,7 +194,7 @@ function ClaudePermissions({
 
       <div className="space-y-4">
         <div className="flex items-center gap-3">
-          <AlertTriangle className="h-5 w-5 text-red-500" />
+          <AlertTriangle className="h-5 w-5 text-destructive" />
           <h3 className="text-lg font-medium text-foreground">{t('permissions.blockedTools.title')}</h3>
         </div>
         <p className="text-sm text-muted-foreground">{t('permissions.blockedTools.description')}</p>
@@ -225,13 +225,13 @@ function ClaudePermissions({
 
         <div className="space-y-2">
           {disallowedTools.map((tool) => (
-            <div key={tool} className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-900/20">
-              <span className="font-mono text-sm text-red-800 dark:text-red-200">{tool}</span>
+            <div key={tool} className="flex items-center justify-between rounded-lg border border-destructive/40 bg-destructive/10 p-3">
+              <span className="font-mono text-sm text-destructive">{tool}</span>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => onDisallowedToolsChange(removeValue(disallowedTools, tool))}
-                className="text-red-600 hover:text-red-700"
+                className="text-destructive"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -245,15 +245,15 @@ function ClaudePermissions({
         </div>
       </div>
 
-      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
-        <h4 className="mb-2 font-medium text-blue-900 dark:text-blue-100">
+      <div className="rounded-lg border border-border bg-muted p-4">
+        <h4 className="mb-2 font-medium text-foreground">
           {t('permissions.toolExamples.title')}
         </h4>
-        <ul className="space-y-1 text-sm text-blue-800 dark:text-blue-200">
-          <li><code className="rounded bg-blue-100 px-1 dark:bg-blue-800">"Bash(git log:*)"</code> {t('permissions.toolExamples.bashGitLog')}</li>
-          <li><code className="rounded bg-blue-100 px-1 dark:bg-blue-800">"Bash(git diff:*)"</code> {t('permissions.toolExamples.bashGitDiff')}</li>
-          <li><code className="rounded bg-blue-100 px-1 dark:bg-blue-800">"Write"</code> {t('permissions.toolExamples.write')}</li>
-          <li><code className="rounded bg-blue-100 px-1 dark:bg-blue-800">"Bash(rm:*)"</code> {t('permissions.toolExamples.bashRm')}</li>
+        <ul className="space-y-1 text-sm text-foreground">
+          <li><code className="rounded bg-muted px-1">"Bash(git log:*)"</code> {t('permissions.toolExamples.bashGitLog')}</li>
+          <li><code className="rounded bg-muted px-1">"Bash(git diff:*)"</code> {t('permissions.toolExamples.bashGitDiff')}</li>
+          <li><code className="rounded bg-muted px-1">"Write"</code> {t('permissions.toolExamples.write')}</li>
+          <li><code className="rounded bg-muted px-1">"Bash(rm:*)"</code> {t('permissions.toolExamples.bashRm')}</li>
         </ul>
       </div>
 
@@ -307,10 +307,10 @@ function CursorPermissions({
     <div className="space-y-6">
       <div className="space-y-4">
         <div className="flex items-center gap-3">
-          <AlertTriangle className="h-5 w-5 text-orange-500" />
+          <AlertTriangle className="h-5 w-5 text-hemi-copper-text" />
           <h3 className="text-lg font-medium text-foreground">{t('permissions.title')}</h3>
         </div>
-        <div className="rounded-lg border border-orange-200 bg-orange-50 p-4 dark:border-orange-800 dark:bg-orange-900/20">
+        <div className="rounded-lg border border-hemi-copper/40 bg-hemi-copper-tint p-4">
           <label className="flex items-center gap-3">
             <input
               type="checkbox"
@@ -319,10 +319,10 @@ function CursorPermissions({
               className="h-4 w-4 rounded border-input bg-card text-primary focus:ring-2 focus:ring-primary"
             />
             <div>
-              <div className="font-medium text-orange-900 dark:text-orange-100">
+              <div className="font-medium text-hemi-copper-text">
                 {t('permissions.skipPermissions.label')}
               </div>
-              <div className="text-sm text-orange-700 dark:text-orange-300">
+              <div className="text-sm text-hemi-copper-text">
                 {t('permissions.skipPermissions.cursorDescription')}
               </div>
             </div>
@@ -332,7 +332,7 @@ function CursorPermissions({
 
       <div className="space-y-4">
         <div className="flex items-center gap-3">
-          <Shield className="h-5 w-5 text-green-500" />
+          <Shield className="h-5 w-5 text-hemi-ok" />
           <h3 className="text-lg font-medium text-foreground">{t('permissions.allowedCommands.title')}</h3>
         </div>
         <p className="text-sm text-muted-foreground">{t('permissions.allowedCommands.description')}</p>
@@ -383,13 +383,13 @@ function CursorPermissions({
 
         <div className="space-y-2">
           {allowedCommands.map((command) => (
-            <div key={command} className="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-900/20">
-              <span className="font-mono text-sm text-green-800 dark:text-green-200">{command}</span>
+            <div key={command} className="flex items-center justify-between rounded-lg border border-hemi-ok/40 bg-hemi-ok-tint p-3">
+              <span className="font-mono text-sm text-hemi-ok">{command}</span>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => onAllowedCommandsChange(removeValue(allowedCommands, command))}
-                className="text-green-600 hover:text-green-700"
+                className="text-hemi-ok"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -405,7 +405,7 @@ function CursorPermissions({
 
       <div className="space-y-4">
         <div className="flex items-center gap-3">
-          <AlertTriangle className="h-5 w-5 text-red-500" />
+          <AlertTriangle className="h-5 w-5 text-destructive" />
           <h3 className="text-lg font-medium text-foreground">{t('permissions.blockedCommands.title')}</h3>
         </div>
         <p className="text-sm text-muted-foreground">{t('permissions.blockedCommands.description')}</p>
@@ -436,13 +436,13 @@ function CursorPermissions({
 
         <div className="space-y-2">
           {disallowedCommands.map((command) => (
-            <div key={command} className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-900/20">
-              <span className="font-mono text-sm text-red-800 dark:text-red-200">{command}</span>
+            <div key={command} className="flex items-center justify-between rounded-lg border border-destructive/40 bg-destructive/10 p-3">
+              <span className="font-mono text-sm text-destructive">{command}</span>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => onDisallowedCommandsChange(removeValue(disallowedCommands, command))}
-                className="text-red-600 hover:text-red-700"
+                className="text-destructive"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -456,15 +456,15 @@ function CursorPermissions({
         </div>
       </div>
 
-      <div className="rounded-lg border border-purple-200 bg-purple-50 p-4 dark:border-purple-800 dark:bg-purple-900/20">
-        <h4 className="mb-2 font-medium text-purple-900 dark:text-purple-100">
+      <div className="rounded-lg border border-border bg-muted p-4">
+        <h4 className="mb-2 font-medium text-foreground">
           {t('permissions.shellExamples.title')}
         </h4>
-        <ul className="space-y-1 text-sm text-purple-800 dark:text-purple-200">
-          <li><code className="rounded bg-purple-100 px-1 dark:bg-purple-800">"Shell(ls)"</code> {t('permissions.shellExamples.ls')}</li>
-          <li><code className="rounded bg-purple-100 px-1 dark:bg-purple-800">"Shell(git status)"</code> {t('permissions.shellExamples.gitStatus')}</li>
-          <li><code className="rounded bg-purple-100 px-1 dark:bg-purple-800">"Shell(npm install)"</code> {t('permissions.shellExamples.npmInstall')}</li>
-          <li><code className="rounded bg-purple-100 px-1 dark:bg-purple-800">"Shell(rm -rf)"</code> {t('permissions.shellExamples.rmRf')}</li>
+        <ul className="space-y-1 text-sm text-foreground">
+          <li><code className="rounded bg-muted px-1">"Shell(ls)"</code> {t('permissions.shellExamples.ls')}</li>
+          <li><code className="rounded bg-muted px-1">"Shell(git status)"</code> {t('permissions.shellExamples.gitStatus')}</li>
+          <li><code className="rounded bg-muted px-1">"Shell(npm install)"</code> {t('permissions.shellExamples.npmInstall')}</li>
+          <li><code className="rounded bg-muted px-1">"Shell(rm -rf)"</code> {t('permissions.shellExamples.rmRf')}</li>
         </ul>
       </div>
     </div>
@@ -484,7 +484,7 @@ function CodexPermissions({ permissionMode, onPermissionModeChange }: Omit<Codex
     <div className="space-y-6">
       <div className="space-y-4">
         <div className="flex items-center gap-3">
-          <Shield className="h-5 w-5 text-green-500" />
+          <Shield className="h-5 w-5 text-hemi-ok" />
           <h3 className="text-lg font-medium text-foreground">{t('permissions.codex.permissionMode')}</h3>
         </div>
         <p className="text-sm text-muted-foreground">{t('permissions.codex.description')}</p>
@@ -502,7 +502,7 @@ function CodexPermissions({ permissionMode, onPermissionModeChange }: Omit<Codex
               name="codexPermissionMode"
               checked={permissionMode === 'default'}
               onChange={() => onPermissionModeChange('default')}
-              className="mt-1 h-4 w-4 text-green-600"
+              className="mt-1 h-4 w-4 text-hemi-ok"
             />
             <div>
               <div className="font-medium text-foreground">{t('permissions.codex.modes.default.title')}</div>
@@ -515,7 +515,7 @@ function CodexPermissions({ permissionMode, onPermissionModeChange }: Omit<Codex
 
         <div
           className={`cursor-pointer rounded-lg border p-4 transition-all ${permissionMode === 'acceptEdits'
-            ? 'border-green-400 bg-green-50 dark:border-green-600 dark:bg-green-900/20'
+            ? 'border-hemi-ok/40 bg-hemi-ok-tint'
             : 'border-border bg-card/50 active:border-border active:bg-accent/50'
             }`}
           onClick={() => onPermissionModeChange('acceptEdits')}
@@ -526,11 +526,11 @@ function CodexPermissions({ permissionMode, onPermissionModeChange }: Omit<Codex
               name="codexPermissionMode"
               checked={permissionMode === 'acceptEdits'}
               onChange={() => onPermissionModeChange('acceptEdits')}
-              className="mt-1 h-4 w-4 text-green-600"
+              className="mt-1 h-4 w-4 text-hemi-ok"
             />
             <div>
-              <div className="font-medium text-green-900 dark:text-green-100">{t('permissions.codex.modes.acceptEdits.title')}</div>
-              <div className="text-sm text-green-700 dark:text-green-300">
+              <div className="font-medium text-hemi-ok">{t('permissions.codex.modes.acceptEdits.title')}</div>
+              <div className="text-sm text-hemi-ok">
                 {t('permissions.codex.modes.acceptEdits.description')}
               </div>
             </div>
@@ -539,7 +539,7 @@ function CodexPermissions({ permissionMode, onPermissionModeChange }: Omit<Codex
 
         <div
           className={`cursor-pointer rounded-lg border p-4 transition-all ${permissionMode === 'bypassPermissions'
-            ? 'border-orange-400 bg-orange-50 dark:border-orange-600 dark:bg-orange-900/20'
+            ? 'border-hemi-copper/40 bg-hemi-copper-tint'
             : 'border-border bg-card/50 active:border-border active:bg-accent/50'
             }`}
           onClick={() => onPermissionModeChange('bypassPermissions')}
@@ -550,14 +550,14 @@ function CodexPermissions({ permissionMode, onPermissionModeChange }: Omit<Codex
               name="codexPermissionMode"
               checked={permissionMode === 'bypassPermissions'}
               onChange={() => onPermissionModeChange('bypassPermissions')}
-              className="mt-1 h-4 w-4 text-orange-600"
+              className="mt-1 h-4 w-4 text-hemi-copper-text"
             />
             <div>
-              <div className="flex items-center gap-2 font-medium text-orange-900 dark:text-orange-100">
+              <div className="flex items-center gap-2 font-medium text-hemi-copper-text">
                 {t('permissions.codex.modes.bypassPermissions.title')}
                 <AlertTriangle className="h-4 w-4" />
               </div>
-              <div className="text-sm text-orange-700 dark:text-orange-300">
+              <div className="text-sm text-hemi-copper-text">
                 {t('permissions.codex.modes.bypassPermissions.description')}
               </div>
             </div>

@@ -36,12 +36,12 @@ export function ScheduledMessageList({ scheduledMessages, onCancel }: ScheduledM
             key={message.id}
             className={`flex items-start gap-2 rounded-xl border px-3 py-2 text-xs ${
               isFailed
-                ? 'border-red-500/30 bg-red-500/10'
+                ? 'border-destructive/40 bg-destructive/10'
                 : 'border-border/60 bg-muted/40'
             }`}
           >
             {isFailed ? (
-              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-500" />
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
             ) : (
               <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             )}

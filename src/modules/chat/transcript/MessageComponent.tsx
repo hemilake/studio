@@ -124,7 +124,7 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
                   {message.adversaries && message.adversaries.length > 0 && (
                     /* Fork: this turn ran in adversarial mode */
                     <span
-                      className="mr-auto inline-flex items-center gap-1 rounded-md bg-rose-50 px-1.5 py-0.5 text-[11px] font-medium text-rose-700 dark:bg-rose-900/20 dark:text-rose-300"
+                      className="mr-auto inline-flex items-center gap-1 rounded-md bg-destructive/10 px-1.5 py-0.5 text-[11px] font-medium text-destructive"
                       title={t('message.adversarialReview', { defaultValue: 'Adversarial mode' })}
                     >
                       <Swords className="h-3 w-3" />
@@ -167,7 +167,7 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
             )}
           </div>
           {!isGrouped && (
-            <div className="hidden h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm text-white sm:flex">
+            <div className="hidden h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary text-sm text-primary-foreground sm:flex">
               U
             </div>
           )}
@@ -179,9 +179,9 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
             <span
               className={`inline-block h-1.5 w-1.5 flex-shrink-0 rounded-full ${
                 message.compact.phase === 'running'
-                  ? 'animate-pulse bg-amber-400 dark:bg-amber-500'
+                  ? 'animate-pulse bg-hemi-copper'
                   : message.compact.phase === 'failed'
-                    ? 'bg-red-400 dark:bg-red-500'
+                    ? 'bg-destructive'
                     : 'bg-gray-400 dark:bg-gray-500'
               }`}
             />
@@ -206,7 +206,7 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
         /* Compact task notification on the left */
         <div className="w-full">
           <div className="flex items-center gap-2 py-0.5">
-            <span className={`inline-block h-1.5 w-1.5 flex-shrink-0 rounded-full ${message.taskStatus === 'completed' ? 'bg-green-400 dark:bg-green-500' : 'bg-amber-400 dark:bg-amber-500'}`} />
+            <span className={`inline-block h-1.5 w-1.5 flex-shrink-0 rounded-full ${message.taskStatus === 'completed' ? 'bg-hemi-ok' : 'bg-hemi-copper'}`} />
             <span className="text-xs text-gray-500 dark:text-gray-400">{message.content}</span>
           </div>
         </div>
@@ -216,7 +216,7 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
           {!isGrouped && (
             <div className="mb-2 flex items-center space-x-3">
               {message.type === 'error' ? (
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-red-600 text-sm text-white">
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-destructive text-sm text-white">
                   !
                 </div>
               ) : message.type === 'tool' ? (

@@ -74,7 +74,7 @@ function BranchRow({ name, isCurrent, isRemote, aheadCount, behindCount, isMobil
         {isCurrent && (aheadCount > 0 || behindCount > 0) && (
           <div className="flex items-center gap-2 text-xs">
             {aheadCount > 0 && (
-              <span className="text-green-600 dark:text-green-400">{t('git:branches.ahead', { n: aheadCount })}</span>
+              <span className="text-hemi-ok">{t('git:branches.ahead', { n: aheadCount })}</span>
             )}
             {behindCount > 0 && (
               <span className="text-primary">{t('git:branches.behind', { n: behindCount })}</span>

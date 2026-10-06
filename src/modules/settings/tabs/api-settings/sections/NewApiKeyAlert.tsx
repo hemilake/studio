@@ -21,8 +21,8 @@ export default function NewApiKeyAlert({
   const { t } = useTranslation('settings');
 
   return (
-    <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-4">
-      <h4 className="mb-2 font-semibold text-yellow-500">{t('apiKeys.newKey.alertTitle')}</h4>
+    <div className="rounded-lg border border-hemi-copper/40 bg-hemi-copper-tint p-4">
+      <h4 className="mb-2 font-semibold text-hemi-copper-text">{t('apiKeys.newKey.alertTitle')}</h4>
       <p className="mb-3 text-sm text-muted-foreground">{t('apiKeys.newKey.alertMessage')}</p>
       <div className="flex items-center gap-2">
         <code className="flex-1 break-all rounded bg-background/50 px-3 py-2 font-mono text-sm">

@@ -119,14 +119,14 @@ export default function SessionOptions({
             autoFocus
           />
           <button
-            className="flex h-6 w-6 items-center justify-center rounded bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/40"
+            className="flex h-6 w-6 items-center justify-center rounded bg-hemi-ok-tint"
             onClick={(event) => {
               event.stopPropagation();
               saveRename();
             }}
             title={t('tooltips.save')}
           >
-            <Check className="h-3 w-3 text-green-600 dark:text-green-400" />
+            <Check className="h-3 w-3 text-hemi-ok" />
           </button>
           <button
             className="flex h-6 w-6 items-center justify-center rounded bg-gray-50 hover:bg-gray-100 dark:bg-gray-900/20 dark:hover:bg-gray-900/40"

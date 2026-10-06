@@ -20,8 +20,8 @@ const getModeClassName = (mode: TokenMode, selectedMode: TokenMode) =>
   `px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
     mode === selectedMode
       ? mode === 'none'
-        ? 'bg-green-500 text-white'
-        : 'bg-blue-500 text-white'
+        ? 'bg-hemi-ok text-white'
+        : 'bg-primary text-primary-foreground'
       : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
   }`;
 
@@ -61,7 +61,7 @@ export default function GithubAuthenticationCard({
       )}
 
       {!loadingTokens && tokenLoadError && (
-        <p className="mb-3 text-sm text-red-600 dark:text-red-400">{tokenLoadError}</p>
+        <p className="mb-3 text-sm text-destructive">{tokenLoadError}</p>
       )}
 
       {!loadingTokens && availableTokens.length > 0 && (
@@ -131,8 +131,8 @@ export default function GithubAuthenticationCard({
 
       {!loadingTokens && availableTokens.length === 0 && (
         <div className="space-y-4">
-          <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-900/20">
-            <p className="text-sm text-blue-800 dark:text-blue-200">
+          <div className="rounded-lg border border-border bg-muted p-3">
+            <p className="text-sm text-foreground">
               {t('projectWizard.step2.publicRepoInfo')}
             </p>
           </div>

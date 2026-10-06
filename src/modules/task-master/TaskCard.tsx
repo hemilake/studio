@@ -34,8 +34,8 @@ function getStatusStyle(status?: string): TaskStatusStyle {
     return {
       icon: CheckCircle,
       statusText: 'Done',
-      iconColor: 'text-green-600 dark:text-green-400',
-      textColor: 'text-green-900 dark:text-green-100',
+      iconColor: 'text-hemi-ok',
+      textColor: 'text-hemi-ok',
     };
   }
 
@@ -43,8 +43,8 @@ function getStatusStyle(status?: string): TaskStatusStyle {
     return {
       icon: Clock,
       statusText: 'In Progress',
-      iconColor: 'text-blue-600 dark:text-blue-400',
-      textColor: 'text-blue-900 dark:text-blue-100',
+      iconColor: 'text-hemi-copper-text',
+      textColor: 'text-foreground',
     };
   }
 
@@ -52,8 +52,8 @@ function getStatusStyle(status?: string): TaskStatusStyle {
     return {
       icon: AlertCircle,
       statusText: 'Review',
-      iconColor: 'text-amber-600 dark:text-amber-400',
-      textColor: 'text-amber-900 dark:text-amber-100',
+      iconColor: 'text-hemi-copper-text',
+      textColor: 'text-hemi-copper-text',
     };
   }
 
@@ -70,16 +70,16 @@ function getStatusStyle(status?: string): TaskStatusStyle {
     return {
       icon: X,
       statusText: 'Cancelled',
-      iconColor: 'text-red-600 dark:text-red-400',
-      textColor: 'text-red-900 dark:text-red-100',
+      iconColor: 'text-destructive',
+      textColor: 'text-destructive',
     };
   }
 
   return {
     icon: Circle,
     statusText: 'Pending',
-    iconColor: 'text-slate-500 dark:text-slate-400',
-    textColor: 'text-slate-900 dark:text-slate-100',
+    iconColor: 'text-gray-500 dark:text-gray-400',
+    textColor: 'text-gray-900 dark:text-gray-100',
   };
 }
 
@@ -87,8 +87,8 @@ function renderPriorityIcon(priority?: string) {
   if (priority === 'high') {
     return (
       <Tooltip content="High priority">
-        <div className="flex h-4 w-4 items-center justify-center rounded bg-red-100 dark:bg-red-900/30">
-          <ChevronUp className="h-2.5 w-2.5 text-red-600 dark:text-red-400" />
+        <div className="flex h-4 w-4 items-center justify-center rounded bg-destructive/10">
+          <ChevronUp className="h-2.5 w-2.5 text-destructive" />
         </div>
       </Tooltip>
     );
@@ -97,8 +97,8 @@ function renderPriorityIcon(priority?: string) {
   if (priority === 'medium') {
     return (
       <Tooltip content="Medium priority">
-        <div className="flex h-4 w-4 items-center justify-center rounded bg-amber-100 dark:bg-amber-900/30">
-          <Minus className="h-2.5 w-2.5 text-amber-600 dark:text-amber-400" />
+        <div className="flex h-4 w-4 items-center justify-center rounded bg-hemi-copper-tint">
+          <Minus className="h-2.5 w-2.5 text-hemi-copper-text" />
         </div>
       </Tooltip>
     );
@@ -107,8 +107,8 @@ function renderPriorityIcon(priority?: string) {
   if (priority === 'low') {
     return (
       <Tooltip content="Low priority">
-        <div className="flex h-4 w-4 items-center justify-center rounded bg-blue-100 dark:bg-blue-900/30">
-          <Circle className="h-1.5 w-1.5 fill-current text-blue-600 dark:text-blue-400" />
+        <div className="flex h-4 w-4 items-center justify-center rounded bg-muted">
+          <Circle className="h-1.5 w-1.5 fill-current text-hemi-copper-text" />
         </div>
       </Tooltip>
     );
@@ -141,7 +141,7 @@ function TaskCard({ task, onClick = null, showParent = false, className = '' }: 
     <div
       className={cn(
         'bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 space-y-3',
-        'hover:shadow-md hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200',
+        'hover:shadow-md hover:border-border transition-all duration-200',
         onClick ? 'cursor-pointer hover:-translate-y-0.5' : 'cursor-default',
         className,
       )}
@@ -173,7 +173,7 @@ function TaskCard({ task, onClick = null, showParent = false, className = '' }: 
         <div className="flex items-center">
           {Array.isArray(task.dependencies) && task.dependencies.length > 0 && (
             <Tooltip content={`Depends on: ${task.dependencies.map((dependency) => `Task ${dependency}`).join(', ')}`}>
-              <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+              <div className="flex items-center gap-1 text-xs text-hemi-copper-text">
                 <ArrowRight className="h-3 w-3" />
                 <span>Depends on: {task.dependencies.join(', ')}</span>
               </div>
@@ -195,7 +195,7 @@ function TaskCard({ task, onClick = null, showParent = false, className = '' }: 
             <span className="text-xs text-gray-500 dark:text-gray-400">Progress:</span>
             <div className="h-1.5 flex-1 rounded-full bg-gray-200 dark:bg-gray-700" title={`${progress.completed} of ${progress.total} subtasks completed`}>
               <div
-                className={cn('h-full rounded-full transition-all duration-300', task.status === 'done' ? 'bg-green-500' : 'bg-blue-500')}
+                className={cn('h-full rounded-full transition-all duration-300', task.status === 'done' ? 'bg-hemi-ok' : 'bg-primary')}
                 style={{ width: `${progress.percentage}%` }}
               />
             </div>

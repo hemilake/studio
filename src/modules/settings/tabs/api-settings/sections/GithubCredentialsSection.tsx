@@ -2,6 +2,7 @@ import { Eye, EyeOff, Github, Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { Button, Input } from '@/shared/ui';
+import { cn } from '@/shared/utils';
 import type { GithubCredentialItem } from '@/shared/types';
 
 type GithubCredentialsSectionProps = {
@@ -49,7 +50,7 @@ export default function GithubCredentialsSection({
           <Github className="h-5 w-5" />
           <h3 className="text-lg font-semibold">{t('apiKeys.github.title')}</h3>
         </div>
-        <Button size="sm" onClick={() => onShowNewGithubFormChange(!showNewGithubForm)}>
+        <Button size="sm" variant="outline" className="border-foreground" onClick={() => onShowNewGithubFormChange(!showNewGithubForm)}>
           <Plus className="mr-1 h-4 w-4" />
           {t('apiKeys.github.addButton')}
         </Button>
@@ -109,10 +110,13 @@ export default function GithubCredentialsSection({
 
       <div className="space-y-2">
         {githubCredentials.length === 0 ? (
-          <p className="text-sm italic text-muted-foreground">{t('apiKeys.github.empty')}</p>
+                    <div className="rounded-[10px] border border-dashed border-border p-4">
+            <p className="text-sm font-medium text-foreground">{t('apiKeys.github.empty')}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{t('apiKeys.github.emptyHint')}</p>
+          </div>
         ) : (
           githubCredentials.map((credential) => (
-            <div key={credential.id} className="flex items-center justify-between rounded-lg border p-3">
+            <div key={credential.id} className="flex items-center justify-between rounded-[10px] border bg-card p-3">
               <div className="flex-1">
                 <div className="font-medium">{credential.credential_name}</div>
                 {credential.description && (
@@ -123,15 +127,21 @@ export default function GithubCredentialsSection({
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant={credential.is_active ? 'outline' : 'secondary'}
+                <button
+                  type="button"
                   onClick={() => onToggleGithubCredential(credential.id, credential.is_active)}
+                  className={cn(
+                    'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors',
+                    credential.is_active
+                      ? 'bg-hemi-ok-tint text-hemi-ok hover:bg-hemi-ok-tint/70'
+                      : 'bg-muted text-muted-foreground hover:text-foreground',
+                  )}
                 >
+                  <span className={cn('h-1.5 w-1.5 rounded-full', credential.is_active ? 'bg-hemi-ok' : 'bg-muted-foreground/50')} aria-hidden />
                   {credential.is_active ? t('apiKeys.status.active') : t('apiKeys.status.inactive')}
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => onDeleteGithubCredential(credential.id)}>
-                  <Trash2 className="h-4 w-4" />
+                </button>
+                <Button size="sm" variant="outline" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => onDeleteGithubCredential(credential.id)}>
+                  <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </div>
             </div>

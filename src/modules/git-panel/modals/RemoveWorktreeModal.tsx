@@ -58,8 +58,8 @@ export default function RemoveWorktreeModal({
       >
         <div className="p-6">
           <div className="mb-4 flex items-center">
-            <div className="mr-3 rounded-full bg-red-100 p-2 dark:bg-red-900/30">
-              <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
+            <div className="mr-3 rounded-full bg-destructive/10 p-2">
+              <Trash2 className="h-4 w-4 text-destructive" />
             </div>
             <h3 id="remove-worktree-title" className="text-lg font-semibold text-foreground">
               {t('git:remove.title')}
@@ -71,7 +71,7 @@ export default function RemoveWorktreeModal({
           </p>
 
           {isDirty && (
-            <p className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-600 dark:text-amber-400">
+            <p className="mb-3 rounded-lg border border-hemi-copper/40 bg-hemi-copper-tint px-3 py-2 text-xs text-hemi-copper-text">
               {t('git:remove.uncommittedWarning', { count: worktree.changedFileCount })}
             </p>
           )}
@@ -110,7 +110,7 @@ export default function RemoveWorktreeModal({
             <button
               onClick={() => void handleRemove()}
               disabled={isRemoving || (isDirty && !force)}
-              className="flex items-center space-x-2 rounded-lg bg-red-600 px-4 py-2 text-sm text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex items-center space-x-2 rounded-lg bg-destructive px-4 py-2 text-sm text-white transition-colors hover:bg-destructive/90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isRemoving ? (
                 <>

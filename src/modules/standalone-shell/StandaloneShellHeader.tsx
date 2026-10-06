@@ -18,7 +18,7 @@ export default function StandaloneShellHeader({
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <h3 className="text-sm font-medium text-gray-200">{title}</h3>
-          {isCompleted && <span className="text-xs text-green-400">{t('misc.completedBadge')}</span>}
+          {isCompleted && <span className="text-xs text-hemi-ok">{t('misc.completedBadge')}</span>}
         </div>
 
         {onClose && (

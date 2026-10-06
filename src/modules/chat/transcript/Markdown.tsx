@@ -111,7 +111,7 @@ const CodeBlock = ({ node: _node, className, children, forceBlock, ...props }: C
   }
 
   return (
-    <div className="group my-3 overflow-hidden rounded-xl border border-border bg-muted/50 shadow-sm dark:bg-zinc-900">
+    <div className="group my-3 overflow-hidden rounded-xl border border-border bg-muted/50 shadow-sm dark:bg-gray-900">
       {/* Label row shares the block's background — no divider, ChatGPT-style */}
       <div className="flex items-center justify-between px-4 pt-2">
         <span className="select-none text-xs text-muted-foreground">{languageLabel}</span>
@@ -126,7 +126,7 @@ const CodeBlock = ({ node: _node, className, children, forceBlock, ...props }: C
             })
           }
           className={`rounded-md p-1 transition-opacity focus-visible:opacity-100 ${copied
-            ? 'text-green-600 opacity-100 dark:text-green-500'
+            ? 'text-hemi-ok opacity-100'
             : 'text-muted-foreground opacity-0 hover:text-foreground group-hover:opacity-100'
             }`}
           title={copied ? t('codeBlock.copied') : t('codeBlock.copyCode')}
@@ -293,7 +293,7 @@ function MarkdownBodyRenderer({ children, breaks = false }: Omit<MarkdownProps, 
           return (
             <a
               href={href || fileRef}
-              className="cursor-pointer text-blue-600 hover:underline dark:text-blue-400"
+              className="cursor-pointer text-hemi-copper-text hover:underline"
               onClick={(event) => {
                 event.preventDefault();
                 // Normalized once for every branch below: the href arrives
@@ -316,7 +316,7 @@ function MarkdownBodyRenderer({ children, breaks = false }: Omit<MarkdownProps, 
         return (
           <a
             href={href}
-            className="text-blue-600 hover:underline dark:text-blue-400"
+            className="text-hemi-copper-text hover:underline"
             target="_blank"
             rel="noopener noreferrer"
           >

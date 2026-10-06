@@ -27,25 +27,25 @@ const CONFIRMATION_ACTION_LABELS: Record<ConfirmActionType, string> = {
 };
 
 const CONFIRMATION_BUTTON_CLASSES: Record<ConfirmActionType, string> = {
-  discard: 'bg-red-600 hover:bg-red-700',
-  delete: 'bg-red-600 hover:bg-red-700',
+  discard: 'bg-destructive hover:bg-destructive/90',
+  delete: 'bg-destructive hover:bg-destructive/90',
   commit: 'bg-primary hover:bg-primary/90',
-  pull: 'bg-green-600 hover:bg-green-700',
-  push: 'bg-orange-600 hover:bg-orange-700',
-  publish: 'bg-purple-600 hover:bg-purple-700',
-  revertLocalCommit: 'bg-yellow-600 hover:bg-yellow-700',
-  deleteBranch: 'bg-red-600 hover:bg-red-700',
+  pull: 'bg-hemi-ok hover:bg-hemi-ok/90',
+  push: 'bg-hemi-copper hover:bg-hemi-copper/90',
+  publish: 'bg-primary hover:bg-primary/90',
+  revertLocalCommit: 'bg-hemi-copper hover:bg-hemi-copper/90',
+  deleteBranch: 'bg-destructive hover:bg-destructive/90',
 };
 
 const CONFIRMATION_ICON_CONTAINER_CLASSES: Record<ConfirmActionType, string> = {
-  discard: 'bg-red-100 dark:bg-red-900/30',
-  delete: 'bg-red-100 dark:bg-red-900/30',
-  commit: 'bg-yellow-100 dark:bg-yellow-900/30',
-  pull: 'bg-yellow-100 dark:bg-yellow-900/30',
-  push: 'bg-yellow-100 dark:bg-yellow-900/30',
-  publish: 'bg-yellow-100 dark:bg-yellow-900/30',
-  revertLocalCommit: 'bg-yellow-100 dark:bg-yellow-900/30',
-  deleteBranch: 'bg-red-100 dark:bg-red-900/30',
+  discard: 'bg-destructive/10',
+  delete: 'bg-destructive/10',
+  commit: 'bg-hemi-copper-tint',
+  pull: 'bg-hemi-copper-tint',
+  push: 'bg-hemi-copper-tint',
+  publish: 'bg-hemi-copper-tint',
+  revertLocalCommit: 'bg-hemi-copper-tint',
+  deleteBranch: 'bg-destructive/10',
 };
 
 type ConfirmActionModalProps = {
