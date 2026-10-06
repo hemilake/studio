@@ -3,6 +3,7 @@ import fsp from 'node:fs/promises';
 import path from 'node:path';
 
 import { projectsDb, sessionsDb } from '@/modules/database/index.js';
+import type { RecentSessionsOrigin } from '@/modules/database/index.js';
 import { broadcastSessionUpserted, chatRunRegistry } from '@/modules/websocket/index.js';
 import { providerRegistry } from '@/modules/providers/provider.registry.js';
 import { sessionHistoryCache } from '@/modules/providers/services/session-history-cache.service.js';
@@ -142,8 +143,12 @@ export const sessionsService = {
   /**
    * Returns the active conversation feed in true global activity order.
    */
-  listRecentSessions(limit: number, offset: number): RecentSessionsPage {
-    const page = sessionsDb.getRecentSessionsPage(limit, offset);
+  listRecentSessions(
+    limit: number,
+    offset: number,
+    origin: RecentSessionsOrigin = 'all',
+  ): RecentSessionsPage {
+    const page = sessionsDb.getRecentSessionsPage(limit, offset, origin);
     const projectCache = new Map<string, ReturnType<typeof projectsDb.getProjectPath>>();
     const conversations = page.sessions.map((session) => {
       const projectPath = session.project_path?.trim() ? session.project_path : null;

@@ -3,6 +3,7 @@ import {
   getStoredAuthToken,
   storeAuthToken,
 } from '@/shared/authToken';
+import type { RecentConversationsOrigin } from '@/shared/types';
 import { IS_PLATFORM } from '@/shared/utils';
 import { readVoiceConfig, voiceConfigHeaders } from '@/shared/voiceConfig';
 
@@ -227,8 +228,12 @@ export const api = {
   sessionDetails: (sessionId: string) =>
     get(`/api/providers/sessions/${encodeURIComponent(sessionId)}`),
   runningSessions: () => get('/api/providers/sessions/running'),
-  recentConversations: ({ limit = 40, offset = 0 }: { limit?: number; offset?: number } = {}) =>
-    get(`/api/providers/sessions/recent${query({ limit, offset })}`),
+  recentConversations: ({
+    limit = 40,
+    offset = 0,
+    origin,
+  }: { limit?: number; offset?: number; origin?: RecentConversationsOrigin } = {}) =>
+    get(`/api/providers/sessions/recent${query({ limit, offset, origin })}`),
   providerSessionId: (sessionId: string) =>
     get(`/api/providers/sessions/${encodeURIComponent(sessionId)}/provider-id`),
   restoreSession: (sessionId: string) => post(`/api/providers/sessions/${sessionId}/restore`),

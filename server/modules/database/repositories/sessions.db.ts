@@ -25,6 +25,26 @@ type RecentSessionsPage = {
   total: number;
 };
 
+/**
+ * Which sessions the recents feed lists, by where they were started.
+ *
+ * `app` sessions were started from the app: the session gateway allocates
+ * their `session_id`, so it differs from the provider's id (or the provider id
+ * is still NULL). `external` sessions were found on disk, started by the
+ * provider CLI outside the app (scheduled `claude -p` jobs, agents, scripts),
+ * and are keyed by the provider-native id in both columns.
+ */
+export type RecentSessionsOrigin = 'all' | 'app' | 'external';
+
+const EXTERNAL_SESSION_CLAUSE =
+  'sessions.provider_session_id IS NOT NULL AND sessions.session_id = sessions.provider_session_id';
+
+const RECENT_ORIGIN_CLAUSES: Record<RecentSessionsOrigin, string> = {
+  all: '1 = 1',
+  app: `NOT (${EXTERNAL_SESSION_CLAUSE})`,
+  external: EXTERNAL_SESSION_CLAUSE,
+};
+
 const SESSION_ROW_COLUMNS =
   'session_id, provider, provider_session_id, project_path, jsonl_path, custom_name, model, effort, forked_from_session_id, isArchived, created_at, updated_at';
 
@@ -541,13 +561,19 @@ export const sessionsDb = {
    * Pagination happens after archived sessions and sessions belonging to an
    * archived project have been excluded. This keeps the sidebar feed complete
    * and correctly ordered across projects instead of flattening only the
-   * per-project slices already loaded by the client.
+   * per-project slices already loaded by the client. `origin` narrows the
+   * feed to sessions started from the app or outside it.
    */
-  getRecentSessionsPage(limit: number, offset: number): RecentSessionsPage {
+  getRecentSessionsPage(
+    limit: number,
+    offset: number,
+    origin: RecentSessionsOrigin = 'all',
+  ): RecentSessionsPage {
     const db = getConnection();
     const visibilityClause = `
       sessions.isArchived = 0
       AND (projects.isArchived IS NULL OR projects.isArchived = 0)
+      AND (${RECENT_ORIGIN_CLAUSES[origin]})
     `;
     const rows = db
       .prepare(

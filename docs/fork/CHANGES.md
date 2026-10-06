@@ -2,6 +2,21 @@
 
 One entry per customization, newest first. Keep the file list accurate: it is the conflict checklist for upstream merges.
 
+## Automatic runs in their own recents tab
+
+- **Since:** 2026-10-06, on top of upstream v1.37.3.
+- **Branch:** `main` only for now. The server half (`origin` on `/sessions/recent`, default `all`) could go upstream.
+- **Why:** scheduled `claude -p` jobs on this machine (PR reviewer, per-issue agents, arch ticks, the unattended mail run) show up in the Conversations list as sessions in `repo`, `hemisphere` or `think`. On 2026-10-06 they were 1,019 of 1,384 rows and pushed the chats Pablo started out of view.
+- **What:** `getRecentSessionsPage` takes an `origin`. A session counts as external when `session_id = provider_session_id`, which is how the disk synchronizer keys sessions it did not start; app chats and forks get their own `session_id` from the session gateway (or still have a NULL provider id). The route reads `?origin=all|app|external` and rejects anything else with a 400. In the sidebar the list header becomes two tabs, "Recent conversations" (`app`, the default) and "Automatic" (`external`); switching clears the rows and refetches page zero. The header stays visible in the loading, empty and error states so there is always a way back. A session started outside the app stays under Automatic even if it is later continued from the UI. The Projects and Running views are unchanged.
+- **Files:**
+  - `server/modules/database/repositories/sessions.db.ts` (`RecentSessionsOrigin`, origin clause), `server/modules/database/index.ts` (type export)
+  - `server/modules/providers/services/sessions.service.ts`, `server/modules/providers/provider.routes.ts` (`origin` query parameter)
+  - `src/shared/types.ts` (`RecentConversationsOrigin`), `src/shared/api.ts` (`origin` on `recentConversations`)
+  - `src/modules/sidebar/hooks/useSidebarController.ts`, `src/modules/sidebar/Sidebar.tsx`, `src/modules/sidebar/SidebarContent.tsx`, `src/modules/sidebar/SidebarRecentConversations.tsx`
+  - `src/modules/i18n/locales/en/sidebar.json`
+  - `server/modules/database/tests/sessions.db.integration.test.ts`, `src/modules/sidebar/tests/recentConversationRowActions.test.tsx`
+- **Verified:** node tests (sessions db and service), vitest (sidebar), typecheck, lint, build.
+
 ## One-click reasoning effort in the composer
 
 - **Since:** 2026-09-27, on top of upstream v1.37.3.

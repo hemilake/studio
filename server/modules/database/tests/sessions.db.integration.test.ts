@@ -166,3 +166,26 @@ test('recent sessions are globally ordered, paginated, and limited to visible co
     );
   });
 });
+
+test('getRecentSessionsPage splits sessions started in the app from those found on disk', async () => {
+  await withIsolatedDatabase(() => {
+    // Found on disk: keyed by the provider id in both columns.
+    sessionsDb.createSession('cli-run', 'claude', '/workspace/agents', 'Scheduled run', '2026-07-18T09:00:00.000Z', '2026-07-18T12:00:00.000Z');
+    // Started in the app, provider id already known.
+    sessionsDb.createAppSession('app-chat', 'claude', '/workspace/chat', 'Chat');
+    sessionsDb.assignProviderSessionId('app-chat', 'provider-of-app-chat');
+    // Started in the app, provider has not announced its id yet.
+    sessionsDb.createAppSession('app-pending', 'codex', '/workspace/chat', 'Pending chat');
+
+    const ids = (origin: 'all' | 'app' | 'external') => sessionsDb
+      .getRecentSessionsPage(10, 0, origin)
+      .sessions.map((session) => session.session_id)
+      .sort();
+
+    assert.deepEqual(ids('app'), ['app-chat', 'app-pending']);
+    assert.deepEqual(ids('external'), ['cli-run']);
+    assert.deepEqual(ids('all'), ['app-chat', 'app-pending', 'cli-run']);
+    assert.equal(sessionsDb.getRecentSessionsPage(1, 0, 'app').total, 2);
+    assert.equal(sessionsDb.getRecentSessionsPage(1, 0, 'external').total, 1);
+  });
+});

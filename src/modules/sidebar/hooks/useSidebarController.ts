@@ -4,7 +4,7 @@ import type { TFunction } from 'i18next';
 import { api } from '@/shared/api';
 import { subscribeToUserPreferences } from '@/shared/userSettings';
 import { usePaletteOps } from '@/modules/command-palette';
-import type { ArchivedProjectListItem, ArchivedSessionListItem, ConversationProjectResult, ConversationSearchResults, LLMProvider, Project, ProjectSession, ProjectSortOrder, RecentConversationListItem, SearchProgress, ActiveSidebarRename, PendingSidebarDeletion, SessionTitleSearchResult, SessionWithProvider, SidebarSearchMode } from '@/shared/types';
+import type { ArchivedProjectListItem, ArchivedSessionListItem, ConversationProjectResult, ConversationSearchResults, LLMProvider, Project, ProjectSession, ProjectSortOrder, RecentConversationListItem, RecentConversationsOrigin, SearchProgress, ActiveSidebarRename, PendingSidebarDeletion, SessionTitleSearchResult, SessionWithProvider, SidebarSearchMode } from '@/shared/types';
 import {
   filterProjects,
   getAllSessions,
@@ -110,11 +110,16 @@ export function useSidebarController({
   const [isRecentConversationsLoading, setIsRecentConversationsLoading] = useState(false);
   const [isLoadingMoreRecentConversations, setIsLoadingMoreRecentConversations] = useState(false);
   const [recentConversationsError, setRecentConversationsError] = useState(false);
+  // Scheduled `claude -p` runs and other sessions started outside the app go to
+  // their own tab, so the default feed shows only conversations started here.
+  const [recentConversationsOrigin, setRecentConversationsOriginState] =
+    useState<RecentConversationsOrigin>('app');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [optimisticStarByProjectId, setOptimisticStarByProjectId] = useState<Map<string, boolean>>(new Map());
   const [loadingMoreProjects, setLoadingMoreProjects] = useState<Set<string>>(new Set());
   const searchSeqRef = useRef(0);
   const recentConversationsSeqRef = useRef(0);
+  const recentConversationsOriginRef = useRef<RecentConversationsOrigin>('app');
   const eventSourceRef = useRef<EventSource | null>(null);
   const starToggleSequenceByProjectRef = useRef<Map<string, number>>(new Map());
   const migrationStartedRef = useRef(false);
@@ -227,7 +232,11 @@ export function useSidebarController({
     setRecentConversationsError(false);
 
     try {
-      const response = await api.recentConversations({ limit: 40, offset });
+      const response = await api.recentConversations({
+        limit: 40,
+        offset,
+        origin: recentConversationsOriginRef.current,
+      });
       if (!response.ok) {
         throw new Error(`Failed to load recent conversations: ${response.status}`);
       }
@@ -269,6 +278,19 @@ export function useSidebarController({
   }, []);
 
   const reloadRecentConversations = useCallback(() => {
+    void fetchRecentConversationsPage(0, false);
+  }, [fetchRecentConversationsPage]);
+
+  const setRecentConversationsOrigin = useCallback((origin: RecentConversationsOrigin) => {
+    if (origin === recentConversationsOriginRef.current) {
+      return;
+    }
+    recentConversationsOriginRef.current = origin;
+    setRecentConversationsOriginState(origin);
+    // Drop the other tab's rows so the skeleton shows instead of stale entries.
+    setRecentConversations([]);
+    setRecentConversationsTotal(0);
+    setRecentConversationsHasMore(false);
     void fetchRecentConversationsPage(0, false);
   }, [fetchRecentConversationsPage]);
 
@@ -1087,6 +1109,8 @@ export function useSidebarController({
     isRecentConversationsLoading,
     isLoadingMoreRecentConversations,
     recentConversationsError,
+    recentConversationsOrigin,
+    setRecentConversationsOrigin,
     reloadRecentConversations,
     loadMoreRecentConversations,
     toggleProject,

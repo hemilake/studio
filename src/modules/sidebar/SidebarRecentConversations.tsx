@@ -1,10 +1,10 @@
 import { Loader2, MessageSquare } from 'lucide-react';
-import type { MouseEvent } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 import type { TFunction } from 'i18next';
 
 import { Button, LLMProviderLogo, Tooltip } from '@/shared/ui';
 import { cn } from '@/shared/utils';
-import type { ProjectSession, RecentConversationListItem, SessionRowActions } from '@/shared/types';
+import type { ProjectSession, RecentConversationListItem, RecentConversationsOrigin, SessionRowActions } from '@/shared/types';
 import { formatCompactAge } from '@/modules/sidebar/utils/sidebarProjectFormatting';
 import SessionOptions from '@/modules/sidebar/SessionOptions';
 
@@ -15,6 +15,13 @@ type SidebarRecentConversationsProps = {
   isLoading: boolean;
   isLoadingMore: boolean;
   hasError: boolean;
+  /**
+   * Which tab is shown: conversations started from the app, or sessions the
+   * provider CLI started outside it (scheduled jobs, agents). The tabs only
+   * render when `onOriginChange` is given.
+   */
+  origin?: RecentConversationsOrigin;
+  onOriginChange?: (origin: RecentConversationsOrigin) => void;
   selectedSession: ProjectSession | null;
   currentTime: Date;
   /**
@@ -48,6 +55,58 @@ function RecentConversationSkeleton() {
   );
 }
 
+function RecentConversationsHeader({
+  origin,
+  total,
+  showCount,
+  onOriginChange,
+  t,
+}: {
+  origin: RecentConversationsOrigin;
+  total: number;
+  showCount: boolean;
+  onOriginChange?: (origin: RecentConversationsOrigin) => void;
+  t: TFunction;
+}) {
+  const appLabel = t('recent.title', 'Recent conversations');
+  const externalLabel = t('recent.automaticTab', 'Automatic');
+
+  return (
+    <div className="flex items-center justify-between px-2 pb-1.5 pt-0.5">
+      {onOriginChange ? (
+        <div className="flex min-w-0 items-center gap-3" role="tablist">
+          {([
+            ['app', appLabel],
+            ['external', externalLabel],
+          ] as const).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              role="tab"
+              aria-selected={origin === value}
+              data-testid={`recent-origin-${value}`}
+              onClick={() => onOriginChange(value)}
+              className={cn(
+                'truncate text-[11px] font-medium transition-colors',
+                origin === value
+                  ? 'text-foreground'
+                  : 'text-muted-foreground/60 hover:text-muted-foreground',
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <span className="text-[11px] font-medium text-muted-foreground">{appLabel}</span>
+      )}
+      {showCount && (
+        <span className="text-[10px] tabular-nums text-muted-foreground/70">{total}</span>
+      )}
+    </div>
+  );
+}
+
 /** Rendered by SidebarContent in the recents search mode to list recently active sessions across all projects. */
 export default function SidebarRecentConversations({
   conversations,
@@ -56,6 +115,8 @@ export default function SidebarRecentConversations({
   isLoading,
   isLoadingMore,
   hasError,
+  origin = 'app',
+  onOriginChange,
   selectedSession,
   currentTime,
   sessionActions,
@@ -64,12 +125,26 @@ export default function SidebarRecentConversations({
   onRetry,
   t,
 }: SidebarRecentConversationsProps) {
+  const isExternal = origin === 'external';
+  const withHeader = (body: ReactNode, showCount = false) => (
+    <div className="px-1" data-testid="recent-conversations-list">
+      <RecentConversationsHeader
+        origin={origin}
+        total={total}
+        showCount={showCount}
+        onOriginChange={onOriginChange}
+        t={t}
+      />
+      {body}
+    </div>
+  );
+
   if (isLoading && conversations.length === 0) {
-    return <RecentConversationSkeleton />;
+    return withHeader(<RecentConversationSkeleton />);
   }
 
   if (hasError && conversations.length === 0) {
-    return (
+    return withHeader(
       <div className="px-4 py-10 text-center">
         <MessageSquare className="mx-auto mb-3 h-6 w-6 text-muted-foreground" />
         <p className="text-sm font-medium text-foreground">
@@ -78,33 +153,30 @@ export default function SidebarRecentConversations({
         <Button variant="ghost" size="sm" className="mt-2" onClick={onRetry}>
           {t('buttons.retry', { ns: 'common', defaultValue: 'Try again' })}
         </Button>
-      </div>
+      </div>,
     );
   }
 
   if (conversations.length === 0) {
-    return (
+    return withHeader(
       <div className="px-4 py-10 text-center">
         <MessageSquare className="mx-auto mb-3 h-6 w-6 text-muted-foreground" />
         <p className="text-sm font-medium text-foreground">
-          {t('recent.emptyTitle', 'No conversations yet')}
+          {isExternal
+            ? t('recent.automaticEmptyTitle', 'No automatic runs')
+            : t('recent.emptyTitle', 'No conversations yet')}
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          {t('recent.emptyDescription', 'Your most recently updated conversations will appear here.')}
+          {isExternal
+            ? t('recent.automaticEmptyDescription', 'Sessions started outside the app, such as scheduled jobs and agents, appear here.')
+            : t('recent.emptyDescription', 'Your most recently updated conversations will appear here.')}
         </p>
-      </div>
+      </div>,
     );
   }
 
-  return (
-    <div className="px-1" data-testid="recent-conversations-list">
-      <div className="flex items-center justify-between px-2 pb-1.5 pt-0.5">
-        <span className="text-[11px] font-medium text-muted-foreground">
-          {t('recent.title', 'Recent conversations')}
-        </span>
-        <span className="text-[10px] tabular-nums text-muted-foreground/70">{total}</span>
-      </div>
-
+  return withHeader(
+    <>
       <div className="space-y-0.5">
         {conversations.map((conversation) => {
           const isSelected = String(selectedSession?.id ?? '') === conversation.sessionId;
@@ -238,6 +310,7 @@ export default function SidebarRecentConversations({
             : t('recent.loadMore', 'Load older conversations')}
         </Button>
       )}
-    </div>
+    </>,
+    true,
   );
 }

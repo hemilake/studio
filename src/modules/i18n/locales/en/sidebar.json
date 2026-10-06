@@ -140,7 +140,10 @@
     "emptyDescription": "Your most recently updated conversations will appear here.",
     "loadFailed": "Could not load recent conversations",
     "loadMore": "Load older conversations",
-    "loadingMore": "Loading more..."
+    "loadingMore": "Loading more...",
+    "automaticTab": "Automatic",
+    "automaticEmptyTitle": "No automatic runs",
+    "automaticEmptyDescription": "Sessions started outside the app, such as scheduled jobs and agents, appear here."
   },
   "deleteConfirmation": {
     "deleteProject": "Remove Project",

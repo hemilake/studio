@@ -8,6 +8,7 @@ import { providerTokenUsageService } from '@/modules/providers/services/provider
 import { providerSkillsService } from '@/modules/providers/services/skills.service.js';
 import { sessionConversationsSearchService } from '@/modules/providers/services/session-conversations-search.service.js';
 import { sessionsService } from '@/modules/providers/services/sessions.service.js';
+import type { RecentSessionsOrigin } from '@/modules/database/index.js';
 import type {
   CustomProviderModelInput,
   LLMProvider,
@@ -374,6 +375,24 @@ const parseSessionSearchLimit = (value: unknown): number => {
   }
 
   return Math.max(1, Math.min(parsed, 100));
+};
+
+const RECENT_SESSIONS_ORIGINS: readonly RecentSessionsOrigin[] = ['all', 'app', 'external'];
+
+const parseRecentSessionsOrigin = (value: unknown): RecentSessionsOrigin => {
+  const raw = readOptionalQueryString(value);
+  if (raw === undefined) {
+    return 'all';
+  }
+
+  if (!(RECENT_SESSIONS_ORIGINS as readonly string[]).includes(raw)) {
+    throw new AppError(`origin must be one of: ${RECENT_SESSIONS_ORIGINS.join(', ')}.`, {
+      code: 'INVALID_QUERY_PARAMETER',
+      statusCode: 400,
+    });
+  }
+
+  return raw as RecentSessionsOrigin;
 };
 
 const parseBoundedIntegerQuery = <T extends number | null>(
@@ -750,7 +769,8 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const limit = parseBoundedIntegerQuery(req.query.limit, 'limit', 40, 1, 100);
     const offset = parseBoundedIntegerQuery(req.query.offset, 'offset', 0, 0);
-    const page = sessionsService.listRecentSessions(limit, offset);
+    const origin = parseRecentSessionsOrigin(req.query.origin);
+    const page = sessionsService.listRecentSessions(limit, offset, origin);
     res.json(createApiSuccessResponse(page));
   }),
 );

@@ -109,6 +109,8 @@ function Sidebar({
     isRecentConversationsLoading,
     isLoadingMoreRecentConversations,
     recentConversationsError,
+    recentConversationsOrigin,
+    setRecentConversationsOrigin,
     reloadRecentConversations,
     loadMoreRecentConversations,
     toggleProject,
@@ -285,6 +287,8 @@ function Sidebar({
             isRecentConversationsLoading={isRecentConversationsLoading}
             isLoadingMoreRecentConversations={isLoadingMoreRecentConversations}
             recentConversationsError={recentConversationsError}
+            recentConversationsOrigin={recentConversationsOrigin}
+            onRecentConversationsOriginChange={setRecentConversationsOrigin}
             searchFilter={searchFilter}
             onSearchFilterChange={setSearchFilter}
             onClearSearchFilter={() => setSearchFilter('')}

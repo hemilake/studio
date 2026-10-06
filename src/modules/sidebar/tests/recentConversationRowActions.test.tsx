@@ -142,3 +142,32 @@ test('a session needing attention gets the amber dot', () => {
   const rows = container.querySelectorAll('[data-testid="recent-conversation-row"]');
   assert.equal(rows.length, 2);
 });
+
+test('the origin tabs switch between app conversations and automatic runs', () => {
+  const chosen: string[] = [];
+  const { getByTestId } = render(
+    <SidebarRecentConversations
+      conversations={[]}
+      total={0}
+      hasMore={false}
+      isLoading={false}
+      isLoadingMore={false}
+      hasError={false}
+      origin="external"
+      onOriginChange={(origin) => chosen.push(origin)}
+      selectedSession={null}
+      currentTime={NOW}
+      sessionActions={makeActions()}
+      onConversationSelect={noop}
+      onLoadMore={noop}
+      onRetry={noop}
+      t={t}
+    />,
+  );
+
+  // The tabs stay reachable from the empty state, or there would be no way back.
+  assert.equal(getByTestId('recent-origin-external').getAttribute('aria-selected'), 'true');
+  assert.equal(getByTestId('recent-origin-app').getAttribute('aria-selected'), 'false');
+  getByTestId('recent-origin-app').click();
+  assert.deepEqual(chosen, ['app']);
+});

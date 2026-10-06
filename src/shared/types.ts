@@ -1354,6 +1354,12 @@ export type RecentConversationListItem = Pick<
 >;
 
 /**
+ * Which half of the recents feed is shown: conversations started from the app,
+ * or sessions the provider CLI started outside it (scheduled jobs, agents).
+ */
+export type RecentConversationsOrigin = 'app' | 'external';
+
+/**
  * The rename the sidebar currently has open, if any.
  *
  * One value rather than two id/draft pairs, so a project and a session cannot
