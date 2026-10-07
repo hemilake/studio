@@ -63,6 +63,8 @@ Settings come from the environment:
 
 To expose Studio beyond your machine, put it behind HTTPS (a reverse proxy or a tunnel). The agents run with your user's permissions.
 
+Hemilake installs Studio for its owners from a self-contained archive per platform, with its own Node: see `docs/fork/hemilake-bundle.md`. `CODEX_CLI_PATH` points Studio at an installed Codex when the Codex package is not in `node_modules`, as in that archive.
+
 ## Staying in sync with CloudCLI UI
 
 Studio follows upstream releases. How the branches and merges work is in [docs/fork/README.md](docs/fork/README.md).

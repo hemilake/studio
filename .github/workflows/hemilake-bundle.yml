@@ -1,0 +1,115 @@
+# Fork (Hemilake bundle): builds the self-contained Studio that hemi installs, one
+# archive per platform, and attaches them to the release of the tag. See
+# docs/fork/hemilake-bundle.md.
+name: Hemilake bundle
+
+on:
+  push:
+    tags: ['v*-hemilake.*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Bundle version (default: <package version>-hemilake.dev+<commit>). Only a tag publishes a release.'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  bundle:
+    if: github.repository == 'hemilake/studio'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { runner: macos-14, target: darwin-arm64 }
+          - { runner: ubuntu-22.04, target: linux-x64 }
+          - { runner: ubuntu-22.04-arm, target: linux-arm64 }
+    runs-on: ${{ matrix.runner }}
+    env:
+      # @vscode/ripgrep downloads its binary from GitHub in its postinstall.
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # The native modules are built for this Node, and the bundle carries the same one.
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: scripts/fork/hemilake-node-version
+          cache: npm
+
+      - name: Version
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            version="${GITHUB_REF_NAME#v}"
+          elif [ -n "$INPUT_VERSION" ]; then
+            version="$INPUT_VERSION"
+          else
+            version="$(node -p 'require("./package.json").version')-hemilake.dev+${GITHUB_SHA::8}"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - run: npm ci
+
+      # The UI shows the version it was built with: make it the bundle's.
+      - run: npm version "${{ steps.version.outputs.version }}" --no-git-tag-version --allow-same-version
+
+      - run: npm run build
+
+      - run: node scripts/fork/build-hemilake-bundle.mjs --version "${{ steps.version.outputs.version }}"
+
+      # Start the bundle with a PATH that has no Node and check it answers.
+      - name: Smoke test
+        run: |
+          set -eu
+          unpacked="$(mktemp -d)"
+          home="$(mktemp -d)"
+          tar -xJf release/hemilake-bundle/*.tar.xz -C "$unpacked"
+          bundle="$(echo "$unpacked"/hemilake-studio-*)"
+          env -i HOME="$home" PATH=/usr/bin:/bin DATABASE_PATH="$home/auth.db" SERVER_PORT=18797 \
+            "$bundle/bin/hemilake-studio" > "$home/server.log" 2>&1 &
+          server=$!
+          for _ in $(seq 1 60); do curl -sf http://127.0.0.1:18797/health > /dev/null && break; sleep 1; done
+          curl -sf http://127.0.0.1:18797/health
+          curl -sf http://127.0.0.1:18797/api/auth/status | grep -q '"needsSetup":true'
+          curl -sf http://127.0.0.1:18797/ | grep -q '<title>Hemilake Studio'
+          curl -sf -X POST -H 'content-type: application/json' -d '{"username":"smoke","password":"smoke-test-123"}' \
+            http://127.0.0.1:18797/api/auth/register | grep -q '"success":true'
+          kill "$server"
+          cat "$home/server.log" | tail -20
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hemilake-studio-${{ matrix.target }}
+          path: release/hemilake-bundle/*
+          if-no-files-found: error
+
+  release:
+    needs: bundle
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: assets
+          merge-multiple: true
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -eu
+          cd assets
+          cat ./*.sha256 > SHA256SUMS
+          version="${GITHUB_REF_NAME#v}"
+          cat > notes.md <<EOF
+          Hemilake Studio $version, self-contained for hemi: each archive carries Node, the server, the UI and the native modules for its platform. Sums in SHA256SUMS. Built from $GITHUB_SHA.
+
+          A modified version of CloudCLI UI (https://github.com/siteboon/claudecodeui), AGPL-3.0-or-later; the source is this tag.
+          EOF
+          gh release create "$GITHUB_REF_NAME" ./*.tar.xz ./*.sha256 SHA256SUMS \
+            --repo "$GITHUB_REPOSITORY" --title "Hemilake Studio $version" --notes-file notes.md

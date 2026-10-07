@@ -2,6 +2,22 @@
 
 One entry per customization, newest first. Keep the file list accurate: it is the conflict checklist for upstream merges.
 
+## Hemilake bundle: Studio without a Node of your own
+
+- **Since:** 2026-10-07, on top of upstream v1.37.3.
+- **Branch:** `feat/hemilake-bundle`, merged into `main`. Fork identity, never for upstream.
+- **Why:** Hemilake installs Studio on its owners' machines (HEM-754), and they should not need Node, npm or a compiler. Upstream's `server:bundle` builds for its Electron app; the Hemilake bundle carries the official Node instead and leaves the agent CLIs to the owner.
+- **What:** documented in `docs/fork/hemilake-bundle.md`.
+  - `scripts/fork/build-hemilake-bundle.mjs`: the server bundled by esbuild into one file (plus the browser-use MCP server, which Studio starts by path), the UI, only the runtime packages (natives, createRequire'd, the agent SDKs) installed for the pinned Node without optional dependencies, other platforms' prebuilds and native sources pruned, node-pty's spawn-helper made executable, the official Node checked against nodejs.org's sums, a launcher, `BUNDLE.json`, `SOURCE.txt`, `.tar.xz` + `.sha256`. It fails when the bundled server loads a package that is in neither the runtime list nor the optional list.
+  - `scripts/fork/hemilake-node-version` (22.23.2) pins the Node for the build and the archive.
+  - `.github/workflows/hemilake-bundle.yml`: darwin-arm64, linux-x64, linux-arm64; a smoke test with no Node on `PATH`; a `v*-hemilake.*` tag publishes a release with `SHA256SUMS`.
+  - Codex: `CODEX_CLI_PATH` names an installed Codex for the SDK (`codexPathOverride`) and for `codex app-server` when the Codex package is absent (the archive leaves out its ~280 MB of binaries).
+  - Embed mode: the open conversation's provider id is asked for again when its run ends, so the `session` message after a new conversation's first reply carries it.
+  - `discord-release.yml` only runs in the upstream repository.
+- **Files:** `scripts/fork/build-hemilake-bundle.mjs`, `scripts/fork/hemilake-node-version`, `.github/workflows/hemilake-bundle.yml`, `docs/fork/hemilake-bundle.md` (new); `.github/workflows/discord-release.yml`, `server/modules/providers/list/codex/{codex-runtime.provider,codex-app-server.client}.ts`, `src/modules/project-workspace/controllers/EmbedEffects.tsx`, `docs/fork/embed.md`, `README.md`.
+- **Verified:** on think (linux-arm64), from the extracted archive with `PATH=/usr/bin:/bin`: the embed end-to-end run against a fake console (20 checks), register and login, a terminal over `/shell` (no system Node in the shell), and a real Claude Code conversation through the owner's `claude` (reply received; the `session` message after it carries the provider session id).
+- **Not done:** an Intel Mac archive (no runner chosen yet); Windows. A Codex conversation through `CODEX_CLI_PATH` was not run (only typecheck and the Codex suites).
+
 ## Embed mode for the Hemilake console
 
 - **Since:** 2026-10-07, on top of upstream v1.37.3.

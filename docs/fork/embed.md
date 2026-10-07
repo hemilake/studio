@@ -22,6 +22,9 @@ framed app keeps first-party storage.
 Set `HOST=127.0.0.1` when the tunnel runs on the same machine, so Studio is not
 reachable on the network without going through it.
 
+An owner without Node gets Studio as a self-contained archive that hemi installs:
+`docs/fork/hemilake-bundle.md`.
+
 ## Frame URL
 
 `https://<studio origin>/?embed=full` or `/?embed=compact`, or a session path
@@ -76,7 +79,7 @@ version of this list is the `EMBED CONTRACT` group in `src/shared/types.ts`.
 | `auth.failed` | `code` | The exchange did not happen; Studio shows its login form. |
 | `route` | `path`, `title` | The path inside Studio (`/` or `/session/<id>`) and the tab title, on every change. The console mirrors them into its address bar and title. |
 | `session` | `session` or null, `projectPath` | The open conversation: `id`, `title`, `provider`, `projectId`, `projectPath` and `providerSessionId`, the CLI's own id, which the lake's hooks key the conversation's saga by (`<client>-session-<providerSessionId>`). It is null until the first reply, and the message is sent again once it exists. |
-| `session.created` | `requestId`, `session` | The conversation the console started with `new` was sent and became a session. The console uses it to link the session back to the item it came from. |
+| `session.created` | `requestId`, `session` | The conversation the console started with `new` was sent and became a session. The console uses it to link the session back to the item it came from. Its `providerSessionId` is usually still null: the `session` message sent when that first run ends carries it. |
 | `counts` | `running`, `attention` | Conversations producing a reply, and conversations with news the user has not looked at. |
 | `notify` | `kind` (`done` or `input`), `sessionId`, `title` | A run finished, or is waiting for a permission decision. |
 | `recent` | `requestId`, `items` | The answer to `recent.request`: `id`, `title`, `provider`, `projectId`, `lastActivity`, `running`. |

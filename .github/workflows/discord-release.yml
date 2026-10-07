@@ -6,6 +6,8 @@ on:
 
 jobs:
   github-releases-to-discord:
+    # Fork: upstream's Discord only; the fork's releases (Hemilake bundles) stay quiet.
+    if: github.repository == 'siteboon/claudecodeui'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

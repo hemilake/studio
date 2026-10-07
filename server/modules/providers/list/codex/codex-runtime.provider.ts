@@ -308,7 +308,10 @@ async function queryCodex(
   const sessionKey = () => sessionId || capturedSessionId || null;
 
   try {
-    codex = new Codex();
+    // Fork (Hemilake bundle): without the Codex package's own binary the SDK
+    // cannot find one, so CODEX_CLI_PATH names the installed CLI.
+    const codexPathOverride = process.env.CODEX_CLI_PATH?.trim();
+    codex = new Codex(codexPathOverride ? { codexPathOverride } : undefined);
 
     const threadOptions: ThreadOptions = {
       workingDirectory,

@@ -43,17 +43,24 @@ export type CodexThreadFork = {
 };
 
 /**
- * Resolves the `codex` launcher shipped in node_modules.
+ * Resolves how to start `codex app-server`: the launcher shipped in
+ * node_modules, run with this Node.
  *
  * Deliberately not the `codex` on PATH: a machine can have a second, older
  * install, and the protocol this speaks is only guaranteed against the
- * version this package depends on.
+ * version this package depends on. Fork (Hemilake bundle): the bundle leaves
+ * the Codex package out (its binaries weigh ~280 MB per platform), so there
+ * the operator's `CODEX_CLI_PATH` is the only Codex there is.
  */
-function resolveCodexLauncher(): string {
+function resolveCodexLauncher(): { command: string; args: string[] } {
   const require_ = createRequire(import.meta.url);
   try {
-    return require_.resolve('@openai/codex/bin/codex.js');
+    return { command: process.execPath, args: [require_.resolve('@openai/codex/bin/codex.js'), 'app-server'] };
   } catch {
+    const configured = process.env.CODEX_CLI_PATH?.trim();
+    if (configured) {
+      return { command: configured, args: ['app-server'] };
+    }
     throw new AppError('The Codex CLI package is not installed, so Codex conversations cannot be branched.', {
       code: 'CODEX_APP_SERVER_UNAVAILABLE',
       statusCode: 501,
@@ -74,7 +81,7 @@ async function withAppServer<T>(
   run: (call: (method: string, params: unknown) => Promise<unknown>) => Promise<T>,
 ): Promise<T> {
   const launcher = resolveCodexLauncher();
-  const child = spawn(process.execPath, [launcher, 'app-server'], {
+  const child = spawn(launcher.command, launcher.args, {
     env: process.env,
     stdio: ['pipe', 'pipe', 'pipe'],
   });

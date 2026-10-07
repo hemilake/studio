@@ -173,6 +173,9 @@ export default function EmbedEffects({ navigate }: Pick<ProjectWorkspaceShellPro
   // the console can find the conversation's saga in the lake.
   const selectedSessionId = selectedSession?.id ?? null;
   const selectedActivity = selectedSession?.lastActivity ?? selectedSession?.updated_at ?? null;
+  // A new conversation gets its provider id during its first run; asking again
+  // when that run ends is what turns the null into the id.
+  const selectedBusy = selectedSessionId !== null && busySessionIds.has(selectedSessionId);
   useEffect(() => {
     let cancelled = false;
     const previousSessionId = previousSessionIdRef.current;
@@ -229,9 +232,9 @@ export default function EmbedEffects({ navigate }: Pick<ProjectWorkspaceShellPro
     return () => {
       cancelled = true;
     };
-    // selectedActivity re-asks for the provider id after the first reply assigns it.
+    // selectedActivity and selectedBusy re-ask for the provider id after the first reply assigns it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedSessionId, selectedActivity, selectedProject?.projectId]);
+  }, [selectedSessionId, selectedActivity, selectedBusy, selectedProject?.projectId]);
 
   // counts: the console's badge on its Studio entry.
   useEffect(() => {
