@@ -147,6 +147,12 @@
     }
   },
   "appearanceSettings": {
+    "theme": {
+      "label": "Tema",
+      "description": "Colores, tipografía y marca. Tu elección te sigue en todos tus dispositivos.",
+      "instanceDefault": "por defecto en esta instancia",
+      "useInstanceDefault": "Usar el de la instancia"
+    },
     "darkMode": {
       "label": "Modo oscuro",
       "description": "Alterna entre el tema claro y el oscuro"
@@ -487,7 +493,7 @@
     },
     "managed": {
       "badge": "Gestionado",
-      "hint": "Gestionado por Hemilake Studio."
+      "hint": "Gestionado por {{brand}}."
     },
     "help": {
       "title": "Acerca de MCP en Codex",

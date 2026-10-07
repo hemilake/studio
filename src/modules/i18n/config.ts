@@ -284,6 +284,8 @@ git: enGit,
     // Interpolation settings
     interpolation: {
       escapeValue: false, // React already escapes values
+      // Fork: {{brand}} is the active theme's product name; ThemeProvider keeps it current.
+      defaultVariables: { brand: 'Hemilake Studio' },
     },
 
     // React-specific settings

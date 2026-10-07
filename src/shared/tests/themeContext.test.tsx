@@ -81,3 +81,20 @@ test('a theme arriving from the store is applied without being written back', ()
   assert.equal(result.current.isDarkMode, true);
   assert.equal(readUserPreference('theme', null), 'dark');
 });
+
+test('picking a theme stores it, marks the document and renames the brand', () => {
+  const { result } = renderHook(() => useTheme(), { wrapper });
+  assert.equal(result.current.theme.id, 'hemilake');
+  assert.equal(readUserPreference<unknown>('colorTheme', null), null, 'mounting stores no theme pick');
+
+  act(() => result.current.setThemeId('orange'));
+
+  assert.equal(result.current.theme.brandName, 'Orange Studio');
+  assert.equal(readUserPreference('colorTheme', null), 'orange');
+  assert.equal(document.documentElement.dataset.theme, 'orange');
+
+  act(() => result.current.setThemeId(null));
+
+  assert.equal(result.current.theme.id, 'hemilake', 'null goes back to the instance default');
+  assert.equal(readUserPreference<unknown>('colorTheme', 'unset'), 'unset');
+});

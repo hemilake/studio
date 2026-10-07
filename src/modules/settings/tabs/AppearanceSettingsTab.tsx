@@ -8,6 +8,7 @@ import SettingsRow from '@/modules/settings/SettingsRow';
 import SettingsSection from '@/modules/settings/SettingsSection';
 import SettingsToggle from '@/modules/settings/SettingsToggle';
 import ChatWorkspaceSettings from '@/modules/settings/tabs/ChatWorkspaceSettings';
+import ThemePicker from '@/modules/settings/tabs/ThemePicker';
 
 type AppearanceSettingsTabProps = {
   projectSortOrder: ProjectSortOrder;
@@ -33,6 +34,15 @@ export default function AppearanceSettingsTab({
 
   return (
     <div className="space-y-8">
+      <SettingsSection
+        title={t('appearanceSettings.theme.label')}
+        description={t('appearanceSettings.theme.description')}
+      >
+        <SettingsCard>
+          <ThemePicker />
+        </SettingsCard>
+      </SettingsSection>
+
       <SettingsSection title={t('appearanceSettings.darkMode.label')}>
         <SettingsCard>
           <SettingsRow

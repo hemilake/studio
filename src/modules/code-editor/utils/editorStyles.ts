@@ -41,14 +41,14 @@ export const getEditorStyles = (isDarkMode: boolean) => {
     }
 
     .cm-gutter.cm-gutter-minimap {
-      background-color: ${isDarkMode ? '#1e1e1e' : '#f5f5f5'};
+      background-color: hsl(var(--muted));
     }
 
     .cm-editor-toolbar-panel {
       padding: 4px 10px;
-      background-color: ${isDarkMode ? '#1f2937' : '#ffffff'};
-      border-bottom: 1px solid ${isDarkMode ? '#374151' : '#e5e7eb'};
-      color: ${isDarkMode ? '#d1d5db' : '#374151'};
+      background-color: hsl(var(--card));
+      border-bottom: 1px solid hsl(var(--border));
+      color: hsl(var(--muted-foreground));
       font-size: 12px;
     }
 
@@ -58,7 +58,7 @@ export const getEditorStyles = (isDarkMode: boolean) => {
       background: transparent;
       border: none;
       cursor: pointer;
-      border-radius: 4px;
+      border-radius: calc(var(--radius) * 0.5);
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -68,7 +68,7 @@ export const getEditorStyles = (isDarkMode: boolean) => {
 
     .cm-diff-nav-btn:hover,
     .cm-toolbar-btn:hover {
-      background-color: ${isDarkMode ? '#374151' : '#f3f4f6'};
+      background-color: hsl(var(--accent));
     }
 
     .cm-diff-nav-btn:disabled {

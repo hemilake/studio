@@ -16,6 +16,29 @@ import { ensureXtermFocusStyles } from '@/modules/shell/utils/terminalStyles';
 
 const TERMINAL_RESIZE_DELAY_MS = 50;
 
+/**
+ * Fork (themes): the terminal's surface colours come from the active theme's
+ * --terminal-* variables; the ANSI palette below stays standard. Falls back to
+ * TERMINAL_OPTIONS when a variable is missing.
+ */
+function readTerminalChrome(): NonNullable<ITerminalOptions['theme']> {
+  const base = TERMINAL_OPTIONS.theme ?? {};
+  if (typeof document === 'undefined') {
+    return base;
+  }
+  const styles = getComputedStyle(document.documentElement);
+  const read = (name: string, fallback: string | undefined) => styles.getPropertyValue(name).trim() || fallback;
+  const background = read('--terminal-background', base.background);
+  return {
+    ...base,
+    background,
+    foreground: read('--terminal-foreground', base.foreground),
+    cursor: read('--terminal-cursor', base.cursor),
+    cursorAccent: background,
+    selectionBackground: read('--terminal-selection', base.selectionBackground),
+  };
+}
+
 const TERMINAL_OPTIONS: ITerminalOptions = {
   cursorBlink: true,
   fontSize: 14,
@@ -171,13 +194,28 @@ export function useShellTerminal({
     setIsInitialized(false);
   }, [fitAddonRef, terminalRef]);
 
+  // Fork (themes): follow theme and dark-mode switches, which change the <html> attributes.
+  useEffect(() => {
+    if (typeof MutationObserver === 'undefined') {
+      return undefined;
+    }
+    const observer = new MutationObserver(() => {
+      const terminal = terminalRef.current;
+      if (terminal) {
+        terminal.options.theme = readTerminalChrome();
+      }
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme'] });
+    return () => observer.disconnect();
+  }, [terminalRef]);
+
   useEffect(() => {
     const terminalContainer = terminalContainerRef.current;
     if (!terminalContainer || !hasSelectedProject || isRestarting || terminalRef.current) {
       return;
     }
 
-    const nextTerminal = new Terminal(TERMINAL_OPTIONS);
+    const nextTerminal = new Terminal({ ...TERMINAL_OPTIONS, theme: readTerminalChrome() });
     terminalRef.current = nextTerminal;
 
     const nextFitAddon = new FitAddon();

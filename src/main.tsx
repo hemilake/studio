@@ -4,6 +4,7 @@ import { scan } from 'react-scan'
 
 import App from '@/App'
 import '@/index.css'
+import '@/shared/theme/themes.css'
 import 'katex/dist/katex.min.css'
 
 // Initialize i18n

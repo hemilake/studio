@@ -18,6 +18,7 @@ import {
 import { createWebSocketServer } from '@/modules/websocket/index.js';
 
 import { getConnectableHost } from '../shared/networkHosts.js';
+import { getInstanceThemeId, themedManifest } from '@/shared/themes.js';
 
 import { createGitModule } from './modules/git/index.js';
 import {
@@ -200,6 +201,21 @@ app.use('/api/scheduled-messages', authenticateToken, scheduledMessagesRoutes);
 app.use('/api/agent', agentRoutes);
 
 app.use('/api/voice', authenticateToken, voiceRoutes);
+
+// Fork (themes): the theme this instance starts with, public so the login screen
+// shows it, and the PWA manifest named and iconed after it.
+app.get('/api/appearance', (_req, res) => {
+    res.json({ theme: getInstanceThemeId() });
+});
+app.get('/manifest.json', (_req, res, next) => {
+    try {
+        const base = JSON.parse(fs.readFileSync(path.join(APP_ROOT, 'public', 'manifest.json'), 'utf8')) as Record<string, unknown>;
+        res.setHeader('Cache-Control', 'no-cache');
+        res.json(themedManifest(base, getInstanceThemeId()));
+    } catch (error) {
+        next(error);
+    }
+});
 
 // Serve public files (like api-docs.html)
 app.use(express.static(path.join(APP_ROOT, 'public')));

@@ -147,6 +147,12 @@
     }
   },
   "appearanceSettings": {
+    "theme": {
+      "label": "Theme",
+      "description": "Colours, type and brand. Your choice follows you to every device.",
+      "instanceDefault": "instance default",
+      "useInstanceDefault": "Use the instance default"
+    },
     "darkMode": {
       "label": "Dark Mode",
       "description": "Toggle between light and dark themes"
@@ -508,7 +514,7 @@
     },
     "managed": {
       "badge": "Managed",
-      "hint": "Managed by Hemilake Studio."
+      "hint": "Managed by {{brand}}."
     },
     "help": {
       "title": "About Codex MCP",

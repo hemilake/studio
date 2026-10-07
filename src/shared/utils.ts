@@ -2,7 +2,7 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
 import type { Project, ProjectSession } from '@/shared/types';
-import { BRAND_NAME } from '@/shared/constants';
+import { getBrandName } from '@/shared/constants';
 
 //----------------- DEPLOYMENT MODE ------------
 
@@ -194,8 +194,6 @@ export const playChatCompletionSound = (options = {}): Promise<void> => playNoti
 
 //----------------- DOCUMENT TITLE ------------
 
-/** Browser tab title shown when no project or session is selected. Private to the title helpers. */
-const DEFAULT_PAGE_TITLE = BRAND_NAME;
 
 /**
  * Resolves the human-readable label for a session, accounting for Cursor sessions that
@@ -222,5 +220,5 @@ export const getPageTitle = (
   }
 
   const displayName = selectedProject?.displayName?.trim();
-  return displayName ? `${displayName} - ${DEFAULT_PAGE_TITLE}` : DEFAULT_PAGE_TITLE;
+  return displayName ? `${displayName} - ${getBrandName()}` : getBrandName();
 };

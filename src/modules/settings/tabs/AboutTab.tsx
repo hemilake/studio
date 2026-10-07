@@ -1,9 +1,9 @@
 import { ExternalLink } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import { BRAND_NAME, FORK_REPO_URL, UPSTREAM_NAME, UPSTREAM_REPO_URL } from '@/shared/constants';
+import { FORK_REPO_URL, UPSTREAM_NAME, UPSTREAM_REPO_URL } from '@/shared/constants';
 import { useVersionCheck } from '@/shared/hooks/useVersionCheck';
-import { BrandMark, BrandWordmark } from '@/shared/ui';
+import { BrandMark, BrandWordmark, useBrandName } from '@/shared/ui';
 
 const DOCS_URL = 'https://cloudcli.ai/docs/plugin-overview';
 
@@ -22,6 +22,7 @@ function GitHubIcon({ className }: { className?: string }) {
  */
 export default function AboutTab() {
   const { t } = useTranslation('settings');
+  const brandName = useBrandName();
   const { updateAvailable, latestVersion, currentVersion, releaseInfo } = useVersionCheck('siteboon', 'claudecodeui');
   const releasesUrl = releaseInfo?.htmlUrl || `${UPSTREAM_REPO_URL}/releases`;
 
@@ -32,7 +33,7 @@ export default function AboutTab() {
         <BrandMark className="h-10 w-10 flex-shrink-0 text-foreground" />
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-base" aria-label={BRAND_NAME}>
+            <span className="text-base" aria-label={brandName}>
               <BrandWordmark />
             </span>
             <a
@@ -71,7 +72,7 @@ export default function AboutTab() {
           className="flex items-center gap-1.5 text-muted-foreground transition-colors hover:text-foreground"
         >
           <GitHubIcon className="h-4 w-4" />
-          {BRAND_NAME}
+          {brandName}
         </a>
         <a
           href={UPSTREAM_REPO_URL}

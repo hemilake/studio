@@ -2,7 +2,7 @@
 // one SVG template, so the glyph matches src/shared/ui/BrandMark.tsx.
 //   node scripts/fork/generate-brand-icons.mjs
 // Logo and favicon sit on a light (paper) tile; PWA and home-screen icons on an ink tile.
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
@@ -65,3 +65,19 @@ await writePng(lightTileSvg(64), join(root, 'favicon.png'), 64);
 
 // Electron app icon (macOS uses the PNG; electron/scripts/generate-macos-icon.js builds the .icns).
 await writePng(inkTileSvg(1024), join(root, '..', 'electron', 'assets', 'logo-macos.png'), 1024);
+
+// Other themes (src/shared/theme/registry.tsx): favicon PNG and PWA icons from the
+// theme's own logo file in public/themes/<id>/, rendered as delivered, never redrawn.
+// Orange uses its small logo (square and bar), as its brand rules ask below 50 px.
+const THEME_ICON_SOURCES = {
+  orange: 'logo-small.svg',
+  classic: 'logo.svg',
+};
+for (const [themeId, source] of Object.entries(THEME_ICON_SOURCES)) {
+  const dir = join(root, 'themes', themeId);
+  const svg = readFileSync(join(dir, source));
+  await writePng(svg, join(dir, 'favicon.png'), 64);
+  for (const size of [72, 96, 128, 144, 152, 192, 384, 512]) {
+    await writePng(svg, join(dir, `icon-${size}x${size}.png`), size);
+  }
+}

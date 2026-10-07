@@ -36,7 +36,7 @@ export default function AuthScreenLayout({
           <div className="text-center">
             <div className="mb-5 flex justify-center">
               {logo ?? (
-                <BrandMark className="h-14 w-14 text-foreground" />
+                <BrandMark size="large" className="h-14 w-14 text-foreground" />
               )}
             </div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground">{title}</h1>

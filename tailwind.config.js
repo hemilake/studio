@@ -14,14 +14,16 @@ export default {
       },
     },
     extend: {
+      // Fork (themes): fonts, grays and corner radii come from CSS variables so each
+      // theme in src/shared/theme/themes.css can set them. Hemilake's values live in src/index.css.
       fontFamily: {
-        sans: ['"IBM Plex Sans"', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Helvetica', 'Arial', 'sans-serif'],
-        mono: ['"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+        sans: ['var(--font-sans)'],
+        mono: ['var(--font-mono)'],
       },
       colors: {
-        // Fork (Hemilake Studio): the cool grays used all over the UI become warm stone,
-        // so dark surfaces match the ink palette instead of reading blue.
-        gray: require('tailwindcss/colors').stone,
+        gray: Object.fromEntries(
+          [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].map((step) => [step, `rgb(var(--gray-${step}) / <alpha-value>)`]),
+        ),
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -64,9 +66,14 @@ export default {
         },
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
+        // Scaled from --radius so a square theme (radius 0) squares every corner; full stays round.
+        DEFAULT: "calc(var(--radius) * 0.5)",
         sm: "calc(var(--radius) - 4px)",
+        md: "calc(var(--radius) - 2px)",
+        lg: "var(--radius)",
+        xl: "calc(var(--radius) * 1.5)",
+        "2xl": "calc(var(--radius) * 2)",
+        "3xl": "calc(var(--radius) * 3)",
       },
       spacing: {
         'safe-area-inset-bottom': 'env(safe-area-inset-bottom)',

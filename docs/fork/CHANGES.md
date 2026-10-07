@@ -2,6 +2,28 @@
 
 One entry per customization, newest first. Keep the file list accurate: it is the conflict checklist for upstream merges.
 
+## Themes (Hemilake, Orange, CloudCLI classic)
+
+- **Since:** 2026-10-07, on top of upstream v1.37.3.
+- **Branch:** `feat/theme-system`, merged into `main`. Builds on the Hemilake theme entry below. Fork identity, never for upstream.
+- **Why:** besides Hemilake, instances for Orange people should look like Orange (white, black, orange, Helvetica Neue, square corners, the Orange logo), and users who preferred the old blue look get it back.
+- **What:**
+  - A theme is a palette plus a brand. `src/shared/theme/registry.tsx` lists them (id, label, product name, footer name, mark, wordmark, favicon, browser colour, optional web font); `src/shared/theme/themes.css` holds the Orange and classic values for `:root[data-theme=…]` and `.dark[data-theme=…]`. Hemilake's values stay the defaults in `src/index.css`.
+  - Fonts, grays and corner radii are CSS variables now: `--font-sans`, `--font-mono`, `--gray-50…950` (RGB channels, so `bg-gray-500/10` keeps working) and every `rounded-*` step scaled from `--radius`, so a radius of 0 squares the whole UI while `rounded-full` stays round. The terminal reads `--terminal-*` and follows theme switches; the code editor toolbar uses the tokens.
+  - `ThemeProvider` resolves the theme (the user's `colorTheme` preference, else the instance default), sets `data-theme` on `<html>`, swaps favicon, apple-touch icon, theme colour and web font, and keeps the brand current for code outside React (`getBrandName()` in `constants.ts`) and for translations: every locale says `{{brand}}`, an i18next default variable.
+  - `BrandMark`, `BrandWordmark` and `useBrandName()` render the active theme's brand; `size="large"` gives Orange its full logo on the auth screens. Orange's logos are its own files, used as delivered.
+  - The server reads the instance default from `CLOUDCLI_THEME` (`hemilake`, `orange`, `classic`; anything else is Hemilake), exposes it at the public `GET /api/appearance` for the login screen, and serves `/manifest.json` named and iconed after it. The client caches it in localStorage for the first paint.
+  - Settings › Appearance has a theme picker; "Use the instance default" clears the user's pick.
+- **Files:**
+  - `src/shared/theme/registry.tsx`, `src/shared/theme/themes.css`, `src/shared/ui/ThemedBrand.tsx`, `src/modules/settings/tabs/ThemePicker.tsx`, `server/shared/themes.ts`, `server/shared/tests/themes.test.ts` (new)
+  - `public/themes/orange/*` (Orange's logo files plus generated PNGs), `public/themes/classic/*` (upstream's logo plus PNGs), `scripts/fork/generate-brand-icons.mjs`
+  - `src/shared/context/ThemeContext.tsx`, `src/shared/tests/themeContext.test.tsx`, `src/shared/ui/BrandMark.tsx` (Hemilake's mark renamed), `src/shared/ui/index.ts`, `src/shared/constants.ts`, `src/shared/utils.ts`, `src/shared/userSettings.ts` (`colorTheme`)
+  - `tailwind.config.js`, `src/index.css`, `src/main.tsx`, `.oxlintrc.json`, `server/index.ts`
+  - `src/modules/settings/tabs/AppearanceSettingsTab.tsx`, `src/modules/sidebar/{SidebarHeader,SidebarFooter}.tsx`, `src/modules/auth/{AuthLoadingScreen,AuthScreenLayout}.tsx`, `src/modules/settings/tabs/AboutTab.tsx`, `src/modules/mcp/McpServers.tsx`, `src/modules/chat/utils/pageTitleNotification.ts`, `src/modules/shell/hooks/useShellTerminal.ts`, `src/modules/code-editor/utils/editorStyles.ts`
+  - `src/modules/i18n/config.ts`, `src/modules/i18n/locales/*/{sidebar,auth,common,settings}.json`
+- **Verified:** typecheck, lint, vitest (70 files, 465 tests), the new server test, client build, and headless Chromium against Pablo's instance with the theme injected into the preferences response (nothing written): chat in all three themes, Orange light and dark at 1440 and 390 px, the Appearance picker, and the login screen with Orange as instance default.
+- **Not done:** Orange asks for no capitals and no shadows; section headings in Settings stay uppercase and arbitrary `shadow-[…]` classes (the login card) keep their shadow. Helvetica Neue is not served: it falls back to Helvetica or Arial. The code editor's syntax theme and the ANSI colours of the terminal are the same in every theme.
+
 ## Composer toolbar on one line on phones
 
 - **Since:** 2026-10-07, on top of upstream v1.37.3.

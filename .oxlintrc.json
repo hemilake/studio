@@ -72,6 +72,7 @@
           "server/shared/claude-cli-path.ts",
           "server/shared/image-attachments.ts",
           "server/shared/adversarial-review.ts",
+          "server/shared/themes.ts",
           "server/shared/message-unification.ts"
         ],
         "mode": "file"
@@ -106,7 +107,7 @@
       },
       {
         "type": "frontend-shared-folder",
-        "pattern": ["src/shared/hooks", "src/shared/context", "src/shared/ui"],
+        "pattern": ["src/shared/hooks", "src/shared/context", "src/shared/ui", "src/shared/theme"],
         "mode": "folder"
       },
       {

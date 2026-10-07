@@ -37,6 +37,8 @@ export type UserPreferences = {
   chatWorkspaceEffort: string | null;
   /** Fork: adversaries the composer's adversarial mode consults; null/empty means Antigravity. */
   adversaries: string[] | null;
+  /** Fork: theme id from src/shared/theme/registry.tsx; null means the instance default. */
+  colorTheme: string | null;
 };
 
 export type UserPreferenceKey = keyof UserPreferences;
@@ -82,6 +84,7 @@ const LEGACY_STORAGE_KEYS: Record<UserPreferenceKey, string> = {
   chatWorkspaceModel: '',
   chatWorkspaceEffort: '',
   adversaries: '',
+  colorTheme: '',
 };
 
 const PREFERENCE_KEYS = Object.keys(LEGACY_STORAGE_KEYS) as UserPreferenceKey[];

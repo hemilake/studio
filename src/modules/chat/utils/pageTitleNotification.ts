@@ -1,4 +1,4 @@
-import { BRAND_NAME } from '@/shared/constants';
+import { getBrandName } from '@/shared/constants';
 
 const COMPLETION_TITLE_INDICATOR = '[Done]';
 const TITLE_INDICATOR_CLEAR_DELAY_MS = 2000;
@@ -92,7 +92,7 @@ export const showCompletionTitleIndicator = (): void => {
     return;
   }
 
-  const baseTitle = stripIndicator(document.title || BRAND_NAME);
+  const baseTitle = stripIndicator(document.title || getBrandName());
   document.title = `${getIndicatorPrefix()}${baseTitle}`;
 
   if (pageIsActive()) {

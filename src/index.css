@@ -50,6 +50,26 @@
     --hemi-ok: 100 15% 35%;              /* #4E6B45 Connected, Active */
     --hemi-ok-tint: 100 22% 92%;         /* #E8EFE4 */
 
+    /* Fork (themes): type, grays (RGB channels) and the terminal, overridden per theme in
+       src/shared/theme/themes.css. Hemilake: IBM Plex and Tailwind's warm stone scale. */
+    --font-sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --gray-50: 250 250 249;
+    --gray-100: 245 245 244;
+    --gray-200: 231 229 228;
+    --gray-300: 214 211 209;
+    --gray-400: 168 162 158;
+    --gray-500: 120 113 108;
+    --gray-600: 87 83 78;
+    --gray-700: 68 64 60;
+    --gray-800: 41 37 36;
+    --gray-900: 28 25 23;
+    --gray-950: 12 10 9;
+    --terminal-background: #181614;
+    --terminal-foreground: #E8E2D8;
+    --terminal-cursor: #F6F3EE;
+    --terminal-selection: #6B4128;
+
     /* glass and glow off: tabs are card on muted with a hairline */
     --nav-glass-bg: 37.5 31% 95% / 0.92;
     --nav-glass-blur: 0px;
@@ -140,7 +160,7 @@
   body {
     @apply bg-background text-foreground;
 
-    font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     margin: 0;

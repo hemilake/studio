@@ -1,0 +1,217 @@
+/*
+ * Fork: themes other than Hemilake, whose values are the defaults in src/index.css.
+ * ThemeContext sets data-theme on <html>; .dark is toggled on the same element, so
+ * each theme overrides :root for light mode and .dark for dark mode. The selectors
+ * carry two parts so they win over index.css regardless of load order.
+ *
+ * Variable names follow index.css: the shadcn tokens, the --hemi-* roles
+ * (copper = state accent, ok = success), fonts, grays as RGB channels and the
+ * terminal colours. Register a new theme in src/shared/theme/registry.tsx too.
+ */
+
+/* ---------- Orange: white, black, orange accent, Helvetica Neue, square corners ---------- */
+
+:root[data-theme="orange"] {
+  --background: 0 0% 96%;            /* #F6F6F6 surface */
+  --foreground: 0 0% 0%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 0%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 0%;
+  --primary: 29 100% 50%;            /* #FF7900, with black text as Orange's own buttons */
+  --primary-foreground: 0 0% 0%;
+  --secondary: 0 0% 93%;             /* #EEEEEE */
+  --secondary-foreground: 0 0% 20%;
+  --muted: 0 0% 93%;
+  --muted-foreground: 0 0% 35%;      /* #595959 */
+  --accent: 0 0% 93%;
+  --accent-foreground: 0 0% 0%;
+  --destructive: 13 82% 44%;         /* #CD3C14 */
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 87%;                /* #DDDDDD */
+  --input: 0 0% 80%;
+  --ring: 29 100% 50%;
+  --radius: 0px;
+
+  --hemi-copper: 29 100% 50%;
+  --hemi-copper-text: 27 100% 47%;   /* #F16E00, Orange's orange text on white */
+  --hemi-copper-tint: 28 100% 95%;
+  --hemi-ok: 120 60% 33%;            /* #228722 */
+  --hemi-ok-tint: 120 40% 93%;
+
+  --nav-glass-bg: 0 0% 100% / 1;
+  --nav-glass-blur: 0px;
+  --nav-glass-saturate: 1;
+  --nav-tab-glow: 0 0% 0% / 0;
+  --nav-tab-ring: 0 0% 87% / 1;
+  --nav-float-shadow: 0 0% 0% / 0;
+  --nav-float-ring: 0 0% 87% / 1;
+  --nav-divider-color: 0 0% 87% / 1;
+  --nav-input-bg: 0 0% 100% / 1;
+  --nav-input-focus-ring: 29 100% 50% / 0.35;
+
+  --font-sans: "Helvetica Neue", HelvNeue, HelvNeueOrange, Helvetica, Arial, "Liberation Sans", sans-serif;
+  --font-mono: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  /* Tailwind's neutral scale: pure grays, like Orange's */
+  --gray-50: 250 250 250;
+  --gray-100: 245 245 245;
+  --gray-200: 229 229 229;
+  --gray-300: 212 212 212;
+  --gray-400: 163 163 163;
+  --gray-500: 115 115 115;
+  --gray-600: 82 82 82;
+  --gray-700: 64 64 64;
+  --gray-800: 38 38 38;
+  --gray-900: 23 23 23;
+  --gray-950: 10 10 10;
+  --terminal-background: #000000;
+  --terminal-foreground: #FFFFFF;
+  --terminal-cursor: #FF7900;
+  --terminal-selection: #6B3300;
+}
+
+.dark[data-theme="orange"] {
+  --background: 0 0% 0%;
+  --foreground: 0 0% 100%;
+  --card: 0 0% 8%;                   /* #141414 */
+  --card-foreground: 0 0% 100%;
+  --popover: 0 0% 8%;
+  --popover-foreground: 0 0% 100%;
+  --primary: 29 100% 50%;
+  --primary-foreground: 0 0% 0%;
+  --secondary: 0 0% 15%;
+  --secondary-foreground: 0 0% 85%;
+  --muted: 0 0% 15%;
+  --muted-foreground: 0 0% 65%;
+  --accent: 0 0% 15%;
+  --accent-foreground: 0 0% 90%;
+  --destructive: 13 75% 55%;
+  --destructive-foreground: 0 0% 0%;
+  --border: 0 0% 20%;                /* #333333 */
+  --input: 0 0% 25%;
+  --ring: 29 100% 50%;
+
+  --hemi-copper: 29 100% 50%;
+  --hemi-copper-text: 29 100% 50%;   /* #FF7900 reads on black */
+  --hemi-copper-tint: 29 60% 12%;
+  --hemi-ok: 120 60% 49%;            /* #32C832 */
+  --hemi-ok-tint: 120 40% 12%;
+
+  --nav-glass-bg: 0 0% 8% / 1;
+  --nav-tab-ring: 0 0% 20% / 1;
+  --nav-float-shadow: 0 0% 0% / 0;
+  --nav-float-ring: 0 0% 20% / 1;
+  --nav-divider-color: 0 0% 20% / 1;
+  --nav-input-bg: 0 0% 15% / 1;
+  --nav-input-focus-ring: 29 100% 50% / 0.4;
+}
+
+/* ---------- CloudCLI classic: upstream's cream and blue, Encode Sans ---------- */
+
+:root[data-theme="classic"] {
+  --background: 44 22% 96%;
+  --foreground: 36 25% 4%;
+  --card: 0 0% 100%;
+  --card-foreground: 36 25% 4%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 36 25% 4%;
+  --primary: 221.2 83.2% 53.3%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 44 15% 91%;
+  --secondary-foreground: 36 15% 18%;
+  --muted: 44 15% 91%;
+  --muted-foreground: 40 5% 44%;
+  --accent: 44 15% 91%;
+  --accent-foreground: 36 15% 18%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 44 14% 87%;
+  --input: 44 14% 87%;
+  --ring: 221.2 83.2% 53.3%;
+  --radius: 0.5rem;
+
+  --hemi-copper: 217.2 91.2% 59.8%;  /* blue-500 */
+  --hemi-copper-text: 221.2 83.2% 53.3%;
+  --hemi-copper-tint: 214 100% 97%;  /* blue-50 */
+  --hemi-ok: 142 76% 36%;            /* green-600 */
+  --hemi-ok-tint: 138 76% 97%;
+
+  --nav-glass-bg: 44 22% 96% / 0.7;
+  --nav-glass-blur: 20px;
+  --nav-glass-saturate: 1.8;
+  --nav-tab-glow: 221.2 83.2% 53.3% / 0.18;
+  --nav-tab-ring: 221.2 83.2% 53.3% / 0.10;
+  --nav-float-shadow: 0 0% 0% / 0.06;
+  --nav-float-ring: 44 14% 87% / 0.5;
+  --nav-divider-color: 44 14% 87% / 0.5;
+  --nav-input-bg: 44 15% 91% / 0.5;
+  --nav-input-focus-ring: 221.2 83.2% 53.3% / 0.22;
+
+  --font-sans: "Encode Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  /* Tailwind's original cool gray */
+  --gray-50: 249 250 251;
+  --gray-100: 243 244 246;
+  --gray-200: 229 231 235;
+  --gray-300: 209 213 219;
+  --gray-400: 156 163 175;
+  --gray-500: 107 114 128;
+  --gray-600: 75 85 99;
+  --gray-700: 55 65 81;
+  --gray-800: 31 41 55;
+  --gray-900: 17 24 39;
+  --gray-950: 3 7 18;
+  --terminal-background: #1e1e1e;
+  --terminal-foreground: #d4d4d4;
+  --terminal-cursor: #ffffff;
+  --terminal-selection: #264f78;
+}
+
+.dark[data-theme="classic"] {
+  --background: 0 0% 8%;
+  --foreground: 40 8% 93%;
+  --card: 0 0% 12%;
+  --card-foreground: 40 8% 93%;
+  --popover: 0 0% 12%;
+  --popover-foreground: 40 8% 93%;
+  --primary: 217.2 91.2% 59.8%;
+  --primary-foreground: 0 0% 8%;
+  --secondary: 0 0% 17%;
+  --secondary-foreground: 40 8% 93%;
+  --muted: 0 0% 17%;
+  --muted-foreground: 0 0% 60%;
+  --accent: 0 0% 17%;
+  --accent-foreground: 40 8% 93%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 40 8% 93%;
+  --border: 0 0% 17%;
+  --input: 0 0% 23%;
+  --ring: 217.2 91.2% 59.8%;
+
+  --hemi-copper: 217.2 91.2% 59.8%;
+  --hemi-copper-text: 213 94% 68%;   /* blue-400 */
+  --hemi-copper-tint: 222 47% 16%;
+  --hemi-ok: 142 69% 58%;            /* green-400 */
+  --hemi-ok-tint: 145 40% 14%;
+
+  --nav-glass-bg: 0 0% 12% / 0.55;
+  --nav-glass-blur: 24px;
+  --nav-glass-saturate: 1.6;
+  --nav-tab-glow: 217.2 91.2% 59.8% / 0.25;
+  --nav-tab-ring: 217.2 91.2% 59.8% / 0.15;
+  --nav-float-shadow: 0 0% 0% / 0.35;
+  --nav-float-ring: 0 0% 17% / 0.3;
+  --nav-divider-color: 0 0% 17% / 0.5;
+  --nav-input-bg: 0 0% 17% / 0.5;
+  --nav-input-focus-ring: 217.2 91.2% 59.8% / 0.25;
+}
+
+/* Orange has no shadows anywhere */
+[data-theme="orange"] .shadow-sm,
+[data-theme="orange"] .shadow,
+[data-theme="orange"] .shadow-md,
+[data-theme="orange"] .shadow-lg {
+  --tw-shadow: 0 0 #0000;
+  --tw-shadow-colored: 0 0 #0000;
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+}

@@ -3,7 +3,8 @@ import type { TFunction } from 'i18next';
 
 import { IS_PLATFORM } from '@/shared/utils';
 import type { ReleaseInfo } from '@/shared/types';
-import { BRAND_NAME, UPSTREAM_NAME, UPSTREAM_REPO_URL } from '@/shared/constants';
+import { UPSTREAM_NAME, UPSTREAM_REPO_URL } from '@/shared/constants';
+import { useThemeDefinition } from '@/shared/context/ThemeContext';
 
 // Fork: the update banner and the Report Issue / Discord links are not rendered.
 // The props stay in the type so callers are untouched (see docs/fork/CHANGES.md).
@@ -20,6 +21,7 @@ type SidebarFooterProps = {
 
 /** Rendered by SidebarContent at the bottom of the panel for settings and restart status. */
 export default function SidebarFooter({ restartRequired, currentVersion, onShowSettings, t }: SidebarFooterProps) {
+  const { footerName } = useThemeDefinition();
   return (
     <div className="flex-shrink-0" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0)' }}>
       {/* Restart-required banner: the running server version differs from the
@@ -61,7 +63,7 @@ export default function SidebarFooter({ restartRequired, currentVersion, onShowS
             rel="noopener noreferrer"
             className="font-mono text-[10.5px] text-muted-foreground/60 transition-colors hover:text-muted-foreground"
           >
-            {BRAND_NAME.toLowerCase()} · {UPSTREAM_NAME} v{currentVersion}
+            {footerName} · {UPSTREAM_NAME} v{currentVersion}
           </a>
         </div>
       )}

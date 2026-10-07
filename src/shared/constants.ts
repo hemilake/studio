@@ -20,10 +20,18 @@ type GitStatusFileGroup = 'modified' | 'added' | 'deleted' | 'untracked';
 //----------------- BRANDING ------------
 
 /**
- * Fork: the product name shown in the UI. The repository, the npm package and
- * the `cloudcli` CLI keep upstream's name; only what the user sees is branded.
+ * Fork: the product name shown in the UI comes from the active theme
+ * (src/shared/theme/registry.tsx); ThemeProvider keeps this copy current for code
+ * outside React, such as the page title. The repository, the npm package and the
+ * `cloudcli` CLI keep upstream's name.
  */
-export const BRAND_NAME = 'Hemilake Studio';
+let activeBrandName = 'Hemilake Studio';
+
+export const getBrandName = (): string => activeBrandName;
+
+export const setBrandName = (name: string): void => {
+  activeBrandName = name;
+};
 
 /** Upstream project this UI is built on, shown next to the version for sync reference. */
 export const UPSTREAM_NAME = 'CloudCLI';
