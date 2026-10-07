@@ -2,6 +2,18 @@
 
 One entry per customization, newest first. Keep the file list accurate: it is the conflict checklist for upstream merges.
 
+## Composer toolbar on one line on phones
+
+- **Since:** 2026-10-07, on top of upstream v1.37.3.
+- **Branch:** `feat/compact-mobile-composer`, merged into `main`. Builds on the effort picker and adversarial mode entries below.
+- **Why:** with the effort chip and the adversarial toggle, the composer toolbar wrapped to two lines on a phone.
+- **What:** below the `sm` breakpoint only. The effort chip is gone; the model menu trigger names the level instead ("Opus · High", the model's parenthetical dropped) and the menu still lists every effort. The adversarial toggle is hidden and the model menu gets an "Adversaries" section: one row turns the mode on and off, the rows below pick the adversaries (at least one stays selected, the rule now shared as `toggleAdversaryInSelection`). While the mode is on, the trigger turns red and shows the swords and the level in place of the model name. The token pill shows only the count, the schedule button appears only once there is text to schedule, the footer padding drops to `px-2`, and the footer no longer wraps: the model trigger truncates when space runs out. Wide screens are unchanged.
+- **Files:**
+  - `src/modules/chat/composer/ChatComposer.tsx`, `ComposerModelMenu.tsx`, `ComposerEffortPicker.tsx`, `ComposerAdversarialToggle.tsx`, `ScheduleMessagePopover.tsx`, `TokenUsageSummary.tsx`
+  - `src/modules/chat/utils/adversarialMode.ts` (`AdversarialModeControls`, `toggleAdversaryInSelection`)
+  - `src/modules/chat/tests/composerEffortPicker.test.tsx` (chip test removed), `src/modules/chat/tests/composerModelMenuAdversarial.test.tsx` (new)
+- **Verified:** vitest (chat suites), typecheck, lint, and headless Chromium at 360, 375, 390, 430 and 1440 px: one line at every phone width, with and without adversarial mode, with and without text typed.
+
 ## Hemilake theme (Hemilake Studio)
 
 - **Since:** 2026-10-06, on top of upstream v1.37.3.

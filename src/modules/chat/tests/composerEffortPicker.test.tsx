@@ -25,19 +25,6 @@ describe('ComposerEffortPicker', () => {
     expect(onSelectEffort).toHaveBeenCalledTimes(1);
   });
 
-  it('steps to the next level from the compact chip, wrapping at the end', () => {
-    const onSelectEffort = vi.fn();
-    const { rerender } = render(
-      <ComposerEffortPicker effort="high" effortOptions={CLAUDE_EFFORTS} onSelectEffort={onSelectEffort} />,
-    );
-    fireEvent.click(screen.getByRole('button', { name: /: High$/ }));
-    expect(onSelectEffort).toHaveBeenLastCalledWith('xhigh');
-
-    rerender(<ComposerEffortPicker effort="max" effortOptions={CLAUDE_EFFORTS} onSelectEffort={onSelectEffort} />);
-    fireEvent.click(screen.getByRole('button', { name: /: Max$/ }));
-    expect(onSelectEffort).toHaveBeenLastCalledWith('low');
-  });
-
   it('renders nothing when the model takes no effort', () => {
     const { container } = render(
       <ComposerEffortPicker effort="default" effortOptions={[]} onSelectEffort={vi.fn()} />,

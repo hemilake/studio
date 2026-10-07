@@ -10,7 +10,11 @@ import {
   ComposerMenuItem,
   ComposerMenuSurface,
 } from '@/modules/chat/composer/ComposerMenuPrimitives';
-import { ADVERSARY_OPTIONS, adversaryLabel } from '@/modules/chat/utils/adversarialMode';
+import {
+  ADVERSARY_OPTIONS,
+  adversaryLabel,
+  toggleAdversaryInSelection,
+} from '@/modules/chat/utils/adversarialMode';
 
 type ComposerAdversarialToggleProps = {
   enabled: boolean;
@@ -24,6 +28,7 @@ type ComposerAdversarialToggleProps = {
  * Fork. Rendered by chat's ChatComposer before the permission menu when Claude
  * is the provider. The swords icon turns adversarial mode on and off with one
  * click; the chevron opens the list of adversaries, which is remembered.
+ * Hidden on phones, where the model menu carries the same controls.
  */
 function ComposerAdversarialToggle({ enabled, selection, onToggle, onChangeSelection }: ComposerAdversarialToggleProps) {
   const { t } = useTranslation('chat');
@@ -38,14 +43,10 @@ function ComposerAdversarialToggle({ enabled, selection, onToggle, onChangeSelec
     : t('composer.adversarialOff', { names, defaultValue: 'Adversarial mode: ask {{names}} too' });
 
   const toggleAdversary = (id: string) => {
-    const next = selection.includes(id)
-      ? selection.filter((current) => current !== id)
-      : [...selection, id];
-    // At least one adversary always stays selected; turning the mode off is the toggle's job.
-    if (next.length === 0) {
-      return;
+    const next = toggleAdversaryInSelection(selection, id);
+    if (next) {
+      onChangeSelection(next);
     }
-    onChangeSelection(next);
   };
 
   const segmentTone = enabled
@@ -54,7 +55,7 @@ function ComposerAdversarialToggle({ enabled, selection, onToggle, onChangeSelec
 
   return (
     <>
-      <div className="flex h-8 shrink-0 items-stretch">
+      <div className="hidden h-8 shrink-0 items-stretch sm:flex">
         <button
           type="button"
           onClick={onToggle}

@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight, Swords } from 'lucide-react';
 
 import type { ProviderModelOption } from '@/shared/types';
 import { DEFAULT_EFFORT_VALUE } from '@/shared/constants';
@@ -12,7 +12,14 @@ import {
   ComposerMenuSeparator,
   ComposerMenuSurface,
 } from '@/modules/chat/composer/ComposerMenuPrimitives';
-import { getQuickEffortValues } from '@/modules/chat/utils/composerEffort';
+import { getQuickEffortValues, shortEffortLabel } from '@/modules/chat/utils/composerEffort';
+import {
+  ADVERSARY_OPTIONS,
+  adversaryLabel,
+  toggleAdversaryInSelection,
+  type AdversarialModeControls,
+} from '@/modules/chat/utils/adversarialMode';
+import { cn } from '@/shared/utils';
 
 type EffortOption = NonNullable<ProviderModelOption['effort']>['values'][number];
 
@@ -26,6 +33,8 @@ type ComposerModelMenuProps = {
   modelOptions: ProviderModelOption[];
   onSelectModel: (model: string) => void;
   modelsLoading: boolean;
+  /** Fork: on phones adversarial mode lives in this menu instead of its own toggle. */
+  adversarialMode?: AdversarialModeControls;
 };
 
 /**
@@ -40,6 +49,7 @@ function ComposerModelMenu({
   modelOptions,
   onSelectModel,
   modelsLoading,
+  adversarialMode,
 }: ComposerModelMenuProps) {
   const { t } = useTranslation('chat');
   const [isOpen, setIsOpen] = useState(false);
@@ -80,6 +90,12 @@ function ComposerModelMenu({
   }
 
   const triggerLabel = hasModelSection ? modelLabel : effortLabel;
+  // Phones drop the parenthetical ("Opus (1M context)" reads "Opus") to fit the toolbar.
+  const phoneTriggerLabel = hasModelSection ? modelLabel.replace(/\s*\(.*\)\s*$/, '') || modelLabel : effortLabel;
+  // Phones have no effort picker, so the trigger names the level itself.
+  const showPhoneEffort = hasModelSection && hasEffortSection && effort !== DEFAULT_EFFORT_VALUE;
+  const isAdversarialOn = Boolean(adversarialMode?.enabled);
+  const adversaryNames = adversarialMode?.selection.map(adversaryLabel).join(' + ') ?? '';
   const ariaLabel = t('composer.modelMenu', {
     defaultValue: 'Select model and reasoning effort',
   });
@@ -93,13 +109,26 @@ function ComposerModelMenu({
           updateAnchor();
           setIsOpen((current) => !current);
         }}
-        className="flex h-8 max-w-20 shrink-0 items-center gap-1 rounded-lg border border-border/60 bg-muted/40 px-2 text-xs font-medium text-foreground transition-colors hover:bg-muted sm:max-w-56"
+        className={cn(
+          'flex h-8 min-w-0 max-w-32 shrink items-center gap-1 overflow-hidden rounded-lg border px-2 text-xs font-medium text-foreground transition-colors sm:max-w-56 sm:shrink-0',
+          isAdversarialOn
+            ? 'border-destructive/40 bg-destructive/10 hover:bg-destructive/15 sm:border-border/60 sm:bg-muted/40 sm:hover:bg-muted'
+            : 'border-border/60 bg-muted/40 hover:bg-muted',
+        )}
         aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-label={ariaLabel}
         title={ariaLabel}
       >
-        <span className="truncate">{triggerLabel}</span>
+        {isAdversarialOn && <Swords className="h-3.5 w-3.5 shrink-0 text-destructive sm:hidden" aria-hidden />}
+        {/* With adversarial mode on, phones trade the model name for the swords; the menu still names the model. */}
+        {!(isAdversarialOn && showPhoneEffort) && <span className="truncate sm:hidden">{phoneTriggerLabel}</span>}
+        <span className="hidden truncate sm:inline">{triggerLabel}</span>
+        {showPhoneEffort && (
+          <span className="shrink-0 text-muted-foreground sm:hidden">
+            {isAdversarialOn ? shortEffortLabel(effort) : `· ${shortEffortLabel(effort)}`}
+          </span>
+        )}
         {hasModelSection && hasEffortSection && effort !== DEFAULT_EFFORT_VALUE && !isEffortShownByPicker && (
           <span className="hidden shrink-0 capitalize text-muted-foreground sm:inline">· {effortLabel}</span>
         )}
@@ -128,9 +157,49 @@ function ComposerModelMenu({
             </>
           )}
 
+          {adversarialMode && (
+            // Fork: phones only; wider screens have ComposerAdversarialToggle.
+            <div className="sm:hidden">
+              {hasEffortSection && <ComposerMenuSeparator />}
+              <ComposerMenuHeading>
+                {t('composer.adversaries', { defaultValue: 'Adversaries' })}
+              </ComposerMenuHeading>
+              <ComposerMenuItem
+                role="menuitem"
+                icon={<Swords className={cn('h-3.5 w-3.5', isAdversarialOn ? 'text-destructive' : 'text-muted-foreground')} />}
+                label={isAdversarialOn
+                  ? t('composer.adversarialOn', { names: adversaryNames, defaultValue: 'Adversarial mode on: {{names}}' })
+                  : t('composer.adversarialOff', { names: adversaryNames, defaultValue: 'Adversarial mode: ask {{names}} too' })}
+                isSelected={isAdversarialOn}
+                trailing={isAdversarialOn ? <Check className="h-3.5 w-3.5 text-foreground" /> : <span />}
+                onSelect={adversarialMode.onToggle}
+              />
+              {ADVERSARY_OPTIONS.map((option) => {
+                const isPicked = adversarialMode.selection.includes(option.id);
+                return (
+                  <ComposerMenuItem
+                    key={option.id}
+                    role="menuitem"
+                    label={option.label}
+                    description={option.model}
+                    isSelected={isPicked}
+                    trailing={isPicked ? <Check className="h-3.5 w-3.5 text-foreground" /> : <span />}
+                    onSelect={() => {
+                      const next = toggleAdversaryInSelection(adversarialMode.selection, option.id);
+                      if (next) {
+                        adversarialMode.onChangeSelection(next);
+                      }
+                    }}
+                    className="pl-8"
+                  />
+                );
+              })}
+            </div>
+          )}
+
           {hasModelSection && (
             <>
-              {hasEffortSection && <ComposerMenuSeparator />}
+              {(hasEffortSection || adversarialMode) && <ComposerMenuSeparator />}
               <ComposerMenuItem
                 role="menuitem"
                 label={modelLabel}

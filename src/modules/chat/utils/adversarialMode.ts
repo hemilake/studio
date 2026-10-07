@@ -43,5 +43,25 @@ export function writeAdversarySelection(ids: string[]): void {
   writeUserPreference('adversaries', normalized.length > 0 && !isDefault ? normalized : null);
 }
 
+/** What the composer needs to show and change adversarial mode. */
+export type AdversarialModeControls = {
+  enabled: boolean;
+  /** Adversaries the next turn consults when enabled; never empty. */
+  selection: string[];
+  onToggle: () => void;
+  onChangeSelection: (ids: string[]) => void;
+};
+
+/**
+ * Adds or removes one adversary. At least one always stays selected: turning
+ * the mode off is the toggle's job, so removing the last one returns null.
+ */
+export function toggleAdversaryInSelection(selection: string[], id: string): string[] | null {
+  const next = selection.includes(id)
+    ? selection.filter((current) => current !== id)
+    : [...selection, id];
+  return next.length > 0 ? next : null;
+}
+
 export const adversaryLabel = (id: string): string =>
   ADVERSARY_OPTIONS.find((option) => option.id === id)?.label ?? id;

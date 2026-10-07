@@ -76,7 +76,8 @@ export function ScheduleMessagePopover({ disabled, onSchedule }: ScheduleMessage
         title={ariaLabel}
         className={cn(
           'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-muted/40 text-muted-foreground transition-colors',
-          disabled ? 'cursor-not-allowed opacity-40' : 'hover:bg-muted hover:text-foreground',
+          // Fork: phones hide it until there is something to schedule, to keep the toolbar on one line.
+          disabled ? 'hidden cursor-not-allowed opacity-40 sm:flex' : 'hover:bg-muted hover:text-foreground',
           isOpen && 'text-foreground',
         )}
       >

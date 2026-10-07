@@ -38,6 +38,7 @@ import ComposerModelMenu from '@/modules/chat/composer/ComposerModelMenu';
 import ComposerEffortPicker from '@/modules/chat/composer/ComposerEffortPicker';
 import ComposerPermissionMenu from '@/modules/chat/composer/ComposerPermissionMenu';
 import ComposerAdversarialToggle from '@/modules/chat/composer/ComposerAdversarialToggle';
+import type { AdversarialModeControls } from '@/modules/chat/utils/adversarialMode';
 
 type MentionableFile = {
   name: string;
@@ -62,12 +63,7 @@ type ChatComposerProps = {
   availableEffortOptions: NonNullable<ProviderModelOption['effort']>['values'];
   onSelectEffort: (effort: string) => void;
   /** Fork: adversarial mode toggle; absent when the provider cannot orchestrate adversaries. */
-  adversarialMode?: {
-    enabled: boolean;
-    selection: string[];
-    onToggle: () => void;
-    onChangeSelection: (ids: string[]) => void;
-  };
+  adversarialMode?: AdversarialModeControls;
   model: string;
   availableModelOptions: ProviderModelOption[];
   onSelectModel: (model: string) => void;
@@ -439,8 +435,8 @@ export default function ChatComposer({
             />
         </PromptInputBody>
 
-        <PromptInputFooter className="flex-wrap gap-y-1">
-          <PromptInputTools className="min-w-0">
+        <PromptInputFooter className="flex-nowrap gap-y-1 px-2 sm:flex-wrap sm:px-3">
+          <PromptInputTools className="shrink-0 sm:min-w-0 sm:shrink">
             <PromptInputButton
               tooltip={{ content: t('input.attachFiles') }}
               onClick={openAttachmentPicker}
@@ -482,7 +478,8 @@ export default function ChatComposer({
 
           </PromptInputTools>
 
-          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+          {/* Fork: on phones the toolbar stays on one line and the model menu trigger truncates instead. */}
+          <div className="ml-auto flex min-w-0 shrink items-center gap-1 sm:shrink-0 sm:gap-2">
             <ScheduleMessagePopover
               disabled={!input.trim()}
               onSchedule={onScheduleMessage}
@@ -496,6 +493,7 @@ export default function ChatComposer({
               modelOptions={availableModelOptions}
               onSelectModel={onSelectModel}
               modelsLoading={modelsLoading}
+              adversarialMode={adversarialMode}
             />
 
             <ComposerEffortPicker

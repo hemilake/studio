@@ -15,9 +15,8 @@ type ComposerEffortPickerProps = {
 
 /**
  * Fork. Rendered by chat's ChatComposer next to the model menu so the reasoning
- * effort is one click away: a segmented control on wide screens, a single chip
- * that steps to the next level on phones. The model menu still lists every
- * value, including the model default and the menu-only ones.
+ * effort is one click away on wide screens. Phones have no room for it; there
+ * the model menu shows the level and lists every value.
  */
 function ComposerEffortPicker({ effort, effortOptions, onSelectEffort }: ComposerEffortPickerProps) {
   const { t } = useTranslation('chat');
@@ -27,54 +26,37 @@ function ComposerEffortPicker({ effort, effortOptions, onSelectEffort }: Compose
   }
 
   const heading = t('composer.reasoning', { defaultValue: 'Reasoning' });
-  const currentIndex = values.indexOf(effort);
-  const nextValue = values[(currentIndex + 1) % values.length];
-  const currentLabel = currentIndex >= 0
-    ? shortEffortLabel(effort)
-    : t('composer.effortDefault', { defaultValue: 'Default' });
 
   return (
-    <>
-      <button
-        type="button"
-        onClick={() => onSelectEffort(nextValue)}
-        className="flex h-8 shrink-0 items-center rounded-lg border border-border/60 bg-muted/40 px-2 text-xs font-medium text-foreground transition-colors hover:bg-muted sm:hidden"
-        aria-label={`${heading}: ${currentLabel}`}
-        title={`${heading}: ${currentLabel} → ${shortEffortLabel(nextValue)}`}
-      >
-        {currentLabel}
-      </button>
-
-      <div
-        role="radiogroup"
-        aria-label={heading}
-        className="hidden h-8 shrink-0 items-center gap-0.5 rounded-lg border border-border/60 bg-muted/40 p-0.5 sm:flex"
-      >
-        {values.map((value) => {
-          const isSelected = value === effort;
-          return (
-            <button
-              key={value}
-              type="button"
-              role="radio"
-              aria-checked={isSelected}
-              onClick={() => {
-                if (!isSelected) onSelectEffort(value);
-              }}
-              title={`${heading}: ${value}`}
-              className={cn(
-                'h-full rounded-md px-2 text-xs font-medium transition-colors',
-                isSelected
-                  ? 'bg-background text-foreground shadow-sm ring-1 ring-border'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-              )}
-            >
-              {shortEffortLabel(value)}
-            </button>
-          );
-        })}
-      </div>
-    </>
+    <div
+      role="radiogroup"
+      aria-label={heading}
+      className="hidden h-8 shrink-0 items-center gap-0.5 rounded-lg border border-border/60 bg-muted/40 p-0.5 sm:flex"
+    >
+      {values.map((value) => {
+        const isSelected = value === effort;
+        return (
+          <button
+            key={value}
+            type="button"
+            role="radio"
+            aria-checked={isSelected}
+            onClick={() => {
+              if (!isSelected) onSelectEffort(value);
+            }}
+            title={`${heading}: ${value}`}
+            className={cn(
+              'h-full rounded-md px-2 text-xs font-medium transition-colors',
+              isSelected
+                ? 'bg-background text-foreground shadow-sm ring-1 ring-border'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+            )}
+          >
+            {shortEffortLabel(value)}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
