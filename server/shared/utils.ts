@@ -42,6 +42,40 @@ import type {
 export const IS_PLATFORM = process.env.VITE_IS_PLATFORM === 'true';
 
 // ---------------------------
+//----------------- CLAUDE CODE CONFIGURATION UTILITIES ------------
+/**
+ * Claude Code's configuration directory: `CLAUDE_CONFIG_DIR` when it is set,
+ * else `.claude` in the home directory. Claude Code keeps its settings,
+ * credentials, session transcripts (`projects/`), `history.jsonl`, skills and
+ * user commands there.
+ *
+ * Fork (Hemilake): hemi runs Studio's Claude Code with a `CLAUDE_CONFIG_DIR`
+ * of its own, so every module that reads those files resolves the directory
+ * here instead of joining `~/.claude`. `homeDirectory` lets a service that
+ * injects its home in tests keep doing so.
+ */
+export function getClaudeConfigDirectory(
+  homeDirectory: string = os.homedir(),
+  environment: NodeJS.ProcessEnv = process.env,
+): string {
+  const configured = environment.CLAUDE_CONFIG_DIR?.trim();
+  return configured ? path.resolve(configured) : path.join(homeDirectory, '.claude');
+}
+
+/**
+ * Claude Code's global state file, `.claude.json` (user-scoped MCP servers
+ * among other things). Claude Code writes it inside `CLAUDE_CONFIG_DIR` when
+ * that is set, and next to the `.claude` directory in the home otherwise.
+ */
+export function getClaudeGlobalConfigPath(
+  homeDirectory: string = os.homedir(),
+  environment: NodeJS.ProcessEnv = process.env,
+): string {
+  const configured = environment.CLAUDE_CONFIG_DIR?.trim();
+  return configured ? path.join(path.resolve(configured), '.claude.json') : path.join(homeDirectory, '.claude.json');
+}
+
+// ---------------------------
 //----------------- NORMALIZED MESSAGE HELPER INPUT TYPES ------------
 /**
  * Input payload accepted by `createNormalizedMessage`.

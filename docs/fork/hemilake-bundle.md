@@ -61,7 +61,7 @@ the Claude agent SDK and Codex ship their CLI binaries per platform (~230 MB and
 
 The bundle carries no agent CLI. Studio runs the owner's own:
 
-- **Claude Code**: `claude` on the service's `PATH`, or `CLAUDE_CLI_PATH`.
+- **Claude Code**: `claude` on the service's `PATH`, or `CLAUDE_CLI_PATH`. hemi gives Studio its own pinned copy and its own `CLAUDE_CONFIG_DIR` (HEM-777); Studio reads Claude Code's sessions, settings and sign-in from there. Claude Code signs in with the owner's own Claude account or API key (ADR-047 in the Hemilake repository).
 - **Codex**: `CODEX_CLI_PATH`; the launcher fills it with `command -v codex`
   when it is unset. Without a Codex, Codex conversations fail with a clear error
   and branching a Codex conversation answers 501.

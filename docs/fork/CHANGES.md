@@ -2,6 +2,19 @@
 
 One entry per customization, newest first. Keep the file list accurate: it is the conflict checklist for upstream merges.
 
+## Claude Code's files under CLAUDE_CONFIG_DIR
+
+- **Since:** 2026-10-07, on top of upstream v1.37.3.
+- **Branch:** `feat/claude-config-dir`, merged into `main`. Could go upstream: it is a plain bug for anyone who sets `CLAUDE_CONFIG_DIR`.
+- **Why:** hemi runs Studio's own Claude Code with a `CLAUDE_CONFIG_DIR` of its own, so Studio's sessions never touch the owner's `~/.claude` (HEM-777, ADR-047). Studio passed its environment to every session already, but read Claude Code's files from `~/.claude` and `~/.claude.json` directly: with the directory elsewhere it listed no conversations, could not reload them and reported Claude as signed out.
+- **What:**
+  - `getClaudeConfigDirectory()` and `getClaudeGlobalConfigPath()` in `server/shared/utils.ts`: `CLAUDE_CONFIG_DIR` when set, else `~/.claude`; `.claude.json` inside `CLAUDE_CONFIG_DIR` when set, else in the home (checked against Claude Code: `claude mcp add --scope user` writes `$CLAUDE_CONFIG_DIR/.claude.json`).
+  - Every reader goes through them: the sessions watcher, the session synchronizer (`projects/`, `history.jsonl`), token usage, skills, MCP settings (provider and runtime), user commands, TaskMaster's detection, the CLI's status line, and the Claude sign-in check (`settings.json`, `.credentials.json`).
+  - The sign-in check counts an `apiKeyHelper` in `settings.json` as signed in ("API key helper"): that is how hemi gives Claude Code the owner's own API key without putting it in the environment.
+  - Project-level `.claude/` folders inside workspaces and the agent API's `~/.claude/external-projects` are unchanged.
+- **Files:** `server/shared/utils.ts`, `server/shared/tests/claude-config-dir.test.ts` (new), `server/modules/providers/list/claude/{claude-auth,claude-mcp,claude-session-synchronizer,claude-skills}.provider.ts`, `server/modules/providers/list/claude/claude-runtime.provider.js`, `server/modules/providers/services/{sessions-watcher,provider-token-usage}.service.ts`, `server/modules/commands/commands.routes.ts`, `server/modules/taskmaster/taskmaster.service.ts`, `server/modules/cli/cli.service.ts`, `server/modules/providers/tests/claude-auth.test.ts`, `docs/fork/hemilake-bundle.md`.
+- **Verified:** typecheck, lint, the Claude auth and config tests (13), the server suite (the Antigravity auth test fails on `main` too), and a throwaway Studio on think with `CLAUDE_CONFIG_DIR` set and the key given only through an `apiKeyHelper` script: Claude shows as signed in, a real reply arrives, the transcript lands in `$CLAUDE_CONFIG_DIR/projects/`, the conversation shows in Recent and reloads from disk, no `~/.claude` or `~/.claude.json` appears in the home, and the server's environment holds no key.
+
 ## Hemilake bundle: Studio without a Node of your own
 
 - **Since:** 2026-10-07, on top of upstream v1.37.3.

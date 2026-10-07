@@ -7,6 +7,7 @@ import {
   buildLookupMap,
   extractFirstValidJsonlData,
   findFilesRecursivelyCreatedAfter,
+  getClaudeConfigDirectory,
   normalizeSessionName,
   readFileTimestamps,
 } from '@/shared/utils.js';
@@ -23,7 +24,8 @@ type ParsedSession = {
  */
 export class ClaudeSessionSynchronizer implements IProviderSessionSynchronizer {
   private readonly provider = 'claude' as const;
-  private readonly claudeHome = path.join(os.homedir(), '.claude');
+  // Fork (Hemilake): CLAUDE_CONFIG_DIR when set, as Claude Code itself does.
+  private readonly claudeHome = getClaudeConfigDirectory();
 
   /**
    * Returns true when a JSONL file is a subagent transcript or tool result

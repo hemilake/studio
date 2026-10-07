@@ -11,13 +11,14 @@ import type {
 } from '@/shared/types.js';
 import {
   findProviderSkillMarkdownFiles,
+  getClaudeConfigDirectory,
   readJsonConfig,
   readObjectRecord,
   readOptionalString,
   readProviderSkillMarkdownDefinition,
 } from '@/shared/utils.js';
 
-const getClaudeHomePath = (): string => path.join(os.homedir(), '.claude');
+const getClaudeHomePath = (): string => getClaudeConfigDirectory();
 
 const getClaudePluginName = (pluginId: string): string | null => {
   const normalizedPluginId = pluginId.trim();

@@ -20,7 +20,7 @@ type CheckCredentialsResult = {
 const checkCredentials = (auth: ClaudeProviderAuth): Promise<CheckCredentialsResult> =>
   (auth as unknown as { checkCredentials: () => Promise<CheckCredentialsResult> }).checkCredentials();
 
-const ENV_KEYS = ['CLAUDE_CODE_OAUTH_TOKEN', 'ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN'] as const;
+const ENV_KEYS = ['CLAUDE_CODE_OAUTH_TOKEN', 'ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN', 'CLAUDE_CONFIG_DIR'] as const;
 
 const withEnv = async (
   overrides: Partial<Record<(typeof ENV_KEYS)[number], string>>,
@@ -204,5 +204,44 @@ test('checkCredentials: ANTHROPIC_API_KEY takes precedence over CLAUDE_CODE_OAUT
         assert.equal(status.method, 'api_key');
       },
     );
+  });
+});
+
+// Fork (Hemilake): Studio installed by hemi runs Claude Code with its own CLAUDE_CONFIG_DIR.
+test('checkCredentials: reads the credentials file from CLAUDE_CONFIG_DIR when it is set, not from ~/.claude', async () => {
+  await withTempHome(async (homeDir) => {
+    await writeCredentialsFile(homeDir, {
+      claudeAiOauth: { accessToken: 'home-token', expiresAt: Date.now() + 60 * 60 * 1000 },
+      email: 'home@example.com',
+    });
+    const configDir = path.join(homeDir, 'studio-claude');
+    await mkdir(configDir, { recursive: true });
+
+    await withEnv({ CLAUDE_CONFIG_DIR: configDir }, async () => {
+      const signedOut = await checkCredentials(new ClaudeProviderAuth());
+      assert.equal(signedOut.authenticated, false);
+
+      await writeFile(path.join(configDir, '.credentials.json'), JSON.stringify({
+        claudeAiOauth: { accessToken: 'studio-token', expiresAt: Date.now() + 60 * 60 * 1000 },
+        email: 'studio@example.com',
+      }));
+      const signedIn = await checkCredentials(new ClaudeProviderAuth());
+      assert.equal(signedIn.authenticated, true);
+      assert.equal(signedIn.email, 'studio@example.com');
+    });
+  });
+});
+
+test('checkCredentials: an apiKeyHelper in settings.json counts as signed in', async () => {
+  await withTempHome(async (homeDir) => {
+    const configDir = path.join(homeDir, 'studio-claude');
+    await mkdir(configDir, { recursive: true });
+    await writeFile(path.join(configDir, 'settings.json'), JSON.stringify({ apiKeyHelper: '/opt/example/key-helper' }));
+
+    await withEnv({ CLAUDE_CONFIG_DIR: configDir }, async () => {
+      const status = await checkCredentials(new ClaudeProviderAuth());
+      assert.equal(status.authenticated, true);
+      assert.equal(status.method, 'api_key');
+    });
   });
 });
