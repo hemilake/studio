@@ -11,3 +11,15 @@ Contributions by Siteboon AI B.V. prior to commit 004135ef were originally
 published under GPL-3.0 and are hereby relicensed to AGPL-3.0-or-later.
 Contributions by other authors prior to that commit remain under GPL-3.0
 and are incorporated into this work as permitted by GPL-3.0 Section 13.
+
+-------------------------------------------------------------------------
+
+Hemilake Studio (https://github.com/hemilake/studio)
+
+Hemilake Studio is a modified version of CloudCLI UI
+(https://github.com/siteboon/claudecodeui), changed since 2026-09-08.
+It is not CloudCLI UI and is not endorsed by Siteboon AI B.V.
+docs/fork/CHANGES.md lists every change and the date it was made.
+
+Modifications copyright 2026 the Hemilake Studio contributors, licensed
+under the same terms (AGPL-3.0-or-later with the additional terms in LICENSE).

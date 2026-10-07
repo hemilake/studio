@@ -15,7 +15,7 @@ type ServerTheme = {
 const THEMES: Record<string, ServerTheme> = {
   hemilake: { name: 'Hemilake Studio', shortName: 'Hemilake', backgroundColor: '#F6F3EE', iconPrefix: '/icons' },
   orange: { name: 'Orange Studio', shortName: 'Orange Studio', backgroundColor: '#FFFFFF', iconPrefix: '/themes/orange' },
-  classic: { name: 'CloudCLI', shortName: 'CloudCLI', backgroundColor: '#F6F4EF', iconPrefix: '/themes/classic' },
+  classic: { name: 'Hemilake Studio', shortName: 'Hemilake', backgroundColor: '#F6F4EF', iconPrefix: '/icons' },
 };
 
 const DEFAULT_THEME = 'hemilake';

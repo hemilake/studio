@@ -106,7 +106,7 @@
   --nav-input-focus-ring: 29 100% 50% / 0.4;
 }
 
-/* ---------- CloudCLI classic: upstream's cream and blue, Encode Sans ---------- */
+/* ---------- Classic blue: CloudCLI UI's cream and blue palette, Encode Sans ---------- */
 
 :root[data-theme="classic"] {
   --background: 44 22% 96%;

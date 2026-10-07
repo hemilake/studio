@@ -69,9 +69,9 @@ await writePng(inkTileSvg(1024), join(root, '..', 'electron', 'assets', 'logo-ma
 // Other themes (src/shared/theme/registry.tsx): favicon PNG and PWA icons from the
 // theme's own logo file in public/themes/<id>/, rendered as delivered, never redrawn.
 // Orange uses its small logo (square and bar), as its brand rules ask below 50 px.
+// Classic blue reuses Hemilake's icons.
 const THEME_ICON_SOURCES = {
   orange: 'logo-small.svg',
-  classic: 'logo.svg',
 };
 for (const [themeId, source] of Object.entries(THEME_ICON_SOURCES)) {
   const dir = join(root, 'themes', themeId);

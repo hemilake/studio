@@ -50,13 +50,6 @@ function OrangeWordmark({ className }: { className?: string }) {
   return <span className={cn('whitespace-nowrap font-bold text-foreground', className)}>Studio</span>;
 }
 
-function ClassicMark({ className }: { className?: string; size?: BrandMarkSize }) {
-  return <img src="/themes/classic/logo.svg" alt="" aria-hidden="true" className={cn('h-4 w-4', className)} />;
-}
-
-function ClassicWordmark({ className }: { className?: string }) {
-  return <span className={cn('whitespace-nowrap font-semibold tracking-tight text-foreground', className)}>CloudCLI</span>;
-}
 
 export const THEMES: Record<ThemeId, ThemeDefinition> = {
   hemilake: {
@@ -85,21 +78,19 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
     Mark: OrangeMark,
     Wordmark: OrangeWordmark,
   },
+  // Upstream's cream-and-blue palette under the Hemilake Studio brand: CloudCLI UI's licence
+  // (LICENSE, Section 7) forbids presenting a modified version under its name or logo.
   classic: {
     id: 'classic',
-    label: 'CloudCLI classic',
-    brandName: 'CloudCLI',
-    footerName: 'CloudCLI',
+    label: 'Classic blue',
+    brandName: 'Hemilake Studio',
+    footerName: 'hemilake studio',
     fontStylesheet: 'https://fonts.googleapis.com/css2?family=Encode+Sans:wght@400;500;600;700&display=swap',
-    favicon: {
-      svg: '/themes/classic/logo.svg',
-      png: '/themes/classic/favicon.png',
-      appleTouch: '/themes/classic/icon-192x192.png',
-    },
+    favicon: { svg: '/favicon.svg', png: '/favicon.png', appleTouch: '/icons/icon-192x192.png' },
     browserColor: { light: '#F6F4EF', dark: '#141414' },
     swatches: ['#F6F4EF', '#0D0B08', '#2563EB'],
-    Mark: ClassicMark,
-    Wordmark: ClassicWordmark,
+    Mark: HemilakeMark,
+    Wordmark: HemilakeWordmark,
   },
 };
 

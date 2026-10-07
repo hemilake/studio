@@ -597,6 +597,7 @@
     "runningStatus": "en ejecución"
   },
   "about": {
-    "tagline": "Tu espacio de trabajo personal con IA, construido sobre CloudCLI"
+    "tagline": "Tu espacio de trabajo personal con IA, construido sobre CloudCLI",
+    "licensed": "Licencia AGPL-3.0-or-later. Versión modificada de CloudCLI UI (https://github.com/siteboon/claudecodeui)."
   }
 }

@@ -2,11 +2,20 @@
 
 One entry per customization, newest first. Keep the file list accurate: it is the conflict checklist for upstream merges.
 
-## Themes (Hemilake, Orange, CloudCLI classic)
+## README, NOTICE and licence notices for Hemilake Studio
+
+- **Since:** 2026-10-07, on top of upstream v1.37.3.
+- **Branch:** `main` only. Fork identity, never for upstream.
+- **Why:** the repository moved to `hemilake/studio` and is public. Its README should describe Hemilake Studio, short, while keeping what CloudCLI UI's licence requires: the attribution "CloudCLI UI (https://github.com/siteboon/claudecodeui)" in a prominent place, a clear mark that this is a modified version, and no use of "CloudCLI" or "Siteboon" to promote it (LICENSE, Section 7).
+- **What:** `README.md` rewritten: what Studio is, what it adds, how to run it from source, the environment variables, and a licence section with the attribution and AGPL's source-offer duty. The upstream translations in `docs/README.*.md` are deleted (they described CloudCLI UI). `NOTICE` keeps upstream's text and adds a Hemilake Studio block: modified version, changed since 2026-09-08, not endorsed by Siteboon, changes listed in this file. The About tab's licence line names CloudCLI UI as the original (en, es).
+- **Files:** `README.md`, `NOTICE`, `docs/README.{de,ja,ko,ru,tr,zh-CN,zh-TW}.md` (deleted), `src/modules/i18n/locales/{en,es}/settings.json`
+- **Merge note:** upstream edits to the deleted translations will show up as modify/delete conflicts; keep them deleted.
+
+## Themes (Hemilake, Orange, Classic blue)
 
 - **Since:** 2026-10-07, on top of upstream v1.37.3.
 - **Branch:** `feat/theme-system`, merged into `main`. Builds on the Hemilake theme entry below. Fork identity, never for upstream.
-- **Why:** besides Hemilake, instances for Orange people should look like Orange (white, black, orange, Helvetica Neue, square corners, the Orange logo), and users who preferred the old blue look get it back.
+- **Why:** besides Hemilake, instances for Orange people should look like Orange (white, black, orange, Helvetica Neue, square corners, the Orange logo), and users who preferred the old blue look get it back. Classic blue keeps the Hemilake Studio name and mark: CloudCLI UI's licence (Section 7) forbids presenting a modified version under its name or logo.
 - **What:**
   - A theme is a palette plus a brand. `src/shared/theme/registry.tsx` lists them (id, label, product name, footer name, mark, wordmark, favicon, browser colour, optional web font); `src/shared/theme/themes.css` holds the Orange and classic values for `:root[data-theme=…]` and `.dark[data-theme=…]`. Hemilake's values stay the defaults in `src/index.css`.
   - Fonts, grays and corner radii are CSS variables now: `--font-sans`, `--font-mono`, `--gray-50…950` (RGB channels, so `bg-gray-500/10` keeps working) and every `rounded-*` step scaled from `--radius`, so a radius of 0 squares the whole UI while `rounded-full` stays round. The terminal reads `--terminal-*` and follows theme switches; the code editor toolbar uses the tokens.
@@ -16,7 +25,7 @@ One entry per customization, newest first. Keep the file list accurate: it is th
   - Settings › Appearance has a theme picker; "Use the instance default" clears the user's pick.
 - **Files:**
   - `src/shared/theme/registry.tsx`, `src/shared/theme/themes.css`, `src/shared/ui/ThemedBrand.tsx`, `src/modules/settings/tabs/ThemePicker.tsx`, `server/shared/themes.ts`, `server/shared/tests/themes.test.ts` (new)
-  - `public/themes/orange/*` (Orange's logo files plus generated PNGs), `public/themes/classic/*` (upstream's logo plus PNGs), `scripts/fork/generate-brand-icons.mjs`
+  - `public/themes/orange/*` (Orange's logo files plus generated PNGs), `scripts/fork/generate-brand-icons.mjs`
   - `src/shared/context/ThemeContext.tsx`, `src/shared/tests/themeContext.test.tsx`, `src/shared/ui/BrandMark.tsx` (Hemilake's mark renamed), `src/shared/ui/index.ts`, `src/shared/constants.ts`, `src/shared/utils.ts`, `src/shared/userSettings.ts` (`colorTheme`)
   - `tailwind.config.js`, `src/index.css`, `src/main.tsx`, `.oxlintrc.json`, `server/index.ts`
   - `src/modules/settings/tabs/AppearanceSettingsTab.tsx`, `src/modules/sidebar/{SidebarHeader,SidebarFooter}.tsx`, `src/modules/auth/{AuthLoadingScreen,AuthScreenLayout}.tsx`, `src/modules/settings/tabs/AboutTab.tsx`, `src/modules/mcp/McpServers.tsx`, `src/modules/chat/utils/pageTitleNotification.ts`, `src/modules/shell/hooks/useShellTerminal.ts`, `src/modules/code-editor/utils/editorStyles.ts`
