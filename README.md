@@ -8,6 +8,23 @@ Hemilake Studio runs on your own machine and gives each agent CLI a chat interfa
 
 Hemilake Studio is a modified version of **CloudCLI UI (https://github.com/siteboon/claudecodeui)**. It is not CloudCLI UI and is not endorsed by Siteboon AI B.V.
 
+<p align="center">
+  <img src="docs/screenshots/chat-light.png" alt="A Claude Code session in Hemilake Studio: Claude finds why a test fails, fixes the code and runs the suite" width="100%">
+</p>
+
+<table>
+  <tr>
+    <td width="40%"><img src="docs/screenshots/chat-dark.png" alt="The same session in dark mode"></td>
+    <td width="40%"><img src="docs/screenshots/settings-themes.png" alt="Settings › Appearance with the Hemilake, Orange and Classic blue themes"></td>
+    <td width="20%"><img src="docs/screenshots/mobile.png" alt="The session on a phone"></td>
+  </tr>
+  <tr>
+    <td align="center">Dark mode</td>
+    <td align="center">Themes</td>
+    <td align="center">On a phone</td>
+  </tr>
+</table>
+
 ## What you get
 
 - Chat with Claude Code, Codex, Cursor CLI, OpenCode and Antigravity, with full session history.

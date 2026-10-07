@@ -9,6 +9,7 @@ One entry per customization, newest first. Keep the file list accurate: it is th
 - **Why:** the repository moved to `hemilake/studio` and is public. Its README should describe Hemilake Studio, short, while keeping what CloudCLI UI's licence requires: the attribution "CloudCLI UI (https://github.com/siteboon/claudecodeui)" in a prominent place, a clear mark that this is a modified version, and no use of "CloudCLI" or "Siteboon" to promote it (LICENSE, Section 7).
 - **What:** `README.md` rewritten: what Studio is, what it adds, how to run it from source, the environment variables, and a licence section with the attribution and AGPL's source-offer duty. The upstream translations in `docs/README.*.md` are deleted (they described CloudCLI UI). `NOTICE` keeps upstream's text and adds a Hemilake Studio block: modified version, changed since 2026-09-08, not endorsed by Siteboon, changes listed in this file. The About tab's licence line names CloudCLI UI as the original (en, es).
 - **Files:** `README.md`, `NOTICE`, `docs/README.{de,ja,ko,ru,tr,zh-CN,zh-TW}.md` (deleted), `src/modules/i18n/locales/{en,es}/settings.json`
+- **Screenshots:** `docs/screenshots/*.png`, taken from a throwaway instance (its own `HOME` and `DATABASE_PATH`) with a demo project, `pocket-ledger`, and a real two-turn Claude Code session. Retake them the same way rather than from a working instance: they are public.
 - **Merge note:** upstream edits to the deleted translations will show up as modify/delete conflicts; keep them deleted.
 
 ## Themes (Hemilake, Orange, Classic blue)
