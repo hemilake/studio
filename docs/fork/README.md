@@ -1,6 +1,6 @@
 # About this fork
 
-`pmoncadaisla/cloudcli` is a fork of [siteboon/claudecodeui](https://github.com/siteboon/claudecodeui) that runs the CloudCLI instances on Pablo's machine with a few patches upstream does not have yet. The list of patches is in [CHANGES.md](CHANGES.md); how the instances are deployed is in `local-instances.md` (untracked, machine-specific).
+`hemilake/studio` (Hemilake Studio) is built on [siteboon/claudecodeui](https://github.com/siteboon/claudecodeui) (CloudCLI) and runs the instances on Pablo's machine with patches upstream does not have. It started on 2026-10-07 from the history of the GitHub fork `pmoncadaisla/cloudcli`, which stays as the route for upstream pull requests. The list of patches is in [CHANGES.md](CHANGES.md); how the instances are deployed is in `local-instances.md` (untracked, machine-specific).
 
 ## Branch model
 
@@ -9,7 +9,7 @@
 | `main` | `origin/main` | Upstream `main` plus this fork's patches. The instances run from here. |
 | `feat/*` | cut from `upstream/main` | One patch each, clean enough to open as an upstream PR. Merged into `main` right away, deleted once upstream merges it. |
 
-Remotes: `upstream` = siteboon/claudecodeui (read-only), `origin` = pmoncadaisla/cloudcli.
+Remotes: `origin` = hemilake/studio (where `main` lives), `upstream` = siteboon/claudecodeui (read-only), `cloudcli-fork` = pmoncadaisla/cloudcli. GitHub only opens pull requests to upstream from a repository in its fork network, so `feat/*` branches meant for upstream are pushed to `cloudcli-fork`.
 
 ## Running from source
 
@@ -48,7 +48,7 @@ If a patch has been merged upstream, drop it here: the merge will usually take c
 git fetch upstream
 git checkout -b feat/short-name upstream/main
 # ... commit ...
-git push -u origin feat/short-name
+git push -u cloudcli-fork feat/short-name
 gh pr create --repo siteboon/claudecodeui --base main --head pmoncadaisla:feat/short-name
 git checkout main && git merge feat/short-name && git push origin main
 ```

@@ -38,7 +38,7 @@ export const UPSTREAM_NAME = 'CloudCLI';
 export const UPSTREAM_REPO_URL = 'https://github.com/siteboon/claudecodeui';
 
 /** This fork's repository. */
-export const FORK_REPO_URL = 'https://github.com/pmoncadaisla/cloudcli';
+export const FORK_REPO_URL = 'https://github.com/hemilake/studio';
 
 // ---------------------------
 
