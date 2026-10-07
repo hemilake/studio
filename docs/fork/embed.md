@@ -18,6 +18,7 @@ framed app keeps first-party storage.
 |---|---|
 | `CLOUDCLI_EMBED_ORIGINS` | Comma-separated console origins, e.g. `https://lake.example.com`. They are the only ones that may frame Studio (`Content-Security-Policy: frame-ancestors 'self' <origins>`) and the only ones whose messages Studio reads. Without it nobody else can frame Studio. |
 | `CLOUDCLI_EMBED_SECRET` or `CLOUDCLI_EMBED_SECRET_FILE` | The key, 32 characters or more, that the console signs sign-in assertions with. The file is read on every exchange, so it can be rotated without a restart. Without it the framed app shows its own login form. |
+| `CLOUDCLI_EMBED_ONLY=1` | The console is the only way in: sign-up and password login are refused (`403 AUTH_CONSOLE_ONLY`), `GET /api/auth/status` says `consoleOnly: true` and never asks for setup, and the first valid assertion creates the single account (`owner`, with a password nobody knows). Opened outside the console, Studio shows a page that sends the owner to it, with no form. Use it whenever Studio is reachable from the internet: otherwise a fresh instance lets its first visitor sign up and get a shell. With it set but the origins or the secret missing, nobody can sign in, and Studio logs so at start. |
 
 Set `HOST=127.0.0.1` when the tunnel runs on the same machine, so Studio is not
 reachable on the network without going through it.
@@ -57,10 +58,12 @@ token. It never trusts a header set by a proxy.
    once.
 4. If nothing arrives within 8 s, or the exchange is refused, Studio posts
    `auth.failed { code }` and shows its login form. With no account yet the code
-   is `EMBED_NO_USER` and Studio shows its setup form.
+   is `EMBED_NO_USER` and Studio shows its setup form. In console-only mode there
+   is no account to miss (the exchange creates it) and no form to fall back to:
+   Studio shows the code and asks the owner to reload Studio's page in the console.
 
-`GET /api/embed/config` (public) returns `{ origins, exchange }`. The framed app
-reads it before it trusts any message.
+`GET /api/embed/config` (public) returns `{ origins, exchange, only }`. The framed
+app reads it before it trusts any message.
 
 ## Messages
 
@@ -113,3 +116,7 @@ opens or closes, so neither exists in v1.
   commands never acts on it before the owner reads it.
 - `frame-ancestors` is now sent on every response. Before embed mode Studio sent
   no framing policy, so any site could frame it.
+- A fresh Studio lets whoever reaches it first create its only account, and that
+  account runs shell commands as the owner. A Studio published on the internet
+  next to its console runs with `CLOUDCLI_EMBED_ONLY=1`, so the console's
+  sign-in is the only way in.

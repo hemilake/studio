@@ -76,11 +76,14 @@ PATH=<owner's PATH, with the agent CLIs> \
 HOST=127.0.0.1 SERVER_PORT=8197 \
 CLOUDCLI_EMBED_ORIGINS=<the console's origins> \
 CLOUDCLI_EMBED_SECRET_FILE=<$HEMI_SECRETS/studio-embed-secret> \
+CLOUDCLI_EMBED_ONLY=1 \
   <bundle>/bin/hemilake-studio
 ```
 
 The launcher defaults `HOST` to `127.0.0.1`, `SERVER_PORT` to `8197` and
-`CLOUDCLI_THEME` to `hemilake`. Studio keeps its data where it always does
+`CLOUDCLI_THEME` to `hemilake`. `CLOUDCLI_EMBED_ONLY=1` makes the console the
+only way to sign in (`docs/fork/embed.md`); hemi sets it, because it publishes
+Studio next to the console. Studio keeps its data where it always does
 (`~/.cloudcli`, or `DATABASE_PATH`), so an update replaces the archive and keeps
 the data, and an owner who already ran Studio from source keeps their account,
 projects and settings.

@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module';
 
 import { getConnection, userDb } from '@/modules/database/index.js';
+import { isEmbedOnly } from '@/shared/utils.js';
 
 import { authenticateToken, generateToken } from './auth.middleware.js';
 import { createAuthRouter } from './auth.routes.js';
@@ -32,6 +33,7 @@ const authService = createAuthService({
   hashPassword: (password) => bcrypt.hash(password, 12),
   comparePassword: (password, passwordHash) => bcrypt.compare(password, passwordHash),
   generateToken,
+  consoleOnly: () => isEmbedOnly(),
 });
 
 /** Auth router assembled for the server entrypoint. */

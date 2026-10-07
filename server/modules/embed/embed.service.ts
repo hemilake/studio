@@ -23,6 +23,11 @@ type EmbedDependencies = {
   verifyAssertion(assertion: string, secret: string, issuers: string[]): AssertionClaims;
   users: {
     getFirstUser(): EmbedUser | undefined;
+    /**
+     * Console-only mode: the instance's single account, created now when there
+     * is none, with a password nobody knows (password login is off anyway).
+     */
+    createConsoleOwner(): EmbedUser;
     updateLastLogin(userId: number): void;
   };
   generateToken(user: EmbedUser): string;
@@ -47,7 +52,9 @@ function refused(message: string, code: string, statusCode = 401): AppError {
  *
  * Studio stays single-user behind a console, as in platform mode: a valid
  * assertion signs in the instance's first active user. Each assertion is good
- * once; its `jti` is remembered until it would have expired anyway.
+ * once; its `jti` is remembered until it would have expired anyway. In
+ * console-only mode nobody can sign up, so the first valid assertion creates
+ * that user.
  */
 export function createEmbedService(dependencies: EmbedDependencies) {
   const spentAssertions = new Map<string, number>();
@@ -66,6 +73,7 @@ export function createEmbedService(dependencies: EmbedDependencies) {
       return {
         origins: config.origins,
         exchange: config.origins.length > 0 && config.secret !== null,
+        only: config.only,
       };
     },
 
@@ -97,7 +105,11 @@ export function createEmbedService(dependencies: EmbedDependencies) {
       }
       spentAssertions.set(claims.jti, Math.min(claims.exp, nowSeconds + EMBED_ASSERTION_MAX_AGE_S));
 
-      const user = dependencies.users.getFirstUser();
+      let user = dependencies.users.getFirstUser();
+      if (!user && config.only) {
+        // Console-only: sign-up is off, so the console's owner gets the account.
+        user = dependencies.users.createConsoleOwner();
+      }
       if (!user) {
         // A fresh instance has no account yet: the client falls back to setup.
         throw refused('Studio has no account yet', 'EMBED_NO_USER', 409);

@@ -33,3 +33,11 @@ test('the secret comes from the variable, else from the file, and must be long e
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('console-only mode is on only when CLOUDCLI_EMBED_ONLY says so', () => {
+  assert.equal(readEmbedConfig({}).only, false);
+  assert.equal(readEmbedConfig({ CLOUDCLI_EMBED_ONLY: '1' }).only, true);
+  assert.equal(readEmbedConfig({ CLOUDCLI_EMBED_ONLY: ' True ' }).only, true);
+  assert.equal(readEmbedConfig({ CLOUDCLI_EMBED_ONLY: '0' }).only, false);
+  assert.equal(readEmbedConfig({ CLOUDCLI_EMBED_ONLY: 'off' }).only, false);
+});

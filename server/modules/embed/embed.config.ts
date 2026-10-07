@@ -1,5 +1,7 @@
 import fs from 'fs';
 
+import { isEmbedOnly } from '@/shared/utils.js';
+
 /**
  * Fork (embed mode): who may frame Studio and the secret a framing console signs
  * its sign-in assertions with. Both come from the environment so the console's
@@ -10,10 +12,15 @@ import fs from 'fs';
  * - CLOUDCLI_EMBED_SECRET, or CLOUDCLI_EMBED_SECRET_FILE naming a file that holds
  *   it: the shared HMAC key of the sign-in exchange, 32 characters or more. The
  *   file is read on every call, so rotating it needs no restart.
+ * - CLOUDCLI_EMBED_ONLY=1: the console is the only way in. Sign-up and password
+ *   login are refused, and the first valid assertion creates the single account.
+ *   For a Studio published on the internet next to its console, where a fresh
+ *   instance's open sign-up would let the first visitor take it.
  */
 export type EmbedConfig = {
   origins: string[];
   secret: string | null;
+  only: boolean;
 };
 
 const MIN_SECRET_LENGTH = 32;
@@ -67,5 +74,6 @@ export function readEmbedConfig(env: NodeJS.ProcessEnv = process.env): EmbedConf
   return {
     origins: readEmbedOrigins(env),
     secret: readSecret(env),
+    only: isEmbedOnly(env),
   };
 }

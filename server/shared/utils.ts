@@ -41,6 +41,17 @@ import type {
  */
 export const IS_PLATFORM = process.env.VITE_IS_PLATFORM === 'true';
 
+/**
+ * Fork (Hemilake): whether Studio signs in through its framing console only
+ * (`CLOUDCLI_EMBED_ONLY=1`). hemi sets it on the Studio it installs and
+ * publishes next to the console: Studio's own sign-up and password login are
+ * refused, and the first console assertion creates the instance's single
+ * account. The Embed and Auth modules both read it here so they agree.
+ */
+export function isEmbedOnly(environment: NodeJS.ProcessEnv = process.env): boolean {
+  return ['1', 'true', 'yes'].includes((environment.CLOUDCLI_EMBED_ONLY ?? '').trim().toLowerCase());
+}
+
 // ---------------------------
 //----------------- CLAUDE CODE CONFIGURATION UTILITIES ------------
 /**

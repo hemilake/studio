@@ -5,6 +5,7 @@ import { getEmbedMode } from '@/shared/embedBridge';
 import { useAuth } from '@/modules/auth/context/AuthContext';
 import { Onboarding } from '@/modules/onboarding';
 import AuthLoadingScreen from '@/modules/auth/AuthLoadingScreen';
+import ConsoleOnlySignIn from '@/modules/auth/ConsoleOnlySignIn';
 import EmbeddedSignIn from '@/modules/auth/EmbeddedSignIn';
 import LoginForm from '@/modules/auth/LoginForm';
 import SetupForm from '@/modules/auth/SetupForm';
@@ -15,7 +16,7 @@ type ProtectedRouteProps = {
 
 /** Used by App to gate the routed application behind setup, login and onboarding. */
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { user, isLoading, needsSetup, hasCompletedOnboarding, refreshOnboardingStatus } = useAuth();
+  const { user, isLoading, needsSetup, consoleOnly, hasCompletedOnboarding, refreshOnboardingStatus } = useAuth();
 
   if (isLoading) {
     return <AuthLoadingScreen />;
@@ -27,6 +28,11 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     }
 
     return <>{children}</>;
+  }
+
+  if (consoleOnly && !user) {
+    // Fork (Hemilake): this Studio signs in through its console only, never by a form.
+    return getEmbedMode() ? <EmbeddedSignIn consoleOnly /> : <ConsoleOnlySignIn />;
   }
 
   if (needsSetup) {

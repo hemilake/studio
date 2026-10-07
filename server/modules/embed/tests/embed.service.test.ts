@@ -46,10 +46,11 @@ function sign(claims: Record<string, unknown> = {}, secret = SECRET): string {
 
 function createDependencies(overrides: Partial<EmbedDependencies> = {}): EmbedDependencies {
   return {
-    readConfig: () => ({ origins: [CONSOLE], secret: SECRET }),
+    readConfig: () => ({ origins: [CONSOLE], secret: SECRET, only: false }),
     verifyAssertion,
     users: {
       getFirstUser: () => ({ id: 7, username: 'owner' }),
+      createConsoleOwner: () => assert.fail('only console-only mode creates an account'),
       updateLastLogin: () => undefined,
     },
     generateToken: (user) => `studio-token-for-${user.username}`,
@@ -68,14 +69,14 @@ function assertRefused(action: () => unknown, code: string, statusCode: number) 
 }
 
 test('public config says whether the exchange is usable without revealing the secret', () => {
-  assert.deepEqual(createEmbedService(createDependencies()).getPublicConfig(), { origins: [CONSOLE], exchange: true });
+  assert.deepEqual(createEmbedService(createDependencies()).getPublicConfig(), { origins: [CONSOLE], exchange: true, only: false });
   assert.deepEqual(
-    createEmbedService(createDependencies({ readConfig: () => ({ origins: [CONSOLE], secret: null }) })).getPublicConfig(),
-    { origins: [CONSOLE], exchange: false },
+    createEmbedService(createDependencies({ readConfig: () => ({ origins: [CONSOLE], secret: null, only: false }) })).getPublicConfig(),
+    { origins: [CONSOLE], exchange: false, only: false },
   );
   assert.deepEqual(
-    createEmbedService(createDependencies({ readConfig: () => ({ origins: [], secret: SECRET }) })).getPublicConfig(),
-    { origins: [], exchange: false },
+    createEmbedService(createDependencies({ readConfig: () => ({ origins: [], secret: SECRET, only: false }) })).getPublicConfig(),
+    { origins: [], exchange: false, only: false },
   );
 });
 
@@ -84,6 +85,7 @@ test('a valid assertion signs in the first user and records the login', () => {
   const service = createEmbedService(createDependencies({
     users: {
       getFirstUser: () => ({ id: 7, username: 'owner' }),
+      createConsoleOwner: () => assert.fail('an existing account is reused'),
       updateLastLogin: (userId) => logins.push(userId),
     },
   }));
@@ -131,15 +133,57 @@ test('garbage is a bad request, not a verification attempt', () => {
 });
 
 test('without origins or a secret the exchange does not exist', () => {
-  const noSecret = createEmbedService(createDependencies({ readConfig: () => ({ origins: [CONSOLE], secret: null }) }));
+  const noSecret = createEmbedService(createDependencies({ readConfig: () => ({ origins: [CONSOLE], secret: null, only: false }) }));
   assertRefused(() => noSecret.exchange(sign()), 'EMBED_EXCHANGE_DISABLED', 404);
-  const noOrigins = createEmbedService(createDependencies({ readConfig: () => ({ origins: [], secret: SECRET }) }));
+  const noOrigins = createEmbedService(createDependencies({ readConfig: () => ({ origins: [], secret: SECRET, only: false }) }));
   assertRefused(() => noOrigins.exchange(sign()), 'EMBED_EXCHANGE_DISABLED', 404);
 });
 
 test('an instance without an account answers 409 so the client can fall back to setup', () => {
   const service = createEmbedService(createDependencies({
-    users: { getFirstUser: () => undefined, updateLastLogin: () => undefined },
+    users: {
+      getFirstUser: () => undefined,
+      createConsoleOwner: () => assert.fail('only console-only mode creates an account'),
+      updateLastLogin: () => undefined,
+    },
   }));
   assertRefused(() => service.exchange(sign()), 'EMBED_NO_USER', 409);
+});
+
+test('console-only mode says so in the public config', () => {
+  const service = createEmbedService(createDependencies({
+    readConfig: () => ({ origins: [CONSOLE], secret: SECRET, only: true }),
+  }));
+  assert.deepEqual(service.getPublicConfig(), { origins: [CONSOLE], exchange: true, only: true });
+});
+
+test('console-only mode creates the account on the first valid assertion, and reuses it after', () => {
+  const accounts: { id: number; username: string }[] = [];
+  const service = createEmbedService(createDependencies({
+    readConfig: () => ({ origins: [CONSOLE], secret: SECRET, only: true }),
+    users: {
+      getFirstUser: () => accounts[0],
+      createConsoleOwner: () => {
+        accounts.push({ id: 1, username: 'owner' });
+        return accounts[0];
+      },
+      updateLastLogin: () => undefined,
+    },
+  }));
+
+  assert.equal(service.exchange(sign({ jti: 'first' })).token, 'studio-token-for-owner');
+  assert.equal(service.exchange(sign({ jti: 'second' })).token, 'studio-token-for-owner');
+  assert.equal(accounts.length, 1);
+});
+
+test('console-only mode creates nothing for an assertion it refuses', () => {
+  const service = createEmbedService(createDependencies({
+    readConfig: () => ({ origins: [CONSOLE], secret: SECRET, only: true }),
+    users: {
+      getFirstUser: () => undefined,
+      createConsoleOwner: () => assert.fail('a refused assertion creates no account'),
+      updateLastLogin: () => undefined,
+    },
+  }));
+  assertRefused(() => service.exchange(sign({}, 'x'.repeat(48))), 'EMBED_ASSERTION_INVALID', 401);
 });

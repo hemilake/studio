@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { createRequire } from 'node:module';
 
 import { generateToken } from '@/modules/auth/index.js';
@@ -23,10 +24,18 @@ type JwtAdapter = {
   verify(token: string, secret: string, options: JwtVerifyOptions): string | Record<string, unknown>;
 };
 
-// jsonwebtoken ships no TypeScript declarations here, so the composition root
-// narrows the one call it makes, as auth.module.ts does for bcrypt.
+type BcryptAdapter = {
+  hashSync(password: string, saltRounds: number): string;
+};
+
+// jsonwebtoken and bcrypt ship no TypeScript declarations here, so the
+// composition root narrows the calls it makes, as auth.module.ts does.
 const require = createRequire(import.meta.url);
 const jwt = require('jsonwebtoken') as JwtAdapter;
+const bcrypt = require('bcrypt') as BcryptAdapter;
+
+/** The account console-only mode creates; Studio shows it as the signed-in user. */
+const CONSOLE_OWNER = 'owner';
 
 const embedService = createEmbedService({
   readConfig: () => readEmbedConfig(),
@@ -42,11 +51,20 @@ const embedService = createEmbedService({
   },
   users: {
     getFirstUser: () => userDb.getFirstUser(),
+    // Synchronous from the read to the insert, so two first exchanges cannot
+    // both create an account.
+    createConsoleOwner: () => userDb.getFirstUser()
+      ?? userDb.createUser(CONSOLE_OWNER, bcrypt.hashSync(randomBytes(32).toString('base64url'), 12)),
     updateLastLogin: (userId) => userDb.updateLastLogin(userId),
   },
   generateToken: (user) => generateToken(user),
   now: () => Date.now(),
 });
+
+if (readEmbedConfig().only && !embedService.getPublicConfig().exchange) {
+  // Fail closed and say so: nobody can sign in until the console's lines are set.
+  console.warn('[embed] CLOUDCLI_EMBED_ONLY is set but CLOUDCLI_EMBED_ORIGINS or the embed secret is missing: nobody can sign in');
+}
 
 /** Embed router assembled for the server entrypoint. */
 export const embedRoutes = createEmbedRouter(embedService);

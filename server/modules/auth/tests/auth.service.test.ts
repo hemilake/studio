@@ -23,6 +23,7 @@ function createDependencies(overrides: Partial<AuthDependencies> = {}): AuthDepe
     hashPassword: async () => 'hashed-password',
     comparePassword: async () => false,
     generateToken: () => 'signed-token',
+    consoleOnly: () => false,
     ...overrides,
   };
 }
@@ -92,4 +93,37 @@ test('refreshSession issues a replacement token for the authenticated user', () 
 
   assert.deepEqual(result, { token: 'replacement-token' });
   assert.deepEqual(tokenUser, { id: 7, username: 'alice' });
+});
+
+test('console-only mode refuses sign-up and password login, and status offers no setup', async () => {
+  let created = false;
+  const service = createAuthService(createDependencies({
+    consoleOnly: () => true,
+    users: {
+      hasUsers: () => false,
+      createUser: (username, passwordHash) => {
+        created = true;
+        return { id: 1, username, password_hash: passwordHash };
+      },
+      getUserByUsername: () => ({ id: 1, username: 'owner', password_hash: 'hash' }),
+      updateLastLogin: () => undefined,
+    },
+    comparePassword: async () => true,
+  }));
+
+  assert.deepEqual(service.getStatus(), { needsSetup: false, isAuthenticated: false, consoleOnly: true });
+  for (const attempt of [() => service.register('owner', 'secret12'), () => service.login('owner', 'secret12')]) {
+    await assert.rejects(attempt, (error: unknown) => {
+      assert.ok(error instanceof AppError);
+      assert.equal(error.code, 'AUTH_CONSOLE_ONLY');
+      assert.equal(error.statusCode, 403);
+      return true;
+    });
+  }
+  assert.equal(created, false);
+});
+
+test('outside console-only mode a fresh instance still offers setup', () => {
+  const service = createAuthService(createDependencies());
+  assert.deepEqual(service.getStatus(), { needsSetup: true, isAuthenticated: false, consoleOnly: false });
 });

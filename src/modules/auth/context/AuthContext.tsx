@@ -35,6 +35,7 @@ type AuthSessionPayload = {
 
 type AuthStatusPayload = {
   needsSetup?: boolean;
+  consoleOnly?: boolean;
 };
 
 type AuthUserPayload = {
@@ -55,6 +56,8 @@ type AuthContextValue = {
   token: string | null;
   isLoading: boolean;
   needsSetup: boolean;
+  // Fork (Hemilake): the server signs in through its console only (CLOUDCLI_EMBED_ONLY).
+  consoleOnly: boolean;
   hasCompletedOnboarding: boolean;
   error: string | null;
   login: (username: string, password: string) => Promise<AuthActionResult>;
@@ -111,6 +114,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [token, setToken] = useState<string | null>(() => readStoredToken());
   const [isLoading, setIsLoading] = useState(true);
   const [needsSetup, setNeedsSetup] = useState(false);
+  const [consoleOnly, setConsoleOnly] = useState(false);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -213,6 +217,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       const statusResponse = await api.auth.status();
       const statusPayload = await parseJsonSafely<AuthStatusPayload>(statusResponse);
+      setConsoleOnly(statusPayload?.consoleOnly === true);
 
       if (statusPayload?.needsSetup) {
         setNeedsSetup(true);
@@ -364,6 +369,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       token,
       isLoading,
       needsSetup,
+      consoleOnly,
       hasCompletedOnboarding,
       error,
       login,
@@ -372,6 +378,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       refreshOnboardingStatus,
     }),
     [
+      consoleOnly,
       error,
       hasCompletedOnboarding,
       isLoading,

@@ -22,10 +22,21 @@ type AuthDependencies = {
   hashPassword(password: string): Promise<string>;
   comparePassword(password: string, passwordHash: string): Promise<boolean>;
   generateToken(user: AuthUser): string;
+  /** Fork (Hemilake): Studio signs in through its console only (CLOUDCLI_EMBED_ONLY). */
+  consoleOnly(): boolean;
 };
 
 function numericUserId(userId: number | bigint): number {
   return Number(userId);
+}
+
+function refuseWhenConsoleOnly(dependencies: AuthDependencies): void {
+  if (dependencies.consoleOnly()) {
+    throw new AppError('This Studio signs in through its Hemilake console only', {
+      code: 'AUTH_CONSOLE_ONLY',
+      statusCode: 403,
+    });
+  }
 }
 
 function isUniqueConstraintError(error: unknown): boolean {
@@ -42,13 +53,17 @@ function isUniqueConstraintError(error: unknown): boolean {
 export function createAuthService(dependencies: AuthDependencies) {
   return {
     getStatus() {
+      const consoleOnly = dependencies.consoleOnly();
       return {
-        needsSetup: !dependencies.users.hasUsers(),
+        // Console-only: there is no setup form; the console creates the account.
+        needsSetup: !consoleOnly && !dependencies.users.hasUsers(),
         isAuthenticated: false,
+        consoleOnly,
       };
     },
 
     async register(usernameInput: unknown, passwordInput: unknown) {
+      refuseWhenConsoleOnly(dependencies);
       const username = typeof usernameInput === 'string' ? usernameInput : '';
       const password = typeof passwordInput === 'string' ? passwordInput : '';
 
@@ -98,6 +113,7 @@ export function createAuthService(dependencies: AuthDependencies) {
     },
 
     async login(usernameInput: unknown, passwordInput: unknown) {
+      refuseWhenConsoleOnly(dependencies);
       const username = typeof usernameInput === 'string' ? usernameInput : '';
       const password = typeof passwordInput === 'string' ? passwordInput : '';
       if (!username || !password) {

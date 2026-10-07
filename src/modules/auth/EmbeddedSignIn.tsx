@@ -9,6 +9,7 @@ import {
   startEmbedBridge,
 } from '@/shared/embedBridge';
 import AuthLoadingScreen from '@/modules/auth/AuthLoadingScreen';
+import ConsoleOnlySignIn from '@/modules/auth/ConsoleOnlySignIn';
 import LoginForm from '@/modules/auth/LoginForm';
 
 // Long enough for a console that is still loading its own page, short enough
@@ -19,11 +20,13 @@ const ASSERTION_TIMEOUT_MS = 8_000;
  * Rendered by ProtectedRoute when Studio runs inside a Hemilake console and has
  * no session: it trades the console's signed assertion for a Studio token. The
  * stored token wakes AuthContext, which loads the user and lets the app through.
- * Any failure falls back to Studio's own login form.
+ * Any failure falls back to Studio's own login form, or, when this Studio signs
+ * in through its console only, to a page that says what went wrong.
  */
-export default function EmbeddedSignIn() {
+export default function EmbeddedSignIn({ consoleOnly = false }: { consoleOnly?: boolean }) {
   // Whether the exchange is still being tried or has given way to the login form.
   const [phase, setPhase] = useState<'exchanging' | 'login'>('exchanging');
+  const [failure, setFailure] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -31,6 +34,7 @@ export default function EmbeddedSignIn() {
     const giveUp = (code: string) => {
       postToConsole({ v: 1, type: 'auth.failed', code });
       if (!cancelled) {
+        setFailure(code);
         setPhase('login');
       }
     };
@@ -71,5 +75,8 @@ export default function EmbeddedSignIn() {
     };
   }, []);
 
-  return phase === 'login' ? <LoginForm /> : <AuthLoadingScreen />;
+  if (phase === 'exchanging') {
+    return <AuthLoadingScreen />;
+  }
+  return consoleOnly ? <ConsoleOnlySignIn code={failure} /> : <LoginForm />;
 }

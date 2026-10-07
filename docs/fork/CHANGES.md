@@ -2,6 +2,19 @@
 
 One entry per customization, newest first. Keep the file list accurate: it is the conflict checklist for upstream merges.
 
+## Console-only sign-in (CLOUDCLI_EMBED_ONLY)
+
+- **Since:** 2026-10-07, on top of upstream v1.37.3.
+- **Branch:** `feat/embed-only`, merged into `main`. Fork identity, never for upstream.
+- **Why:** hemi installs Studio and publishes it on the internet next to the console without asking the owner for anything. A fresh Studio lets its first visitor sign up, and that account gets a shell on the owner's machine. With the console as the only way in, publishing it is safe.
+- **What:**
+  - `isEmbedOnly()` in `server/shared/utils.ts` reads `CLOUDCLI_EMBED_ONLY`; the embed config carries it as `only`, and `GET /api/embed/config` returns it.
+  - Auth: `register` and `login` refuse with `403 AUTH_CONSOLE_ONLY`; `GET /api/auth/status` returns `consoleOnly` and never `needsSetup` in that mode.
+  - Embed exchange: with no account yet, a valid assertion creates the single account `owner`, with a bcrypt hash of 32 random bytes as its password. The read and the insert are synchronous, so two first exchanges cannot both create one.
+  - Client: `ConsoleOnlySignIn` (no form) outside the console or when the console's sign-in fails; `ProtectedRoute` checks console-only before setup; `EmbeddedSignIn` falls back to it instead of the login form.
+  - Studio logs a warning at start when the mode is on and the origins or the secret are missing (nobody can sign in).
+- **Files:** `server/shared/utils.ts`, `server/modules/embed/{embed.config,embed.service,embed.module}.ts`, `server/modules/auth/{auth.service,auth.module}.ts`, their tests, `src/modules/auth/{ConsoleOnlySignIn,EmbeddedSignIn,ProtectedRoute}.tsx`, `src/modules/auth/context/AuthContext.tsx`, `src/modules/i18n/locales/{en,es}/auth.json`, `docs/fork/embed.md`, `docs/fork/hemilake-bundle.md`.
+
 ## Claude Code's files under CLAUDE_CONFIG_DIR
 
 - **Since:** 2026-10-07, on top of upstream v1.37.3.
