@@ -151,7 +151,8 @@
       "label": "Tema",
       "description": "Colores, tipografía y marca. Tu elección te sigue en todos tus dispositivos.",
       "instanceDefault": "por defecto en esta instancia",
-      "useInstanceDefault": "Usar el de la instancia"
+      "useInstanceDefault": "Usar el de la instancia",
+      "embedded": "Dentro de Hemilake, Studio usa el tema de Hemilake y sigue su modo claro u oscuro. Tu elección se mantiene cuando abres Studio por separado."
     },
     "darkMode": {
       "label": "Modo oscuro",

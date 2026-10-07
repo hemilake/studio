@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { setBrandName } from '@/shared/constants';
+import { getEmbedMode, onConsoleMessage } from '@/shared/embedBridge';
 import {
   DEFAULT_THEME_ID,
   isThemeId,
@@ -43,6 +44,17 @@ export const useTheme = () => {
 
 /** Fork: the active theme definition, or the default outside a ThemeProvider (tests, isolated renders). */
 export const useThemeDefinition = (): ThemeDefinition => useContext(ThemeContext)?.theme ?? THEMES[DEFAULT_THEME_ID];
+
+/**
+ * Fork (embed mode): inside a Hemilake console Studio wears Hemilake's theme and
+ * the console's light or dark, and never stores either: the user's own choices
+ * still apply when Studio is opened on its own.
+ */
+const EMBEDDED = getEmbedMode() !== null;
+
+const systemPrefersDark = (): boolean => (
+  typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-color-scheme: dark)').matches)
+);
 
 /** Fork: the instance default seen last time, so the first paint (and the login screen) is already right. */
 const INSTANCE_THEME_STORAGE_KEY = 'instance-theme';
@@ -92,6 +104,9 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   // stored theme is read synchronously from the preference mirror so the very
   // first paint is already the right colour.
   const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (EMBEDDED) {
+      return systemPrefersDark();
+    }
     const savedTheme = readUserPreference<string | null>('theme', null);
     if (savedTheme) {
       return savedTheme === 'dark';
@@ -107,7 +122,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
 
   const [instanceThemeId, setInstanceThemeId] = useState<ThemeId>(readCachedInstanceTheme);
   const [userThemeId, setUserThemeId] = useState<ThemeId | null>(readUserTheme);
-  const theme = THEMES[userThemeId ?? instanceThemeId];
+  const theme = THEMES[EMBEDDED ? DEFAULT_THEME_ID : userThemeId ?? instanceThemeId];
 
   // The brand is also read outside React (page title) and by translations
   // ({{brand}}); keep both current before children render.
@@ -140,7 +155,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   // another tab) arrives through the preference store rather than a re-render.
   useEffect(() => subscribeToUserPreferences(() => {
     const savedTheme = readUserPreference<string | null>('theme', null);
-    if (savedTheme) {
+    if (savedTheme && !EMBEDDED) {
       setIsDarkMode(savedTheme === 'dark');
     }
     setUserThemeId(readUserTheme());
@@ -196,9 +211,10 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = (e: MediaQueryListEvent) => {
-      // Only update if user hasn't manually set a preference
+      // Only update if user hasn't manually set a preference (embedded, the
+      // console follows the system too, so Studio does as well)
       const savedTheme = readUserPreference<string | null>('theme', null);
-      if (!savedTheme) {
+      if (!savedTheme || EMBEDDED) {
         setIsDarkMode(e.matches);
       }
     };
@@ -212,8 +228,22 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const toggleDarkMode = useCallback(() => {
     setIsDarkMode((previous) => {
       const next = !previous;
-      writeUserPreference('theme', next ? 'dark' : 'light');
+      if (!EMBEDDED) {
+        writeUserPreference('theme', next ? 'dark' : 'light');
+      }
       return next;
+    });
+  }, []);
+
+  // Fork (embed mode): the console says light or dark on load and on change.
+  useEffect(() => {
+    if (!EMBEDDED) {
+      return undefined;
+    }
+    return onConsoleMessage((message) => {
+      if (message.type === 'theme') {
+        setIsDarkMode(message.mode === 'dark');
+      }
     });
   }, []);
 

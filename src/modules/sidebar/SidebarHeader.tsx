@@ -3,6 +3,7 @@ import type { TFunction } from 'i18next';
 
 import { BrandMark, BrandWordmark, Button, Input, Tooltip, useBrandName } from '@/shared/ui';
 import { IS_PLATFORM,cn } from '@/shared/utils';
+import { getEmbedMode } from '@/shared/embedBridge';
 import type { SidebarSearchMode } from '@/shared/types';
 
 const MOD_KEY =
@@ -31,6 +32,11 @@ type SidebarHeaderProps = {
 /** Module-level, not a nested render function, so the wordmark is not remounted on every SidebarHeader render. */
 function LogoBlock({ t }: { t: TFunction }) {
   const brandName = useBrandName();
+  // Fork (embed mode): the console's rail carries the brand; keep the slot so
+  // the header buttons stay on the right.
+  if (getEmbedMode()) {
+    return <div className="min-w-0 flex-1" />;
+  }
   return (
     <div className="flex min-w-0 items-center gap-2">
       <BrandMark className="h-[22px] w-[22px] flex-shrink-0 text-foreground" />

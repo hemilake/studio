@@ -1607,3 +1607,48 @@ type TaskStatus =
 
 /** A TaskMaster task's priority; high, medium and low are the known values and the string fallback tolerates anything else TaskMaster emits. */
 type TaskPriority = 'high' | 'medium' | 'low' | string;
+
+// ---------------------------
+
+//----------------- EMBED CONTRACT ------------
+// Fork (embed mode): the messages Studio and a framing Hemilake console exchange
+// over postMessage. Every message carries `v: 1`; either side ignores a type it
+// does not know, so the two can ship in any order. docs/fork/embed.md is the
+// prose version of this contract and must change with it.
+
+/** How Studio is framed: the full workspace beside the console's rail, or the compact quick panel without a sidebar. */
+export type EmbedMode = 'full' | 'compact';
+
+/** A conversation as Studio reports it to the console: enough to find its saga in the lake and to list it. */
+export type EmbedSessionSummary = {
+  id: string;
+  title: string;
+  provider: LLMProvider | null;
+  projectId: string | null;
+  projectPath: string | null;
+  /** The provider CLI's own session id, which the lake's hooks key the session's saga by; null until the first reply. */
+  providerSessionId: string | null;
+};
+
+/** Messages Studio posts to the framing console. */
+export type StudioToConsoleMessage =
+  | { v: 1; type: 'studio.ready'; version: string; embed: EmbedMode; signedIn: boolean }
+  | { v: 1; type: 'auth.request' }
+  | { v: 1; type: 'auth.failed'; code: string }
+  | { v: 1; type: 'route'; path: string; title: string }
+  | { v: 1; type: 'session'; session: EmbedSessionSummary | null; projectPath: string | null }
+  | { v: 1; type: 'session.created'; requestId: string; session: EmbedSessionSummary }
+  | { v: 1; type: 'counts'; running: number; attention: number }
+  | { v: 1; type: 'notify'; kind: 'done' | 'input'; sessionId: string; title: string }
+  | { v: 1; type: 'recent'; requestId: string; items: Array<Omit<EmbedSessionSummary, 'providerSessionId' | 'projectPath'> & { lastActivity: string | null; running: boolean }> }
+  | { v: 1; type: 'new.failed'; requestId: string; code: 'no_project' | 'workspace_failed' }
+  | { v: 1; type: 'shortcut'; combo: 'mod+j' };
+
+/** Messages the framing console posts to Studio. */
+export type ConsoleToStudioMessage =
+  | { v: 1; type: 'auth'; assertion: string }
+  | { v: 1; type: 'theme'; mode: 'light' | 'dark' }
+  | { v: 1; type: 'navigate'; path: string }
+  | { v: 1; type: 'new'; requestId: string; prompt: string; projectPath: string | null }
+  | { v: 1; type: 'focus' }
+  | { v: 1; type: 'recent.request'; requestId: string; limit: number };

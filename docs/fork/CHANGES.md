@@ -2,6 +2,23 @@
 
 One entry per customization, newest first. Keep the file list accurate: it is the conflict checklist for upstream merges.
 
+## Embed mode for the Hemilake console
+
+- **Since:** 2026-10-07, on top of upstream v1.37.3.
+- **Branch:** `feat/embed-mode`, merged into `main`. Fork identity, never for upstream.
+- **Why:** the Hemilake console shows Studio as one of its sections (`?embed=full`) and as a quick panel over any page (`?embed=compact`), without either app importing the other's code. Studio is served from its own origin; the root-relative `/api`, `/ws`, `/shell` and `/sw.js` rule out a path prefix on the console's origin.
+- **What:** the whole contract is in `docs/fork/embed.md`.
+  - Server: module `server/modules/embed`. `CLOUDCLI_EMBED_ORIGINS` and `CLOUDCLI_EMBED_SECRET(_FILE)`, `frame-ancestors 'self' <origins>` on every response (there was no framing policy before), the public `GET /api/embed/config` and `POST /api/embed/exchange`, which trades a console-signed HS256 assertion (audience `hemilake-studio`, issuer one of the origins, at most 120 s, `jti` used once) for the first user's normal token. The auth barrel now exports `generateToken`.
+  - Client: `src/shared/embedBridge.ts` detects the mode (framed only, kept in sessionStorage), checks every incoming message (parent window, allowed origin, field by field), posts only to the console's origin and passes ⌘J/Ctrl+J up. `src/modules/auth/EmbeddedSignIn.tsx` runs the exchange and falls back to the login form. `src/modules/project-workspace/controllers/EmbedEffects.tsx` reports route, session (with the provider's session id, which keys the lake's saga), counts, finished and blocked runs, and serves `navigate`, `new` (prefill only, never sends), `focus` and `recent.request`. The contract's types are the `EMBED CONTRACT` group in `src/shared/types.ts`.
+  - Chrome: embedded, the sidebar header drops the brand mark and wordmark; compact drops the sidebar and its menu button. The settings link and the footer line naming CloudCLI UI stay (licence, Section 7). The theme is Hemilake's with the console's light or dark, and is never stored; Settings › Appearance explains it instead of offering pickers.
+- **Files:**
+  - `server/modules/embed/*` (new, with tests), `server/modules/auth/index.ts`, `server/index.ts`
+  - `src/shared/embedBridge.ts`, `src/shared/tests/embedBridge.test.ts`, `src/modules/auth/EmbeddedSignIn.tsx`, `src/modules/project-workspace/controllers/EmbedEffects.tsx` (new)
+  - `src/main.tsx`, `src/shared/api.ts`, `src/shared/types.ts`, `src/shared/context/ThemeContext.tsx`, `src/modules/auth/ProtectedRoute.tsx`, `src/modules/project-workspace/{ProjectWorkspaceShell,ProjectSidebarRegion,MobileMenuButton}.tsx`, `src/modules/sidebar/SidebarHeader.tsx`, `src/modules/settings/tabs/AppearanceSettingsTab.tsx`, `src/modules/i18n/locales/{en,es}/settings.json`
+  - `.oxlintrc.json` (`src/shared/embedBridge.ts` listed as a shared file), `README.md`, `docs/fork/embed.md`
+- **Verified:** typecheck, lint, vitest (71 files, 473 tests), the server suite (the 7 failures there predate this change and depend on the shell's environment or fail on `main` too), and an end-to-end run in headless Chromium: a throwaway instance (own HOME and database, loopback) framed by a fake console on another origin that signs assertions server-side. 20 checks: ready, exchange sign-in, route, session, counts, hidden brand, theme, prefill without send, abandoned prefill replaced and typed text kept, unknown project refused, recent, navigate filter, ⌘J, compact at 560 px without sidebar, and a non-configured origin refused by `frame-ancestors`. A real send produced `session.created` with the request id, `counts` 1→0 and `notify done`.
+- **Not done:** `providerSessionId` was only seen null in the end-to-end run (no agent CLI in the throwaway instance); with a real Claude Code run it is filled once the CLI names its session. The console side lives in the Hemilake repository.
+
 ## README, NOTICE and licence notices for Hemilake Studio
 
 - **Since:** 2026-10-07, on top of upstream v1.37.3.

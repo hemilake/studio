@@ -1,5 +1,7 @@
 import { useTranslation } from 'react-i18next';
+
 import { useMobileMenuHandlers } from '@/modules/project-workspace/hooks/useMobileMenuHandlers';
+import { getEmbedMode } from '@/shared/embedBridge';
 
 type MobileMenuButtonProps = {
   onMenuClick: () => void;
@@ -14,6 +16,11 @@ export default function MobileMenuButton({ onMenuClick, compact = false }: Mobil
   const buttonClasses = compact
     ? 'p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-accent/60 pwa-menu-button'
     : 'p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-accent/60 touch-manipulation active:scale-95 pwa-menu-button flex-shrink-0';
+
+  // Fork (embed mode): the compact panel has no sidebar to open.
+  if (getEmbedMode() === 'compact') {
+    return null;
+  }
 
   return (
     <button

@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useProjectSidebarState } from '@/modules/project-workspace/context/ProjectsStateContext';
 import { Sidebar } from '@/modules/sidebar';
+import { getEmbedMode } from '@/shared/embedBridge';
 import type { ProjectWorkspaceShellProps } from '@/shared/types';
 
 /** Rendered by ProjectWorkspaceShell to host the sidebar module, docked on desktop and as a drawer on mobile. */
@@ -26,6 +27,12 @@ function ProjectSidebarRegion({
     event.stopPropagation();
     setSidebarOpen(false);
   }, [setSidebarOpen]);
+
+  // Fork (embed mode): the console's quick panel shows one conversation and
+  // lists the rest in its own Recent menu.
+  if (getEmbedMode() === 'compact') {
+    return null;
+  }
 
   if (!isMobile) {
     return (

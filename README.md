@@ -58,6 +58,8 @@ Settings come from the environment:
 | `SERVER_PORT` | Port to listen on (default 3001). |
 | `CLOUDCLI_THEME` | Default theme for the instance: `hemilake`, `orange` or `classic`. Also names and icons the installable web app. |
 | `CLAUDE_CLI_PATH` | Path to the `claude` binary when it is not on `PATH`. |
+| `CLOUDCLI_EMBED_ORIGINS` | Hemilake console origins allowed to frame Studio (embed mode, see `docs/fork/embed.md`). |
+| `CLOUDCLI_EMBED_SECRET` / `CLOUDCLI_EMBED_SECRET_FILE` | Key the console signs its sign-in assertions with, 32 characters or more. |
 
 To expose Studio beyond your machine, put it behind HTTPS (a reverse proxy or a tunnel). The agents run with your user's permissions.
 

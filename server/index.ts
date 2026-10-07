@@ -27,6 +27,7 @@ import {
     authRoutes,
     validateApiKey,
 } from './modules/auth/index.js';
+import { embedRoutes, frameAncestors } from './modules/embed/index.js';
 import { taskmasterRoutes } from './modules/taskmaster/index.js';
 import { commandsRoutes } from './modules/commands/index.js';
 import { settingsRoutes } from './modules/settings/index.js';
@@ -124,6 +125,8 @@ createWebSocketServer(server, {
 });
 
 app.use(cors({ exposedHeaders: ['X-Refreshed-Token', 'X-Auth-Error'] }));
+// Fork (embed mode): only Studio itself and the consoles in CLOUDCLI_EMBED_ORIGINS may frame it.
+app.use(frameAncestors);
 app.use(express.json({
     limit: '50mb',
     type: (req) => {
@@ -152,6 +155,9 @@ app.use('/api', validateApiKey);
 
 // Authentication routes (public)
 app.use('/api/auth', authRoutes);
+
+// Fork (embed mode): the framing console's origins and its sign-in exchange (public)
+app.use('/api/embed', embedRoutes);
 
 // File Tree API Routes (protected)
 app.use('/api/file-tree', authenticateToken, fileTreeRoutes);

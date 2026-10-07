@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { scan } from 'react-scan'
 
 import App from '@/App'
+import { startEmbedBridge } from '@/shared/embedBridge'
 import '@/index.css'
 import '@/shared/theme/themes.css'
 import 'katex/dist/katex.min.css'
@@ -23,6 +24,10 @@ if ('serviceWorker' in navigator) {
     console.warn('Service worker registration failed:', err);
   });
 }
+
+// Fork (embed mode): inside a Hemilake console, start talking to it before the
+// first render so the sign-in exchange can begin straight away.
+void startEmbedBridge()
 
 const rootElement = document.getElementById('root')
 if (!rootElement) {

@@ -160,6 +160,15 @@ const pluginAssetPath = (pluginName: string, assetFile: string) =>
 
 export const api = {
   // Auth endpoints (no token required)
+  // Fork (embed mode): public, so a framed client can use them before it is signed in.
+  embed: {
+    config: () => fetch('/api/embed/config', { cache: 'no-store' }),
+    exchange: (assertion: string) => fetch('/api/embed/exchange', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ assertion }),
+    }),
+  },
   auth: {
     status: () => fetch('/api/auth/status'),
     login: (username: string, password: string) => fetch('/api/auth/login', {

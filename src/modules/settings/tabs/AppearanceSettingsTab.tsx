@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 
 import { DarkModeToggle } from '@/shared/ui';
+import { getEmbedMode } from '@/shared/embedBridge';
 import type { CodeEditorSettingsState, ProjectSortOrder } from '@/shared/types';
 import { LanguageSelector } from '@/modules/i18n';
 import SettingsCard from '@/modules/settings/SettingsCard';
@@ -34,25 +35,37 @@ export default function AppearanceSettingsTab({
 
   return (
     <div className="space-y-8">
-      <SettingsSection
-        title={t('appearanceSettings.theme.label')}
-        description={t('appearanceSettings.theme.description')}
-      >
-        <SettingsCard>
-          <ThemePicker />
-        </SettingsCard>
-      </SettingsSection>
-
-      <SettingsSection title={t('appearanceSettings.darkMode.label')}>
-        <SettingsCard>
-          <SettingsRow
-            label={t('appearanceSettings.darkMode.label')}
-            description={t('appearanceSettings.darkMode.description')}
+      {getEmbedMode() ? (
+        // Fork (embed mode): the console decides theme and light/dark; picking
+        // one here would neither show nor be stored.
+        <SettingsSection title={t('appearanceSettings.theme.label')}>
+          <SettingsCard>
+            <p className="px-4 py-3 text-sm text-muted-foreground">{t('appearanceSettings.theme.embedded')}</p>
+          </SettingsCard>
+        </SettingsSection>
+      ) : (
+        <>
+          <SettingsSection
+            title={t('appearanceSettings.theme.label')}
+            description={t('appearanceSettings.theme.description')}
           >
-            <DarkModeToggle ariaLabel={t('appearanceSettings.darkMode.label')} />
-          </SettingsRow>
-        </SettingsCard>
-      </SettingsSection>
+            <SettingsCard>
+              <ThemePicker />
+            </SettingsCard>
+          </SettingsSection>
+
+          <SettingsSection title={t('appearanceSettings.darkMode.label')}>
+            <SettingsCard>
+              <SettingsRow
+                label={t('appearanceSettings.darkMode.label')}
+                description={t('appearanceSettings.darkMode.description')}
+              >
+                <DarkModeToggle ariaLabel={t('appearanceSettings.darkMode.label')} />
+              </SettingsRow>
+            </SettingsCard>
+          </SettingsSection>
+        </>
+      )}
 
       <SettingsSection title={t('mainTabs.appearance')}>
         <SettingsCard>

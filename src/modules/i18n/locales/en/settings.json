@@ -151,7 +151,8 @@
       "label": "Theme",
       "description": "Colours, type and brand. Your choice follows you to every device.",
       "instanceDefault": "instance default",
-      "useInstanceDefault": "Use the instance default"
+      "useInstanceDefault": "Use the instance default",
+      "embedded": "Inside Hemilake, Studio uses Hemilake's theme and follows its light or dark mode. Your own choice still applies when you open Studio on its own."
     },
     "darkMode": {
       "label": "Dark Mode",
