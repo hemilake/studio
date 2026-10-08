@@ -128,6 +128,29 @@ function ifNoneMatchMatches(headerValue: string | string[] | undefined, etag: st
     .some((candidate) => candidate === '*' || candidate === etag || candidate === `W/${etag}`);
 }
 
+const LOOPBACK_ADDRESSES = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
+
+function firstHeaderValue(value: string | string[] | undefined): string {
+  const raw = Array.isArray(value) ? value[0] : value;
+  return (raw ?? '').split(',')[0]?.trim() ?? '';
+}
+
+/**
+ * The visitor's address for rate limiting. Behind a local tunnel (cloudflared, a
+ * reverse proxy on the same machine) every request comes from loopback, so the
+ * forwarded address is used; from any other peer the headers are ignored because
+ * the client could set them.
+ */
+function rateLimitKey(req: Request): string {
+  const remote = req.socket?.remoteAddress || req.ip || 'unknown';
+  if (!LOOPBACK_ADDRESSES.has(remote)) {
+    return remote;
+  }
+  return firstHeaderValue(req.headers['cf-connecting-ip'])
+    || firstHeaderValue(req.headers['x-forwarded-for'])
+    || remote;
+}
+
 /**
  * Creates an in-memory per-IP rate limiter for the public share endpoint.
  *
@@ -153,7 +176,7 @@ export function createPublicShareRateLimiter(options: {
       }
     }
 
-    const clientIp = req.ip || req.socket?.remoteAddress || 'unknown';
+    const clientIp = rateLimitKey(req);
     const existing = buckets.get(clientIp);
 
     if (!existing || existing.resetAt <= currentMs) {

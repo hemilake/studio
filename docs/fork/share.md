@@ -28,7 +28,7 @@ accessible without a JWT or API key.
 
 | Method & path | Headers | Response |
 |---|---|---|
-| `GET /api/public/shares/:token` | Optional `If-None-Match` | `200` `{ title, provider, items: [{ id, role: 'user' \| 'assistant', text, timestamp }], running: boolean, updatedAt }` with `ETag`, `Cache-Control: no-store`, `X-Robots-Tag: noindex, nofollow`, `Referrer-Policy: no-referrer`; `304` when `If-None-Match` matches `ETag`; `404` `{ error: "Share not found" }` for unknown, revoked, or expired tokens; `429` when per-IP rate limit (120 requests/min) is exceeded. |
+| `GET /api/public/shares/:token` | Optional `If-None-Match` | `200` `{ title, provider, items: [{ id, role: 'user' \| 'assistant', text, timestamp }], running: boolean, updatedAt }` with `ETag`, `Cache-Control: no-store`, `X-Robots-Tag: noindex, nofollow`, `Referrer-Policy: no-referrer`; `304` when `If-None-Match` matches `ETag`; `404` `{ error: "Share not found" }` for unknown, revoked, or expired tokens; `429` when per-IP rate limit (120 requests/min) is exceeded. From a loopback peer (cloudflared or a local reverse proxy) the visitor is `CF-Connecting-IP`, else the first `X-Forwarded-For` entry; from any other peer those headers are ignored. |
 
 ### Public page (`/share/:token`)
 

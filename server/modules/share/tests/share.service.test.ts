@@ -438,3 +438,28 @@ test('public share endpoint enforces per-IP rate limiting with 429', async () =>
     { maxRequestsPerMinute: 3 },
   );
 });
+
+test('public rate limit keys on the forwarded address behind a local tunnel', async () => {
+  await withShareTestServer(
+    async ({ baseUrl, ownerId }) => {
+      const createRes = await fetch(`${baseUrl}/api/shares`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-test-user-id': String(ownerId),
+        },
+        body: JSON.stringify({ sessionId: SESSION_ID }),
+      });
+      const created = (await createRes.json()) as { token: string };
+      const fetchAs = (ip: string) => fetch(`${baseUrl}/api/public/shares/${created.token}`, {
+        headers: { 'cf-connecting-ip': ip },
+      });
+
+      assert.equal((await fetchAs('203.0.113.1')).status, 200);
+      assert.equal((await fetchAs('203.0.113.1')).status, 200);
+      assert.equal((await fetchAs('203.0.113.1')).status, 429);
+      assert.equal((await fetchAs('203.0.113.2')).status, 200);
+    },
+    { maxRequestsPerMinute: 2 },
+  );
+});
