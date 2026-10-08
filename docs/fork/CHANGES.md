@@ -2,6 +2,25 @@
 
 One entry per customization, newest first. Keep the file list accurate: it is the conflict checklist for upstream merges.
 
+## Activity in the chat: tool calls folded into lines
+
+- **Since:** 2026-10-08, on top of upstream v1.37.3.
+- **Branch:** `feat/studio-activity`. Fork identity (Hemilake's naming and lake symbol); the segment model could go upstream on its own.
+- **Why:** a turn with 12 tool calls and 3 sentences took about 1,700 px: every call was two rows (the call, then "Output"), Hemilake's tools carried "(plugin_hemilake_hemilake)", every Bash call was a full-width card, every sentence had its own copy bar, and a floating "Thinking… 2m 3s" tab covered the last lines. Design: Claude Design hand-off "Hemilake Studio Activity" (8 Oct).
+- **What:**
+  - `utils/turnSegments.ts`: the transcript as text blocks, activity segments (the run of tool calls between two sentences) and turn footers. Call and result are one row (the result is already merged by tool id); identical consecutive calls (same tool, same verb) fold into one row with ×N, never across a failure. Calls without a result are live while the turn runs and "interrupted" after it. `AskUserQuestion`, `ExitPlanMode` and subagents keep their own cards and split segments.
+  - `utils/activityNaming.ts`: the one naming table for the chat and the export. Verb, argument, a short result per tool family ("8 facts · 2 people", "23 messages", "67 lines", "exit 1"), icon, and the phrase of the folded line ("Ran 3 commands, recalled from your lake, read Slack"). Bash uses its `description`. Unknown MCP tools are humanised; `formatToolDisplayName` drops the server part too.
+  - `transcript/ActivitySegment.tsx`: the folded line (icons, words, steps and time, chevron), rows, and the opened row (full input as `key: value`, output preview, lake facts with a copper dot and "valid since", "via Hemilake" for channel tools, the diff or checklist renderer for edits and todos). A segment with a failed step opens itself. The live line: exactly one while a turn runs, inside the trailing segment or alone after a sentence, with a spinner or the lake symbol's ping, a sweep over the verb and the elapsed seconds; between steps it says "Thinking" (or the provider's status) and "Writing" while prose streams. The segment's summary waits until the segment ends ("2 done so far").
+  - Composer: `ComposerStatusPill` ("Working · 2m 03s", phones show the time) next to the token count replaces the floating `ActivityIndicator`; Stop stays the submit button. The pane's bottom padding for the tab is gone.
+  - Copy · MD · read aloud on hover or focus of an assistant block, over its bottom-right corner, taking no height (in the flow on touch screens). The time moved to the turn's header; a finished turn ends with "12 steps · 2m 03s".
+  - Motion classes `hemi-activity-{sweep,ping,spin,rise}` in `src/index.css`, all off with `prefers-reduced-motion`.
+  - Durations: the Claude history merge copies the result row's `timestamp` onto `toolResult` (server), and `useChatMessages` keeps it.
+  - `LazyMessageRow` takes an `estimatedHeight` (32 px for a folded segment never measured).
+  - Removed: `ToolGroupContainer`, `utils/toolGrouping.ts`, `ActivityIndicator`, `ToolGroupItem`.
+- **Files:** `src/modules/chat/utils/{turnSegments,activityNaming}.ts`, `src/modules/chat/hooks/useNow.ts`, `src/modules/chat/transcript/{ActivitySegment,ActivityIcon,AssistantHeader}.tsx`, `src/modules/chat/composer/ComposerStatusPill.tsx`, `src/modules/chat/tests/activityTranscript.test.tsx` (new); `src/modules/chat/transcript/{ChatMessagesPane,MessageComponent,LazyMessageRow}.tsx`, `src/modules/chat/composer/ChatComposer.tsx`, `src/modules/chat/ChatInterface.tsx`, `src/modules/chat/export/TranscriptExportDocument.tsx`, `src/modules/chat/hooks/useChatMessages.ts`, `src/modules/chat/tools/configs/toolConfigs.ts`, `src/shared/types.ts`, `src/index.css`, `src/modules/chat/tests/{diffStatsBadgeRender,useChatMessages}.test.ts*`, `server/modules/providers/list/claude/claude-sessions.provider.ts`, `server/shared/types.ts`.
+- **Verified:** typecheck, the client suite (476), the provider suites (the Antigravity auth test fails on `main` too), and the 8 Oct session "Masiva prepago Mario Bodega" on a throwaway server (copy of the database, no plugins) at 1440×900: no "Output" row and no `plugin_hemilake` anywhere; the first three segments and three sentences after the question take ~350 px; the opened Recalled row lists the lake's facts. Live states (lake ping, Bash spinner, between steps, dark, reduced motion) checked on a local harness page.
+- **Not done:** the turn footer has no token count (the client only knows the session's context size, not a turn's usage); the naming table and the new strings are English only.
+
 ## Console-only sign-in (CLOUDCLI_EMBED_ONLY)
 
 - **Since:** 2026-10-07, on top of upstream v1.37.3.
