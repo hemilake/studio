@@ -42,6 +42,10 @@ export const useTheme = () => {
   return context;
 };
 
+/** Fork (inline visuals): dark mode, or the <html> class outside a ThemeProvider (tests, isolated renders). */
+export const useIsDarkMode = (): boolean =>
+  useContext(ThemeContext)?.isDarkMode ?? document.documentElement.classList.contains('dark');
+
 /** Fork: the active theme definition, or the default outside a ThemeProvider (tests, isolated renders). */
 export const useThemeDefinition = (): ThemeDefinition => useContext(ThemeContext)?.theme ?? THEMES[DEFAULT_THEME_ID];
 

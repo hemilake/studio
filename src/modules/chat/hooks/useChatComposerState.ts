@@ -1001,6 +1001,22 @@ export function useChatComposerState({
     if (send) handleSubmitRef.current?.(createFakeSubmitEvent());
   }, [setInput]);
 
+  // Fork (inline visuals): a widget's sendPrompt or "Ask to change" replaces the
+  // composer's text and either submits it or leaves it focused for the owner.
+  const fillComposer = useCallback((text: string, send: boolean) => {
+    setInput(text);
+    inputValueRef.current = text;
+    if (send) {
+      handleSubmitRef.current?.(createFakeSubmitEvent());
+      return;
+    }
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.focus();
+      window.requestAnimationFrame(() => textarea.setSelectionRange(text.length, text.length));
+    }
+  }, [setInput]);
+
   useEffect(() => {
     inputValueRef.current = input;
   }, [input]);
@@ -1273,6 +1289,7 @@ export function useChatComposerState({
   return {
     input,
     setInput,
+    fillComposer,
     editingAnchorId,
     beginEditMessage,
     cancelEditMessage,

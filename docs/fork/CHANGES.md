@@ -2,6 +2,21 @@
 
 One entry per customization, newest first. Keep the file list accurate: it is the conflict checklist for upstream merges.
 
+## Inline visuals: ```visual blocks drawn with D3 in a sandboxed frame
+
+- **Since:** 2026-10-08, on top of upstream v1.37.3.
+- **Branch:** `feat/inline-visuals`. Fork identity (Hemilake theme tokens, the `visualize` skill's contract); the sandboxed renderer could go upstream on its own.
+- **Why:** Studio should show charts, diagrams and small widgets in the conversation, like Visualize in Claude Desktop (Linear HEM-860/HEM-861). Design, Gemini 4 EAP's review and a library bake-off (D3 beat Chart.js, Observable Plot and Vega-Lite) in the epic.
+- **What:** contract and threat model in `docs/fork/visuals.md`.
+  - ```` ```visual ```` blocks render in an iframe with `sandbox="allow-scripts"` and a `srcdoc` the host builds: a no-network CSP, the theme as CSS variables (aliases, a validated `--chart-1..8` palette per theme and mode), IBM Plex as data: fonts, D3 7.9.0 inlined when the code uses it, and a bootstrap for height, `sendPrompt`, links and SVG/PNG export. ```` ```html ```` blocks get a Preview button.
+  - Toolbar: Ask to change, Show code, Copy, Download (HTML/SVG/PNG), Save to workspace, Full screen. A visual still streaming shows a "Drawing…" card.
+  - `sendPrompt` sends outside bypass mode and only fills the composer in bypass (`fillComposer` in `useChatComposerState`).
+  - Studio's CSP header gains `frame-src 'self' blob:`, so a frame cannot navigate itself to another site.
+  - Claude Code's system prompt gets a constant `append` (`server/shared/studio-visuals-prompt.ts`) saying the UI draws visuals.
+- **Files:** `src/modules/chat/visuals/**`, `src/modules/chat/tests/{visualDocument,visualBlock}.test.ts*`, `server/shared/studio-visuals-prompt.ts`, `docs/fork/visuals.md` (new); `src/modules/chat/transcript/{Markdown,StreamingMarkdown}.tsx`, `src/modules/chat/ChatInterface.tsx`, `src/modules/chat/hooks/useChatComposerState.ts`, `src/shared/context/ThemeContext.tsx`, `src/modules/i18n/locales/{en,es}/chat.json`, `server/modules/embed/embed.routes.ts`, `server/modules/providers/list/claude/claude-runtime.provider.js`, `.oxlintrc.json`, `NOTICE`.
+- **Verified:** typecheck, lint, the client suite, build. On a throwaway server with a real Claude Code turn: a D3 dashboard (KPI cards, indexed/absolute toggle, forecast shading) in Hemilake light and dark, at phone width and in Orange; an interactive explainer whose sliders redraw and whose button sent its follow-up through `sendPrompt`; SVG, PNG and HTML downloads. A hostile widget on Studio's origin could not read storage, cookies or the parent, fetch, load an outside image, open a window or navigate (details in `docs/fork/visuals.md`).
+- **Not done:** the `visualize` skill (HEM-862, plugin); seeding it into `~/.agents/skills` for Codex, Cursor and OpenCode waits for it. The PNG export draws text in a system font (the frame's data: fonts do not reach the rasterised SVG). Strings in English and Spanish only.
+
 ## Activity in the chat: tool calls folded into lines
 
 - **Since:** 2026-10-08, on top of upstream v1.37.3.

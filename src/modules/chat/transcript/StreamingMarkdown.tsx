@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 
 import { MarkdownBody } from '@/modules/chat/transcript/Markdown';
 import { splitStreamingMarkdown } from '@/modules/chat/utils/streamingMarkdown';
+import { VisualPendingContext } from '@/modules/chat/visuals';
 
 type StreamingMarkdownProps = {
   content: string;
@@ -57,7 +58,12 @@ export default function StreamingMarkdown({
   return (
     <div className={className}>
       {settled && <MarkdownBody>{settled}</MarkdownBody>}
-      {pending && <MarkdownBody>{pending}</MarkdownBody>}
+      {/* Fork (inline visuals): a visual in the half still being written waits to mount its frame. */}
+      {pending && (
+        <VisualPendingContext.Provider value>
+          <MarkdownBody>{pending}</MarkdownBody>
+        </VisualPendingContext.Provider>
+      )}
     </div>
   );
 }

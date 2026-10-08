@@ -8,6 +8,7 @@ import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/pris
 import { useTranslation } from 'react-i18next';
 
 import { MermaidDiagram } from '@/modules/code-editor';
+import { HtmlPreviewModal, VisualBlock } from '@/modules/chat/visuals';
 import { MarkdownImage } from '@/modules/chat/transcript/MarkdownImage';
 import { normalizeInlineCodeFences } from '@/modules/chat/utils/chatFormatting';
 import { copyTextToClipboard } from '@/shared/utils';
@@ -80,9 +81,10 @@ type CodeBlockProps = {
 };
 
 // `node` is destructured out so react-markdown's hast node never reaches the DOM.
-const CodeBlock = ({ node: _node, className, children, forceBlock, ...props }: CodeBlockProps) => {
+const CodeBlock = ({ node, className, children, forceBlock, ...props }: CodeBlockProps) => {
   const { t } = useTranslation('chat');
   const [copied, setCopied] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   // Fenced blocks carry a trailing newline in the tree; trim it so the
   // highlighter doesn't render an empty final line.
   const raw = (Array.isArray(children) ? children.join('') : String(children ?? '')).replace(/\n$/, '');
@@ -110,11 +112,27 @@ const CodeBlock = ({ node: _node, className, children, forceBlock, ...props }: C
     return <MermaidDiagram code={raw} />;
   }
 
+  // Fork (inline visuals): docs/fork/visuals.md. The info string after the
+  // language (`kind=chart title="…"`) arrives as the hast node's meta.
+  if (language === 'visual') {
+    return <VisualBlock code={raw} meta={typeof node?.data?.meta === 'string' ? node.data.meta : null} />;
+  }
+
   return (
     <div className="group my-3 overflow-hidden rounded-xl border border-border bg-muted/50 shadow-sm dark:bg-gray-900">
       {/* Label row shares the block's background — no divider, ChatGPT-style */}
       <div className="flex items-center justify-between px-4 pt-2">
         <span className="select-none text-xs text-muted-foreground">{languageLabel}</span>
+        <div className="flex items-center gap-1">
+        {language === 'html' && (
+          <button
+            type="button"
+            onClick={() => setPreviewOpen(true)}
+            className="rounded-md px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            {t('visual.preview', { defaultValue: 'Preview' })}
+          </button>
+        )}
         <button
           type="button"
           onClick={() =>
@@ -155,7 +173,9 @@ const CodeBlock = ({ node: _node, className, children, forceBlock, ...props }: C
             </svg>
           )}
         </button>
+        </div>
       </div>
+      {previewOpen && <HtmlPreviewModal code={raw} onClose={() => setPreviewOpen(false)} />}
 
       <SyntaxHighlighter
         language={language}

@@ -287,5 +287,28 @@
     "failed": "No enviado — {{reason}}",
     "cancel": "Cancelar mensaje programado",
     "dismiss": "Descartar el aviso de fallo"
+  },
+  "visual": {
+    "preview": "Vista previa",
+    "untitled": "Visual",
+    "drawing": "Dibujando {{title}}",
+    "lines": "{{count}} líneas",
+    "lines_one": "{{count}} línea",
+    "lines_other": "{{count}} líneas",
+    "askToChange": "Pedir un cambio",
+    "askToChangePrompt": "Cambia el visual \"{{title}}\": ",
+    "showCode": "Ver código",
+    "showVisual": "Ver visual",
+    "copyCode": "Copiar código",
+    "copied": "Código copiado",
+    "download": "Descargar",
+    "saveToWorkspace": "Guardar en el espacio de trabajo",
+    "saved": "Guardado en {{path}}",
+    "saveFailed": "No se pudo guardar el visual.",
+    "fullScreen": "Pantalla completa",
+    "close": "Cerrar",
+    "htmlPreview": "Vista previa HTML",
+    "nothingToExport": "Este visual no tiene un gráfico que exportar como imagen.",
+    "loadFailed": "No se pudo cargar el visual."
   }
 }

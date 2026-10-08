@@ -362,5 +362,28 @@
     "tokensLabel_other": "tokens",
     "escClosesModal": "Esc closes the modal.",
     "close": "Close"
+  },
+  "visual": {
+    "preview": "Preview",
+    "untitled": "Visual",
+    "drawing": "Drawing {{title}}",
+    "lines": "{{count}} lines",
+    "lines_one": "{{count}} line",
+    "lines_other": "{{count}} lines",
+    "askToChange": "Ask to change",
+    "askToChangePrompt": "Update the \"{{title}}\" visual: ",
+    "showCode": "Show code",
+    "showVisual": "Show visual",
+    "copyCode": "Copy code",
+    "copied": "Code copied",
+    "download": "Download",
+    "saveToWorkspace": "Save to workspace",
+    "saved": "Saved to {{path}}",
+    "saveFailed": "Could not save the visual.",
+    "fullScreen": "Full screen",
+    "close": "Close",
+    "htmlPreview": "HTML preview",
+    "nothingToExport": "This visual has no chart to export as an image.",
+    "loadFailed": "The visual could not be loaded."
   }
 }

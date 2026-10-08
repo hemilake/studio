@@ -6,6 +6,7 @@ import { useTasksSettings } from '@/modules/task-master';
 import { useWebSocket } from '@/shared/context/WebSocketContext';
 import PermissionContext from '@/modules/chat/context/PermissionContext';
 import { MarkdownWorkspaceContext } from '@/modules/chat/context/MarkdownWorkspaceContext';
+import { VisualActionsContext } from '@/modules/chat/visuals';
 import { api } from '@/shared/api';
 import type {
   ChatMessage,
@@ -182,6 +183,7 @@ function ChatInterface({
   const {
     input,
     setInput,
+    fillComposer,
     textareaRef,
     inputHighlightRef,
     isTextareaExpanded,
@@ -360,6 +362,11 @@ function ChatInterface({
   }), [pendingPermissionRequests, handlePermissionDecision]);
 
   // Lets markdown image paths in the transcript resolve against this project.
+  // Fork (inline visuals): what a widget in the transcript may do with the composer.
+  const visualActionsValue = useMemo(
+    () => ({ fillComposer, permissionMode: typeof permissionMode === 'string' ? permissionMode : null }),
+    [fillComposer, permissionMode],
+  );
   const markdownWorkspaceValue = useMemo(() => ({
     projectId: selectedProject?.projectId ?? null,
   }), [selectedProject?.projectId]);
@@ -413,6 +420,7 @@ function ChatInterface({
     <PermissionContext.Provider value={permissionContextValue}>
       <div className="flex h-full min-h-0 flex-col">
         <MarkdownWorkspaceContext.Provider value={markdownWorkspaceValue}>
+        <VisualActionsContext.Provider value={visualActionsValue}>
           <ChatMessagesPane
             scrollContainerRef={scrollContainerRef}
             // Not redundant with the `scroll` listener. A first page is 20 rows,
@@ -466,6 +474,7 @@ function ChatInterface({
             onForkFromMessage={supportsSessionForking ? handleForkFromMessage : undefined}
             onLoadFullTranscript={loadFullTranscript}
           />
+        </VisualActionsContext.Provider>
         </MarkdownWorkspaceContext.Provider>
 
         <div className="relative flex-shrink-0">

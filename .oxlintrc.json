@@ -72,6 +72,7 @@
           "server/shared/claude-cli-path.ts",
           "server/shared/image-attachments.ts",
           "server/shared/adversarial-review.ts",
+          "server/shared/studio-visuals-prompt.ts",
           "server/shared/themes.ts",
           "server/shared/message-unification.ts"
         ],

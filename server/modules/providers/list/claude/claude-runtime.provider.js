@@ -29,6 +29,7 @@ import {
   CLAUDE_ULTRACODE_EFFORT
 } from '@/modules/providers/list/claude/claude-models.provider.js';
 import { resolveClaudeCodeExecutablePath } from '@/shared/claude-cli-path.js';
+import { STUDIO_VISUALS_PROMPT } from '@/shared/studio-visuals-prompt.js';
 import {
   createNotificationEvent,
   notifyBackgroundWorkCompleted,
@@ -281,7 +282,9 @@ function mapCliOptionsToSDK(options = {}) {
 
   sdkOptions.systemPrompt = {
     type: 'preset',
-    preset: 'claude_code'
+    preset: 'claude_code',
+    // Fork (inline visuals): this UI draws ```visual blocks; see docs/fork/visuals.md.
+    append: STUDIO_VISUALS_PROMPT,
   };
 
   sdkOptions.settingSources = ['project', 'user', 'local'];

@@ -23,3 +23,13 @@ docs/fork/CHANGES.md lists every change and the date it was made.
 
 Modifications copyright 2026 the Hemilake Studio contributors, licensed
 under the same terms (AGPL-3.0-or-later with the additional terms in LICENSE).
+
+-------------------------------------------------------------------------
+
+Third-party files bundled by Hemilake Studio's inline visuals
+(src/modules/chat/visuals/):
+
+- D3 7.9.0, copyright 2010-2023 Mike Bostock, ISC licence
+  (vendor/D3-LICENSE.txt).
+- IBM Plex Sans and IBM Plex Mono (Latin subsets), copyright 2019 IBM Corp.,
+  SIL Open Font License 1.1 (fonts/OFL.txt).

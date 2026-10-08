@@ -34,14 +34,24 @@ export function createEmbedRouter(service: ReturnType<typeof createEmbedService>
 }
 
 /**
+ * What Studio's own frames may load or navigate to (fork, inline visuals): its
+ * origin and blob: (the PDF preview). A visual's sandboxed frame inherits no
+ * cookies or storage, but without this it could still navigate itself to
+ * another site and carry data in the URL; the embedder's frame-src blocks that.
+ * srcdoc frames are not fetched, so they are unaffected. docs/fork/visuals.md.
+ */
+export const FRAME_SRC = "frame-src 'self' blob:";
+
+/**
  * Creates the middleware that tells browsers who may frame Studio: itself and
  * the configured console origins, nobody else. Before the fork added embed mode
- * Studio sent no framing policy at all, so any site could frame it.
+ * Studio sent no framing policy at all, so any site could frame it. The same
+ * header carries FRAME_SRC.
  */
 export function createFrameAncestorsMiddleware(readOrigins: () => string[]): RequestHandler {
   return (_req, res, next) => {
     const sources = ["'self'", ...readOrigins()].join(' ');
-    res.setHeader('Content-Security-Policy', `frame-ancestors ${sources}`);
+    res.setHeader('Content-Security-Policy', `frame-ancestors ${sources}; ${FRAME_SRC}`);
     next();
   };
 }
