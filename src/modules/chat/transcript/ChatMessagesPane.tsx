@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import type { Dispatch, RefObject, SetStateAction } from 'react';
 
 import type { ChatMessage,
@@ -9,12 +9,13 @@ import type { ChatMessage,
   ProviderModelActions,
   ProviderModelsDefinition } from '@/shared/types';
 import { getIntrinsicMessageKey } from '@/modules/chat/utils/messageKeys';
-import { groupConsecutiveTools, isToolGroupItem } from '@/modules/chat/utils/toolGrouping';
+import { buildTranscript } from '@/modules/chat/utils/turnSegments';
 import { useLazyRowObserver } from '@/modules/chat/hooks/useLazyRowObserver';
 import LazyMessageRow from '@/modules/chat/transcript/LazyMessageRow';
 import MessageComponent from '@/modules/chat/transcript/MessageComponent';
 import ProviderSelectionEmptyState from '@/modules/chat/transcript/ProviderSelectionEmptyState';
-import ToolGroupContainer from '@/modules/chat/transcript/ToolGroupContainer';
+import ActivitySegment, { LiveLine, TurnFooter } from '@/modules/chat/transcript/ActivitySegment';
+import AssistantHeader from '@/modules/chat/transcript/AssistantHeader';
 import LoadAllMessagesOverlay from '@/modules/chat/transcript/LoadAllMessagesOverlay';
 import ChatExportMenu from '@/modules/chat/transcript/ChatExportMenu';
 
@@ -25,6 +26,9 @@ import ChatExportMenu from '@/modules/chat/transcript/ChatExportMenu';
  */
 const INITIAL_MOUNTED_TAIL_ROWS = 30;
 
+/** A folded activity line, for the placeholder of a segment never measured. */
+const ACTIVITY_ROW_HEIGHT_PX = 32;
+
 type ChatMessagesPaneProps = {
   scrollContainerRef: RefObject<HTMLDivElement>;
   onWheel: () => void;
@@ -32,8 +36,8 @@ type ChatMessagesPaneProps = {
   isLoadingSessionMessages: boolean;
   /** True while the viewed session has an active provider run in flight. */
   isProcessing?: boolean;
-  /** True while ChatComposer's floating activity/stop tab is rendered above the input. */
-  hasActivityIndicator?: boolean;
+  /** The provider's status line for the running turn, shown on the live line when no tool runs. */
+  liveStatusText?: string | null;
   chatMessages: ChatMessage[];
   selectedSession: ProjectSession | null;
   currentSessionId: string | null;
@@ -87,7 +91,7 @@ function ChatMessagesPane({
   onTouchMove,
   isLoadingSessionMessages,
   isProcessing = false,
-  hasActivityIndicator = false,
+  liveStatusText = null,
   chatMessages,
   selectedSession,
   currentSessionId,
@@ -128,10 +132,20 @@ function ChatMessagesPane({
 }: ChatMessagesPaneProps) {
   const { t } = useTranslation('chat');
   const lazyRows = useLazyRowObserver(scrollContainerRef);
-  const groupedVisibleMessages = useMemo(
-    () => groupConsecutiveTools(visibleMessages, Boolean(showThinking)),
-    [visibleMessages, showThinking],
+  // Fork (Hemilake Studio activity): text blocks, activity segments (a run of
+  // tool calls between two sentences, folded into one line) and turn footers,
+  // plus the one live line of a running turn.
+  const transcript = useMemo(
+    () => buildTranscript(visibleMessages, { showThinking: Boolean(showThinking), isProcessing }),
+    [visibleMessages, showThinking, isProcessing],
   );
+
+  // Open or folded, per segment, as the user left it; ActivitySegment opens
+  // one with a failed step until the user says otherwise.
+  const [openSegments, setOpenSegments] = useState<Record<string, boolean>>({});
+  const toggleSegment = useCallback((id: string, open: boolean) => {
+    setOpenSegments((current) => ({ ...current, [id]: open }));
+  }, []);
 
   // Stable, deterministic keys for the messages rendered this pass.
   //
@@ -149,15 +163,15 @@ function ChatMessagesPane({
       occurrences.set(intrinsicKey, seen + 1);
       keys.set(message, seen === 0 ? intrinsicKey : `${intrinsicKey}__${seen}`);
     };
-    for (const item of groupedVisibleMessages) {
-      if (isToolGroupItem(item)) {
+    for (const item of transcript.items) {
+      if (item.kind === 'activity') {
         item.messages.forEach(assign);
-      } else {
-        assign(item);
+      } else if (item.kind === 'message') {
+        assign(item.message);
       }
     }
     return keys;
-  }, [groupedVisibleMessages]);
+  }, [transcript]);
 
   const getMessageKey = useCallback(
     (message: ChatMessage) =>
@@ -170,9 +184,7 @@ function ChatMessagesPane({
       ref={scrollContainerRef}
       onWheel={onWheel}
       onTouchMove={onTouchMove}
-      className={`chat-messages-pane relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden pt-3 sm:pt-4 ${
-        hasActivityIndicator ? 'pb-12 sm:pb-14' : 'pb-3 sm:pb-4'
-      }`}
+      className="chat-messages-pane relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden pb-3 pt-3 sm:pb-4 sm:pt-4"
     >
       {chatMessages.length > 0 && (
         <div className="pointer-events-none sticky right-4 top-3 z-10 mb-2 flex justify-end sm:px-4">
@@ -264,54 +276,66 @@ function ChatMessagesPane({
 
           {(() => {
             let prevMessage: ChatMessage | null = null;
-            const rowCount = groupedVisibleMessages.length;
+            const { items, live } = transcript;
+            const rowCount = items.length;
+            // An assistant turn names its provider once, over its first block.
+            const opensTurn = (previous: ChatMessage | null) =>
+              !previous || (previous.type !== 'assistant' && previous.type !== 'tool');
+            const shortTime = (timestamp: ChatMessage['timestamp']) =>
+              new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-            return groupedVisibleMessages.map((item, index) => {
+            const rows = items.map((item, index) => {
               // Rows near the tail mount their content on first commit so the
               // initial scroll-to-bottom measures real heights; older rows
               // start as placeholders and mount when scrolled toward.
               const initiallyNearViewport = index >= rowCount - INITIAL_MOUNTED_TAIL_ROWS;
 
-              if (isToolGroupItem(item)) {
-                const groupPrevMessage = prevMessage;
+              if (item.kind === 'turn-footer') {
+                return <TurnFooter key={item.id} steps={item.steps} durationMs={item.durationMs} />;
+              }
+
+              if (item.kind === 'activity') {
+                const showHeader = opensTurn(prevMessage);
                 prevMessage = item.messages[item.messages.length - 1] || prevMessage;
 
                 return (
                   <LazyMessageRow
-                    key={`tool-group-${getMessageKey(item.messages[0])}`}
+                    key={`activity-${getMessageKey(item.messages[0])}`}
                     lazyRows={lazyRows}
                     timestamp={item.timestamp}
                     initiallyNearViewport={initiallyNearViewport}
+                    estimatedHeight={ACTIVITY_ROW_HEIGHT_PX}
                   >
-                    <ToolGroupContainer
-                      group={item}
-                      prevMessage={groupPrevMessage}
-                      createDiff={createDiff}
-                      getMessageKey={getMessageKey}
-                      onFileOpen={onFileOpen}
-                      onShowSettings={onShowSettings}
-                      onGrantToolPermission={onGrantToolPermission}
-                      showRawParameters={showRawParameters}
-                      showThinking={showThinking}
-                      selectedProject={selectedProject}
-                      provider={provider}
-                    />
+                    <div className="px-3 sm:px-0">
+                      {showHeader && <AssistantHeader kind="assistant" provider={provider} time={shortTime(item.timestamp)} />}
+                      <ActivitySegment
+                        segment={item}
+                        open={openSegments[item.id]}
+                        onToggle={toggleSegment}
+                        live={live && live.segmentId === item.id ? live : null}
+                        liveStatusText={liveStatusText}
+                        createDiff={createDiff}
+                        onFileOpen={onFileOpen}
+                        selectedProject={selectedProject}
+                      />
+                    </div>
                   </LazyMessageRow>
                 );
               }
 
+              const message = item.message;
               const messagePrevMessage = prevMessage;
-              prevMessage = item;
+              prevMessage = message;
 
               return (
                 <LazyMessageRow
-                  key={getMessageKey(item)}
+                  key={getMessageKey(message)}
                   lazyRows={lazyRows}
-                  timestamp={item.timestamp}
+                  timestamp={message.timestamp}
                   initiallyNearViewport={initiallyNearViewport}
                 >
                   <MessageComponent
-                    message={item}
+                    message={message}
                     prevMessage={messagePrevMessage}
                     createDiff={createDiff}
                     onFileOpen={onFileOpen}
@@ -327,6 +351,23 @@ function ChatMessagesPane({
                 </LazyMessageRow>
               );
             });
+
+            // The running turn's live line, when it does not belong to a
+            // trailing segment: between a sentence and the next step, or
+            // before the first one.
+            if (live && !live.segmentId) {
+              const showHeader = opensTurn(prevMessage);
+              rows.push(
+                <div key="activity-live" className="px-3 sm:px-0">
+                  {showHeader && <AssistantHeader kind="assistant" provider={provider} />}
+                  <div className="ml-0.5 border-l-2 border-hemi-copper/40 pl-3">
+                    <LiveLine live={live} statusText={liveStatusText} />
+                  </div>
+                </div>,
+              );
+            }
+
+            return rows;
           })()}
         </>
       )}

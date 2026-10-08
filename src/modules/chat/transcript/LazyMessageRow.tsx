@@ -34,6 +34,8 @@ type LazyMessageRowProps = {
    * placeholder and mounts when scrolled toward.
    */
   initiallyNearViewport: boolean;
+  /** Placeholder height before the row was ever measured; a folded activity line is far shorter than a message. */
+  estimatedHeight?: number;
   children: ReactNode;
 };
 
@@ -41,6 +43,7 @@ export default function LazyMessageRow({
   lazyRows,
   timestamp,
   initiallyNearViewport,
+  estimatedHeight = ESTIMATED_ROW_HEIGHT_PX,
   children,
 }: LazyMessageRowProps) {
   const [isNearViewport, setIsNearViewport] = useState(initiallyNearViewport);
@@ -71,7 +74,7 @@ export default function LazyMessageRow({
     <div
       ref={elementRef}
       data-message-timestamp={timestamp || undefined}
-      style={isMounted ? undefined : { height: measuredHeight ?? ESTIMATED_ROW_HEIGHT_PX }}
+      style={isMounted ? undefined : { height: measuredHeight ?? estimatedHeight }}
     >
       {isMounted ? children : null}
     </div>

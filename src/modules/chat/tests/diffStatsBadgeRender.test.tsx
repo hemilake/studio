@@ -2,10 +2,11 @@ import { describe, expect, it } from 'vitest';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
-import ToolGroupContainer from '@/modules/chat/transcript/ToolGroupContainer';
+import ActivitySegment from '@/modules/chat/transcript/ActivitySegment';
+import { buildTranscript, type ActivitySegment as ActivitySegmentModel } from '@/modules/chat/utils/turnSegments';
 import { ToolRenderer } from '@/modules/chat/tools/ToolRenderer';
 import { createCachedDiffCalculator } from '@/modules/chat/utils/messageTransforms';
-import type { ChatMessage, ToolGroupItem } from '@/shared/types';
+import type { ChatMessage } from '@/shared/types';
 
 const createDiff = createCachedDiffCalculator();
 
@@ -73,16 +74,17 @@ describe('diff stats in the tool header', () => {
   });
 });
 
-// A run of consecutive same-tool calls collapses into one row showing `x4` and
-// a filename. Without a total, the collapsed row says nothing about how large
-// the batch of edits actually is.
-describe('diff stats on a collapsed tool group', () => {
-  const editMessage = (oldString: string, newString: string): ChatMessage => ({
+// Repeated edits fold into one activity row with ×N. Without a total, that row
+// would say nothing about how large the batch of edits actually is.
+describe('diff stats on a folded activity row', () => {
+  const editMessage = (oldString: string, newString: string, toolId: string): ChatMessage => ({
     type: 'assistant',
     content: '',
     timestamp: new Date('2026-08-23T00:00:00.000Z'),
     isToolUse: true,
     toolName: 'Edit',
+    toolId,
+    toolResult: { content: 'ok', isError: false },
     toolInput: serializeToolInput({
       file_path: '/tmp/demo/a.js',
       old_string: oldString,
@@ -90,33 +92,27 @@ describe('diff stats on a collapsed tool group', () => {
     }),
   } as unknown as ChatMessage);
 
-  const renderGroup = (toolName: string, messages: ChatMessage[]) => {
-    const group = {
-      _isGroup: true,
-      toolName,
-      messages,
-      timestamp: messages[0].timestamp,
-      preview: 'a.js',
-    } as ToolGroupItem;
+  const renderGroup = (_toolName: string, messages: ChatMessage[]) => {
+    const segment = buildTranscript(messages).items.find((item) => item.kind === 'activity') as ActivitySegmentModel;
 
     return renderToStaticMarkup(
-      React.createElement(ToolGroupContainer, {
-        group,
-        prevMessage: null,
+      React.createElement(ActivitySegment, {
+        segment,
+        open: true,
+        onToggle: () => {},
         createDiff,
-        getMessageKey: (message: ChatMessage) => String(message.timestamp),
-        provider: 'claude' as const,
       }),
     );
   };
 
   it('totals the added and removed lines across the group', () => {
     const markup = renderGroup('Edit', [
-      editMessage('a\nb', 'a\nB'),
-      editMessage('one\ntwo\nthree', 'one\ntwo\nthree\nfour\nfive'),
+      editMessage('a\nb', 'a\nB', 'e1'),
+      editMessage('one\ntwo\nthree', 'one\ntwo\nthree\nfour\nfive', 'e2'),
     ]);
 
     expect(markup).toContain('3 lines added, 1 removed');
+    expect(markup).toContain('×2');
   });
 
   it('leaves a group of non-diff tools without a total', () => {

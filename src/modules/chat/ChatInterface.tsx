@@ -382,11 +382,6 @@ function ChatInterface({
     }
   }, [currentSessionId, provider, selectProviderEffort, selectedSession?.id]);
 
-  // Mirrors ChatComposer's own visibility check so the message pane can
-  // reserve enough bottom space to keep the floating status tab from
-  // overlapping the last message.
-  const hasActivityIndicator = Boolean(sessionActivity && pendingPermissionRequests.length === 0);
-
   const selectedProviderLabel =
     provider === 'cursor'
       ? t('messageTypes.cursor')
@@ -429,7 +424,7 @@ function ChatInterface({
             onTouchMove={handleScroll}
             isLoadingSessionMessages={isLoadingSessionMessages}
             isProcessing={isProcessing}
-            hasActivityIndicator={hasActivityIndicator}
+            liveStatusText={sessionActivity?.statusText ?? null}
             chatMessages={chatMessages}
             selectedSession={selectedSession}
             currentSessionId={currentSessionId}

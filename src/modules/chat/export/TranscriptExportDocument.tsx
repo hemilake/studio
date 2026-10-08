@@ -4,8 +4,11 @@ import { i18n } from '@/modules/i18n';
 import type { ChatMessage, DiffLine, LLMProvider, Project } from '@/shared/types';
 import { TranscriptRenderContext } from '@/modules/chat/context/TranscriptRenderContext';
 import MessageComponent from '@/modules/chat/transcript/MessageComponent';
-import ToolGroupContainer from '@/modules/chat/transcript/ToolGroupContainer';
-import { groupConsecutiveTools, isToolGroupItem } from '@/modules/chat/utils/toolGrouping';
+import ActivitySegment, { TurnFooter } from '@/modules/chat/transcript/ActivitySegment';
+import AssistantHeader from '@/modules/chat/transcript/AssistantHeader';
+import { buildTranscript } from '@/modules/chat/utils/turnSegments';
+
+const noopToggle = () => {};
 
 type TranscriptExportDocumentProps = {
   messages: ChatMessage[];
@@ -17,7 +20,7 @@ type TranscriptExportDocumentProps = {
 /**
  * The transcript, rendered for a document instead of a screen.
  *
- * It deliberately mounts the same `MessageComponent` / `ToolGroupContainer`
+ * It deliberately mounts the same `MessageComponent` / `ActivitySegment`
  * tree the chat pane uses. Every previous export was a second formatter that
  * only knew about `msg.type`, which is why tool calls — the bulk of an agent
  * transcript — came out as empty sections. Rendering the real components means
@@ -36,40 +39,45 @@ export function TranscriptExportDocument({
 }: TranscriptExportDocumentProps) {
   // Thinking blocks are included: an export is a record of what happened, and
   // the on-screen toggle is about noise in a live conversation.
-  const grouped = groupConsecutiveTools(messages, true);
+  const { items } = buildTranscript(messages, { showThinking: true, isProcessing: false });
   let previousMessage: ChatMessage | null = null;
 
   return (
     <I18nextProvider i18n={i18n}>
       <TranscriptRenderContext.Provider value={{ isExporting: true }}>
         <div className="chat-export-transcript">
-          {grouped.map((item, index) => {
-            if (isToolGroupItem(item)) {
-              const groupPreviousMessage = previousMessage;
+          {items.map((item, index) => {
+            if (item.kind === 'turn-footer') {
+              return <TurnFooter key={`footer-${index}`} steps={item.steps} durationMs={item.durationMs} />;
+            }
+
+            if (item.kind === 'activity') {
+              const opensTurn = !previousMessage || (previousMessage.type !== 'assistant' && previousMessage.type !== 'tool');
               previousMessage = item.messages[item.messages.length - 1] || previousMessage;
 
+              // Opened in an export: the folded line hides detail the reader
+              // can ask for, and a document has no way to ask.
               return (
-                <ToolGroupContainer
-                  key={`group-${index}`}
-                  group={item}
-                  prevMessage={groupPreviousMessage}
-                  createDiff={createDiff}
-                  getMessageKey={(message: ChatMessage) => String(message.timestamp)}
-                  showRawParameters={false}
-                  showThinking
-                  selectedProject={selectedProject}
-                  provider={provider}
-                />
+                <div key={`activity-${index}`}>
+                  {opensTurn && <AssistantHeader kind="assistant" provider={provider} />}
+                  <ActivitySegment
+                    segment={item}
+                    open
+                    onToggle={noopToggle}
+                    createDiff={createDiff}
+                    selectedProject={selectedProject}
+                  />
+                </div>
               );
             }
 
             const messagePreviousMessage = previousMessage;
-            previousMessage = item;
+            previousMessage = item.message;
 
             return (
               <MessageComponent
                 key={`message-${index}`}
-                message={item}
+                message={item.message}
                 prevMessage={messagePreviousMessage}
                 createDiff={createDiff}
                 showRawParameters={false}

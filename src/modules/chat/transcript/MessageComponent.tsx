@@ -5,7 +5,6 @@ import { GitBranchIcon, PencilIcon, Swords } from 'lucide-react';
 import type { ChatMessage, ClaudePermissionSuggestion, PermissionGrantResult, LLMProvider,DiffLine,Project } from '@/shared/types';
 import { formatUsageLimitText, stripProposedPlanEnvelope } from '@/modules/chat/utils/chatFormatting';
 import { ToolRenderer, ToolErrorDisplay, SubagentPanel, shouldHideToolResult } from '@/modules/chat/tools';
-import { LLMProviderLogo } from '@/shared/ui';
 import { Reasoning, ReasoningContent, ReasoningTrigger } from '@/modules/chat/transcript/Reasoning';
 import ChatMessageImages from '@/modules/chat/transcript/ChatMessageImages';
 import ChatMessageFiles from '@/modules/chat/transcript/ChatMessageFiles';
@@ -16,6 +15,7 @@ import MessageSpeakControl from '@/modules/chat/transcript/MessageSpeakControl';
 import { useIsExportingTranscript } from '@/modules/chat/context/TranscriptRenderContext';
 import { MemoryCitations } from '@/modules/chat/transcript/MemoryCitations';
 import { adversaryLabel } from '@/modules/chat/utils/adversarialMode';
+import AssistantHeader from '@/modules/chat/transcript/AssistantHeader';
 
 type MessageComponentProps = {
   message: ChatMessage;
@@ -85,6 +85,10 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
 
 
   const formattedTime = useMemo(() => new Date(message.timestamp).toLocaleTimeString(), [message.timestamp]);
+  const headerTime = useMemo(
+    () => new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    [message.timestamp],
+  );
   const shouldHideThinkingMessage = Boolean(message.isThinking && !showThinking);
 
   if (shouldHideThinkingMessage) {
@@ -212,38 +216,13 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
         </div>
       ) : (
         /* Claude/Error/Tool messages on the left */
-        <div className="w-full">
+        <div className={`chat-message-block relative w-full ${message.isStreaming ? 'hemi-activity-rise' : ''}`}>
           {!isGrouped && (
-            <div className="mb-2 flex items-center space-x-3">
-              {message.type === 'error' ? (
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-destructive text-sm text-white">
-                  !
-                </div>
-              ) : message.type === 'tool' ? (
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gray-600 text-sm text-white dark:bg-gray-700">
-                  🔧
-                </div>
-              ) : (
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full p-1 text-sm text-foreground">
-                  <LLMProviderLogo provider={provider} className="h-full w-full" />
-                </div>
-              )}
-              <div className="text-sm font-medium text-gray-900 dark:text-white">
-                {message.type === 'error'
-                  ? t('messageTypes.error')
-                  : message.type === 'tool'
-                    ? t('messageTypes.tool')
-                    : (provider === 'cursor'
-                        ? t('messageTypes.cursor')
-                        : provider === 'codex'
-                          ? t('messageTypes.codex')
-                          : provider === 'opencode'
-                              ? t('messageTypes.opencode', { defaultValue: 'OpenCode' })
-                              : provider === 'antigravity'
-                                  ? t('messageTypes.antigravity', { defaultValue: 'Antigravity' })
-                              : t('messageTypes.claude'))}
-              </div>
-            </div>
+            <AssistantHeader
+              kind={message.type === 'error' ? 'error' : message.type === 'tool' ? 'tool' : 'assistant'}
+              provider={provider}
+              time={headerTime}
+            />
           )}
 
           <div className="w-full">
@@ -399,15 +378,13 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
               <MemoryCitations citations={message.memoryCitations} />
             )}
 
-            {(shouldShowAssistantCopyControl || !isGrouped) && (
-              <div className="mt-1 flex w-full items-center gap-2 text-[11px] text-gray-400 dark:text-gray-500">
-                {shouldShowAssistantCopyControl && (
-                  <MessageCopyControl content={assistantCopyContent} messageType="assistant" />
-                )}
-                {shouldShowAssistantCopyControl && (
-                  <MessageSpeakControl content={assistantCopyContent} />
-                )}
-                {!isGrouped && <span>{formattedTime}</span>}
+            {/* Fork (Hemilake Studio activity): copy · MD · read aloud appear on
+                hover or focus of the block, taking no height; on touch screens,
+                where nothing hovers, they stay in the flow. */}
+            {shouldShowAssistantCopyControl && (
+              <div className="chat-message-actions flex items-center gap-1 text-[11px] text-muted-foreground">
+                <MessageCopyControl content={assistantCopyContent} messageType="assistant" />
+                <MessageSpeakControl content={assistantCopyContent} />
               </div>
             )}
           </div>
