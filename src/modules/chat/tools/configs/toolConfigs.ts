@@ -3,6 +3,8 @@
  * Defines display behavior for all tool types 
  */
 
+import { humanizeName, splitMcpName } from '@/modules/chat/utils/activityNaming';
+
 export type ToolDisplayConfig = {
   input: {
     type: 'one-line' | 'collapsible' | 'plan' | 'hidden';
@@ -99,11 +101,11 @@ export function formatToolDisplayName(toolName: string): string {
     return unifiedLabel;
   }
 
-  const mcpMatch = /^mcp__([^_]+(?:_[^_]+)*)__(.+)$/.exec(toolName);
-  if (!mcpMatch) {
-    return toolName;
-  }
-  return `${mcpMatch[2]} (${mcpMatch[1]})`;
+  // Fork (Hemilake Studio activity): the action alone, in words. The server
+  // part ("plugin_hemilake_hemilake") is never shown; activity rows name the
+  // source with an icon instead (utils/activityNaming).
+  const mcp = splitMcpName(toolName);
+  return mcp ? humanizeName(mcp.tool) : toolName;
 }
 
 export const TOOL_CONFIGS: Record<string, ToolDisplayConfig> = {

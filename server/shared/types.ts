@@ -327,6 +327,8 @@ export type NormalizedMessage = {
     content?: string;
     isError?: boolean;
     toolUseResult?: unknown;
+    /** Fork: when the result arrived (history merges), for step durations in the chat. */
+    timestamp?: string;
   };
   isError?: boolean;
   text?: string;

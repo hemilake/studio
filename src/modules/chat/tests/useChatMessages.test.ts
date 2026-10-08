@@ -64,6 +64,8 @@ test('rebuilds a tool-use UI message when its separately received result changes
     content: 'file contents',
     isError: false,
     toolUseResult: undefined,
+    // When the result arrived, for the activity row's duration.
+    timestamp: toolResult.timestamp,
   });
 
   const unrelatedStream = message('stream', {

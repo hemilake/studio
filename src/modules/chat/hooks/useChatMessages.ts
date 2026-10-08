@@ -386,6 +386,10 @@ export function normalizedToChatMessages(messages: NormalizedMessage[]): ChatMes
               content: formatToolResultContent(tr.content),
               isError: Boolean(tr.isError),
               toolUseResult: (tr as any).toolUseResult,
+              // Fork: when the result came back, for the step's duration in
+              // the activity line. A live result row carries its own; a
+              // history load copies it onto the merged result.
+              timestamp: (tr as { timestamp?: string }).timestamp,
             }
           : null;
 
