@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 type TokenUsageSummaryProps = {
   usage: Record<string, unknown> | null;
   onClick?: () => void;
+  /** Fork: only the count, while the status pill takes room beside it. */
+  compact?: boolean;
 };
 
 const formatTokenCount = (value: number) => {
@@ -36,7 +38,7 @@ const readUsageNumber = (value: unknown) => {
  * Rendered by chat's ChatComposer to show the session's context-window usage
  * and open the detailed token breakdown on click.
  */
-function TokenUsageSummary({ usage, onClick }: TokenUsageSummaryProps) {
+function TokenUsageSummary({ usage, onClick, compact = false }: TokenUsageSummaryProps) {
   const { t } = useTranslation();
   const breakdown =
     usage?.breakdown && typeof usage.breakdown === 'object'
@@ -55,11 +57,11 @@ function TokenUsageSummary({ usage, onClick }: TokenUsageSummaryProps) {
       aria-label={t('chat:misc.showTokenUsage')}
     >
       {/* Fork: phones show only the count, to keep the composer toolbar on one line. */}
-      <span className="hidden h-5 w-5 place-items-center rounded-md bg-primary/10 text-primary sm:grid">
+      <span className={`hidden h-5 w-5 place-items-center rounded-md bg-primary/10 text-primary ${compact ? '' : 'sm:grid'}`}>
         <ActivityIcon className="h-3.5 w-3.5" />
       </span>
       <span className="font-medium text-foreground">{formatTokenCount(usedTokens)}</span>
-      <span className="hidden text-muted-foreground/70 sm:inline">
+      <span className={`hidden text-muted-foreground/70 ${compact ? '' : 'sm:inline'}`}>
         {t('chat:misc.tokensLabel', { count: usedTokens })}
       </span>
     </button>

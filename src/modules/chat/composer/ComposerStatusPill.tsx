@@ -12,7 +12,10 @@ type ComposerStatusPillProps = {
  * as a pill in the composer's toolbar next to the token count. It replaces the
  * floating "Thinking… 2m 3s" tab that sat over the last lines of the chat; what
  * runs now is the live line in the transcript, and Stop stays the composer's
- * submit button. Phones show only the time.
+ * submit button. Only the dot and the time show: with the label the toolbar
+ * no longer fits on one line at the composer's full width (866 px) and the
+ * model controls wrap below; the label is the pill's title and its
+ * accessible name.
  */
 export default function ComposerStatusPill({ activity }: ComposerStatusPillProps) {
   const { t } = useTranslation('chat');
@@ -38,11 +41,11 @@ export default function ComposerStatusPill({ activity }: ComposerStatusPillProps
     <span
       className="inline-flex h-8 flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-hemi-copper-tint px-2.5 text-[12.5px] font-medium text-hemi-copper-text"
       role="status"
+      title={`${label} · ${elapsed}`}
       data-composer-status=""
     >
       <span className="h-[7px] w-[7px] flex-shrink-0 rounded-full bg-hemi-copper" aria-hidden />
-      <span className="hidden sm:inline">{label}</span>
-      <span className="hidden sm:inline" aria-hidden>·</span>
+      <span className="sr-only">{label}</span>
       <span className="font-mono tabular-nums">{elapsed}</span>
     </span>
   );

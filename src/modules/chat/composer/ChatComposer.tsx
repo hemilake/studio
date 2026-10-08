@@ -439,7 +439,7 @@ export default function ChatComposer({
 
             <ComposerStatusPill activity={activity} />
 
-            <TokenUsageSummary usage={tokenBudget} onClick={onShowTokenUsage} />
+            <TokenUsageSummary usage={tokenBudget} onClick={onShowTokenUsage} compact={Boolean(activity)} />
 
             <PromptInputButton
               tooltip={{ content: t('input.showAllCommands') }}
