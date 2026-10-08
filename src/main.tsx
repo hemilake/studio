@@ -4,6 +4,7 @@ import { scan } from 'react-scan'
 
 import App from '@/App'
 import { startEmbedBridge } from '@/shared/embedBridge'
+import { resolvePublicShareTokenFromPathname } from '@/shared/utils'
 import '@/index.css'
 import '@/shared/theme/themes.css'
 import 'katex/dist/katex.min.css'
@@ -18,8 +19,10 @@ import '@/modules/i18n'
 // `localStorage.setItem('react-scan', 'on')` and reload.
 scan({ enabled: import.meta.env.DEV && localStorage.getItem('react-scan') === 'on' })
 
-// Register service worker for PWA + Web Push support
-if ('serviceWorker' in navigator) {
+const isPublicShareRoute = resolvePublicShareTokenFromPathname() !== null
+
+// Register service worker for PWA + Web Push support (skip on public share views)
+if (!isPublicShareRoute && 'serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(err => {
     console.warn('Service worker registration failed:', err);
   });
@@ -27,7 +30,9 @@ if ('serviceWorker' in navigator) {
 
 // Fork (embed mode): inside a Hemilake console, start talking to it before the
 // first render so the sign-in exchange can begin straight away.
-void startEmbedBridge()
+if (!isPublicShareRoute) {
+  void startEmbedBridge()
+}
 
 const rootElement = document.getElementById('root')
 if (!rootElement) {

@@ -222,3 +222,112 @@ export const getPageTitle = (
   const displayName = selectedProject?.displayName?.trim();
   return displayName ? `${displayName} - ${getBrandName()}` : getBrandName();
 };
+
+// ---------------------------
+
+//----------------- ROUTER BASENAME AND PUBLIC SHARE ROUTE ------------
+
+/** Directories that hold static assets rather than an application deployment prefix. */
+const DEPLOYMENT_ASSET_DIRECTORIES = new Set(['assets', 'static', 'icons', 'images']);
+
+/**
+ * Detects the router basename from explicit runtime config or deployment hints in
+ * `index.html`. Used by `App`, `main` and `SessionShareDialog` so router mounting,
+ * public share route detection and public share URL construction all agree on the
+ * same prefix.
+ */
+export function detectRouterBasename(): string {
+  const explicitBasename =
+    typeof window !== 'undefined'
+      ? (window as Window & { __ROUTER_BASENAME__?: string }).__ROUTER_BASENAME__ || ''
+      : '';
+  if (explicitBasename) {
+    return explicitBasename.replace(/\/+$/, '');
+  }
+
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return '';
+  }
+
+  const candidatePaths = [
+    { kind: 'manifest' as const, value: document.querySelector('link[rel="manifest"]')?.getAttribute('href') },
+    { kind: 'script' as const, value: document.querySelector('script[type="module"][src]')?.getAttribute('src') },
+    ...Array.from(
+      document.querySelectorAll(
+        'link[rel~="icon"][href], link[rel="apple-touch-icon"][href], link[rel="apple-touch-icon-precomposed"][href], link[rel="mask-icon"][href]',
+      ),
+    ).map((node) => ({
+      kind: 'icon' as const,
+      value: node.getAttribute('href'),
+    })),
+  ].filter((candidate): candidate is { kind: 'manifest' | 'script' | 'icon'; value: string } => Boolean(candidate.value));
+
+  let detectedBasename = '';
+  for (const candidate of candidatePaths) {
+    try {
+      const candidateUrl = new URL(candidate.value, document.baseURI || window.location.href);
+      if (candidateUrl.origin !== window.location.origin) {
+        continue;
+      }
+
+      const pathname = candidateUrl.pathname;
+      const normalizedPathname = pathname.replace(/\/+$/, '');
+
+      let normalized = '';
+      if (candidate.kind === 'script') {
+        const match = normalizedPathname.match(/^(.*)\/assets\//);
+        normalized = match?.[1] ? match[1].replace(/\/+$/, '') : '';
+      } else {
+        const manifestMatch = normalizedPathname.match(/^(.*)\/(?:manifest\.json|site\.webmanifest)$/);
+        const iconMatch = normalizedPathname.match(
+          /^(.*)\/(?:favicon(?:\.[^/]+)?|apple-touch-icon(?:-[^/]+)?(?:\.[^/]+)?|mask-icon(?:\.[^/]+)?|[^/]*icon[^/]*)$/,
+        );
+        const match = candidate.kind === 'manifest' ? manifestMatch : iconMatch;
+        if (match?.[1]) {
+          const segments = match[1].split('/').filter(Boolean);
+          while (segments.length > 0 && DEPLOYMENT_ASSET_DIRECTORIES.has(segments[segments.length - 1])) {
+            segments.pop();
+          }
+
+          normalized = segments.length > 0 ? `/${segments.join('/')}` : '';
+        }
+      }
+
+      if (normalized.length > detectedBasename.length) {
+        detectedBasename = normalized;
+      }
+    } catch {
+      // Ignore invalid candidate URLs and continue checking other hints.
+    }
+  }
+
+  return detectedBasename;
+}
+
+/**
+ * Extracts the share token when the current pathname is `/share/:token` (after
+ * stripping any deployment router basename), or returns `null` for normal app routes.
+ * Used by `App` and `main` to mount the public read-only view outside the authenticated tree.
+ */
+export function resolvePublicShareTokenFromPathname(
+  pathname = typeof window !== 'undefined' ? window.location.pathname : '',
+  basename = detectRouterBasename(),
+): string | null {
+  const normalizedBasename = basename.replace(/\/+$/, '');
+  let relativePath = pathname;
+  if (normalizedBasename && relativePath.startsWith(`${normalizedBasename}/`)) {
+    relativePath = relativePath.slice(normalizedBasename.length);
+  }
+
+  const match = /^\/share\/([^/]+)\/?$/.exec(relativePath);
+  if (!match?.[1]) {
+    return null;
+  }
+
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
+}
+

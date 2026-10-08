@@ -263,6 +263,29 @@ export const api = {
     cancel: (id: string) => del(`/api/scheduled-messages/${encodeURIComponent(id)}`),
   },
 
+  // Fork (session share): owner endpoints (/api/shares) and public read-only endpoint (/api/public/shares).
+  shares: {
+    create: (body: { sessionId: string; provider?: string }) => post('/api/shares', body),
+    getBySession: (sessionId: string) => get(`/api/shares${query({ sessionId })}`),
+    update: (
+      id: string,
+      body: { title?: string | null; hiddenIds?: string[]; expiresAt?: string | null },
+    ) => patch(`/api/shares/${encodeURIComponent(id)}`, body),
+    revoke: (id: string) => del(`/api/shares/${encodeURIComponent(id)}`),
+    preview: (id: string) => get(`/api/shares/${encodeURIComponent(id)}/preview`),
+  },
+
+  publicShares: {
+    // Deliberately uses bare fetch without authenticatedFetch so the public
+    // share page never touches auth tokens or triggers session-expiry events.
+    get: (token: string, options: { etag?: string | null; signal?: AbortSignal } = {}) =>
+      fetch(`/api/public/shares/${encodeURIComponent(token)}`, {
+        method: 'GET',
+        headers: options.etag ? { 'If-None-Match': options.etag } : undefined,
+        signal: options.signal,
+      }),
+  },
+
   // Workspace file tree
   readFile: (projectId: string, filePath: string) =>
     get(`/api/file-tree/projects/${projectId}/file${query({ filePath })}`),

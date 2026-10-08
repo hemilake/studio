@@ -22,6 +22,8 @@ type MarkdownProps = {
   className?: string;
   /** Render single newlines as hard line breaks (for user-typed messages). */
   breaks?: boolean;
+  /** Disables workspace file-open links and workspace image fetches (used on public share pages). */
+  disableWorkspaceLinks?: boolean;
 };
 
 // Links to the wider web (or in-page anchors) keep normal browser navigation;
@@ -271,11 +273,15 @@ const markdownComponents = {
 };
 
 /**
- * Used by chat's MessageComponent, ToolErrorDisplay and MarkdownContent to
- * render model-authored markdown with this module's shared prose styling,
- * code highlighting and table rules.
+ * Used by chat's MessageComponent, ToolErrorDisplay and MarkdownContent, and by
+ * the Share module's PublicSharePage, to render model-authored markdown with
+ * shared prose styling, code highlighting and table rules.
  */
-function MarkdownBodyRenderer({ children, breaks = false }: Omit<MarkdownProps, 'className'>) {
+function MarkdownBodyRenderer({
+  children,
+  breaks = false,
+  disableWorkspaceLinks = false,
+}: Omit<MarkdownProps, 'className'>) {
   const content = useMemo(
     () => normalizeInlineCodeFences(String(children ?? '')),
     [children],
@@ -303,7 +309,28 @@ function MarkdownBodyRenderer({ children, breaks = false }: Omit<MarkdownProps, 
   const components = useMemo(
     () => ({
       ...markdownComponents,
+      ...(disableWorkspaceLinks
+        ? {
+            img: () => <span className="font-mono text-xs text-muted-foreground">[image]</span>,
+          }
+        : {}),
       a: ({ href, children: linkChildren }: { href?: string; children?: React.ReactNode }) => {
+        if (disableWorkspaceLinks) {
+          if (!href || !isExternalHref(href)) {
+            return <span>{linkChildren}</span>;
+          }
+          return (
+            <a
+              href={href}
+              className="text-hemi-copper-text hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {linkChildren}
+            </a>
+          );
+        }
+
         // Prefer the href when it is a real path; otherwise fall back to the
         // link text, since models often emit `[src/foo.ts]()` with an empty href.
         const linkText = childrenToText(linkChildren);
@@ -345,7 +372,7 @@ function MarkdownBodyRenderer({ children, breaks = false }: Omit<MarkdownProps, 
         );
       },
     }),
-    [openFileInEditor, openDirectory],
+    [disableWorkspaceLinks, openFileInEditor, openDirectory],
   );
 
   return (
@@ -367,11 +394,21 @@ function MarkdownBodyRenderer({ children, breaks = false }: Omit<MarkdownProps, 
  */
 export const MarkdownBody = memo(MarkdownBodyRenderer);
 
-/** Markdown in its own prose container. The form every non-streaming caller uses. */
-export const Markdown = memo(function Markdown({ children, className, breaks }: MarkdownProps) {
+/**
+ * Markdown in its own prose container. Used across the chat module and by
+ * PublicSharePage in the share module.
+ */
+export const Markdown = memo(function Markdown({
+  children,
+  className,
+  breaks,
+  disableWorkspaceLinks,
+}: MarkdownProps) {
   return (
     <div className={className}>
-      <MarkdownBody breaks={breaks}>{children}</MarkdownBody>
+      <MarkdownBody breaks={breaks} disableWorkspaceLinks={disableWorkspaceLinks}>
+        {children}
+      </MarkdownBody>
     </div>
   );
 });

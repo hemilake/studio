@@ -18,6 +18,7 @@ import ActivitySegment, { LiveLine, TurnFooter } from '@/modules/chat/transcript
 import AssistantHeader from '@/modules/chat/transcript/AssistantHeader';
 import LoadAllMessagesOverlay from '@/modules/chat/transcript/LoadAllMessagesOverlay';
 import ChatExportMenu from '@/modules/chat/transcript/ChatExportMenu';
+import { SessionShareDialog } from '@/modules/share';
 
 /**
  * How many of the newest rows mount with real content on the first commit,
@@ -188,7 +189,14 @@ function ChatMessagesPane({
     >
       {chatMessages.length > 0 && (
         <div className="pointer-events-none sticky right-4 top-3 z-10 mb-2 flex justify-end sm:px-4">
-          <div className="pointer-events-auto">
+          <div className="pointer-events-auto flex items-center gap-1.5">
+            {(selectedSession?.id || currentSessionId) && (
+              <SessionShareDialog
+                sessionId={(selectedSession?.id || currentSessionId) as string}
+                sessionTitle={selectedSession?.summary || selectedSession?.title}
+                provider={provider}
+              />
+            )}
             <ChatExportMenu
               messages={chatMessages}
               sessionTitle={selectedSession?.summary || selectedSession?.title}

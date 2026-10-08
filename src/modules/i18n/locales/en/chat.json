@@ -289,6 +289,42 @@
       "description": "Every message, unformatted, for tooling."
     }
   },
+  "share": {
+    "trigger": "Share session",
+    "heading": "Share session",
+    "loading": "Loading share settings…",
+    "description": "Publish a read-only link that anyone can open without signing in. Only your prompts and the assistant’s text outputs are shown — tool calls, file contents, and thinking stay private.",
+    "createLink": "Create public link",
+    "urlLabel": "Public link",
+    "titleLabel": "Title",
+    "titlePlaceholder": "Shared conversation title",
+    "itemsHeading": "Messages in shared view",
+    "itemsVisibleCount": "{{visible}} of {{total}} visible",
+    "noItems": "No shareable prompts or outputs in this session yet.",
+    "roleUser": "Prompt",
+    "roleAssistant": "Assistant",
+    "showItem": "Show in shared view",
+    "hideItem": "Hide from shared view",
+    "hiddenBadge": "Hidden",
+    "visibleBadge": "Visible",
+    "openSharedView": "Open shared view",
+    "stopSharing": "Stop sharing",
+    "cancelRevoke": "Cancel",
+    "confirmStopSharing": "Confirm stop sharing",
+    "errors": {
+      "createFailed": "Unable to create public link.",
+      "updateFailed": "Unable to save changes.",
+      "revokeFailed": "Unable to stop sharing."
+    },
+    "public": {
+      "live": "Live",
+      "readOnly": "Read-only",
+      "unavailable": "This link is no longer available",
+      "unavailableHint": "The owner may have stopped sharing this session or the link has expired.",
+      "loading": "Loading shared conversation…",
+      "empty": "No messages in this shared session yet."
+    }
+  },
   "schedule": {
     "trigger": "Schedule this message",
     "heading": "Send later",
