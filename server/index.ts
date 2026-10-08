@@ -28,6 +28,7 @@ import {
     validateApiKey,
 } from './modules/auth/index.js';
 import { embedRoutes, frameAncestors } from './modules/embed/index.js';
+import { publicShareRoutes, shareRoutes } from './modules/share/index.js';
 import { taskmasterRoutes } from './modules/taskmaster/index.js';
 import { commandsRoutes } from './modules/commands/index.js';
 import { settingsRoutes } from './modules/settings/index.js';
@@ -150,6 +151,9 @@ app.get('/health', (req, res) => {
     });
 });
 
+// Fork (session share): public read-only share endpoint, mounted before validateApiKey
+app.use('/api/public/shares', publicShareRoutes);
+
 // Optional API key validation (if configured)
 app.use('/api', validateApiKey);
 
@@ -202,6 +206,8 @@ app.use('/api/browser-use', authenticateToken, browserUseRoutes);
 // Unified provider MCP routes (protected)
 app.use('/api/providers', authenticateToken, providerRoutes);
 app.use('/api/scheduled-messages', authenticateToken, scheduledMessagesRoutes);
+// Fork (session share): owner management routes for public session links (protected)
+app.use('/api/shares', authenticateToken, shareRoutes);
 
 // Agent API Routes (uses API key authentication)
 app.use('/api/agent', agentRoutes);
@@ -251,8 +257,8 @@ app.use(express.static(path.join(APP_ROOT, 'dist'), {
 
 // Serve React app for all other routes (excluding static files)
 app.get('*', (req, res) => {
-    // Skip requests for static assets (files with extensions)
-    if (path.extname(req.path)) {
+    // Skip requests for static assets (files with extensions), except /share/* routes
+    if (!req.path.startsWith('/share/') && path.extname(req.path)) {
         return res.status(404).send('Not found');
     }
 

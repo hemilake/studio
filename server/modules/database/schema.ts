@@ -250,6 +250,32 @@ CREATE TABLE IF NOT EXISTS superseded_provider_sessions (
 );
 `;
 
+/**
+ * Public read-only session share links owned by a Studio user.
+ *
+ * `token` holds 32 random bytes encoded as base64url. `hidden_ids` is a JSON
+ * array of candidate item ids that the owner has chosen to omit from the
+ * public view. Revoked shares retain their row with `revoked_at` set so the
+ * token can never be re-used.
+ */
+export const SESSION_SHARES_TABLE_SCHEMA_SQL = `
+CREATE TABLE IF NOT EXISTS session_shares (
+    id TEXT PRIMARY KEY,
+    token TEXT UNIQUE NOT NULL,
+    user_id INTEGER NOT NULL,
+    session_id TEXT NOT NULL,
+    provider TEXT NOT NULL DEFAULT 'claude',
+    title TEXT,
+    hidden_ids TEXT NOT NULL DEFAULT '[]',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    revoked_at DATETIME,
+    expires_at DATETIME,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (session_id) REFERENCES sessions(session_id) ON DELETE CASCADE
+);
+`;
+
 export const INIT_SCHEMA_SQL = `
 -- Initialize authentication database
 PRAGMA foreign_keys = ON;
@@ -303,4 +329,8 @@ ${USER_PREFERENCES_TABLE_SCHEMA_SQL}
 ${SESSION_DRAFTS_TABLE_SCHEMA_SQL}
 
 ${SUPERSEDED_PROVIDER_SESSIONS_TABLE_SCHEMA_SQL}
+
+${SESSION_SHARES_TABLE_SCHEMA_SQL}
+CREATE INDEX IF NOT EXISTS idx_session_shares_token ON session_shares(token);
+CREATE INDEX IF NOT EXISTS idx_session_shares_session_user ON session_shares(session_id, user_id);
 `;
