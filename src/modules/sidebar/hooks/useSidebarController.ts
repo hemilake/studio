@@ -3,6 +3,7 @@ import type { TFunction } from 'i18next';
 
 import { api } from '@/shared/api';
 import { subscribeToUserPreferences } from '@/shared/userSettings';
+import { useWebSocket } from '@/shared/context/WebSocketContext';
 import { usePaletteOps } from '@/modules/command-palette';
 import type { ArchivedProjectListItem, ArchivedSessionListItem, ConversationProjectResult, ConversationSearchResults, LLMProvider, Project, ProjectSession, ProjectSortOrder, RecentConversationListItem, RecentConversationsOrigin, SearchProgress, ActiveSidebarRename, PendingSidebarDeletion, SessionTitleSearchResult, SessionWithProvider, SidebarSearchMode } from '@/shared/types';
 import {
@@ -79,6 +80,7 @@ export function useSidebarController({
   sidebarVisible,
 }: UseSidebarControllerArgs) {
   const paletteOps = usePaletteOps();
+  const { subscribe } = useWebSocket();
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
   // Running groups start expanded and remember manual collapses independently of Projects.
   const [collapsedRunningProjects, setCollapsedRunningProjects] = useState<Set<string>>(new Set());
@@ -222,18 +224,22 @@ export function useSidebarController({
     }
   }, []);
 
-  const fetchRecentConversationsPage = useCallback(async (offset: number, append: boolean) => {
+  const fetchRecentConversationsPage = useCallback(async (
+    offset: number,
+    append: boolean,
+    { limit = 40, silent = false }: { limit?: number; silent?: boolean } = {},
+  ) => {
     const requestSequence = ++recentConversationsSeqRef.current;
     if (append) {
       setIsLoadingMoreRecentConversations(true);
-    } else {
+    } else if (!silent) {
       setIsRecentConversationsLoading(true);
     }
     setRecentConversationsError(false);
 
     try {
       const response = await api.recentConversations({
-        limit: 40,
+        limit,
         offset,
         origin: recentConversationsOriginRef.current,
       });
@@ -293,6 +299,49 @@ export function useSidebarController({
     setRecentConversationsHasMore(false);
     void fetchRecentConversationsPage(0, false);
   }, [fetchRecentConversationsPage]);
+
+  // The Conversations feed is a server-ordered page, not something the
+  // `session_upserted` deltas can patch in place (the app/automatic split and
+  // the ordering live in the query), so a new or updated session refetches it.
+  // Without this a chat started here only showed up after a manual refresh.
+  const recentConversationsLiveRef = useRef({ active: false, loaded: 0 });
+  recentConversationsLiveRef.current = {
+    active: searchMode === 'conversations' && debouncedSearchQuery.length < 2,
+    loaded: recentConversations.length,
+  };
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const unsubscribe = subscribe((event) => {
+      if (event.kind !== 'session_upserted' && event.kind !== 'websocket_reconnected') {
+        return;
+      }
+      if (!recentConversationsLiveRef.current.active) {
+        return;
+      }
+      // A running chat upserts its session on every flush of the watcher;
+      // one refetch per burst is enough.
+      if (timer) {
+        clearTimeout(timer);
+      }
+      timer = setTimeout(() => {
+        timer = null;
+        if (!recentConversationsLiveRef.current.active) {
+          return;
+        }
+        // Keep the pages the user already scrolled through (the route caps at 100).
+        const limit = Math.min(Math.max(40, recentConversationsLiveRef.current.loaded), 100);
+        void fetchRecentConversationsPage(0, false, { limit, silent: true });
+      }, 800);
+    });
+
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+      unsubscribe();
+    };
+  }, [fetchRecentConversationsPage, subscribe]);
 
   const loadMoreRecentConversations = useCallback(() => {
     if (isLoadingMoreRecentConversations || !recentConversationsHasMore) {
