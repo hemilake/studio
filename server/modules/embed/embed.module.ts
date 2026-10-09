@@ -3,9 +3,10 @@ import { createRequire } from 'node:module';
 
 import { generateToken } from '@/modules/auth/index.js';
 import { userDb } from '@/modules/database/index.js';
+import { seedGitIdentity } from '@/modules/user/index.js';
 
 import { readEmbedConfig, readEmbedOrigins } from './embed.config.js';
-import { createEmbedRouter, createFrameAncestorsMiddleware } from './embed.routes.js';
+import { createCorsOriginCheck, createEmbedRouter, createFrameAncestorsMiddleware } from './embed.routes.js';
 import {
   createEmbedService,
   EMBED_ASSERTION_AUDIENCE,
@@ -34,7 +35,7 @@ const require = createRequire(import.meta.url);
 const jwt = require('jsonwebtoken') as JwtAdapter;
 const bcrypt = require('bcrypt') as BcryptAdapter;
 
-/** The account console-only mode creates; Studio shows it as the signed-in user. */
+/** The account the first console sign-in creates; Studio shows it as the signed-in user. */
 const CONSOLE_OWNER = 'owner';
 
 const embedService = createEmbedService({
@@ -56,6 +57,7 @@ const embedService = createEmbedService({
     createConsoleOwner: () => userDb.getFirstUser()
       ?? userDb.createUser(CONSOLE_OWNER, bcrypt.hashSync(randomBytes(32).toString('base64url'), 12)),
     updateLastLogin: (userId) => userDb.updateLastLogin(userId),
+    seedGitIdentity: (userId, identity) => seedGitIdentity(userId, identity),
   },
   generateToken: (user) => generateToken(user),
   now: () => Date.now(),
@@ -71,3 +73,6 @@ export const embedRoutes = createEmbedRouter(embedService);
 
 /** Framing policy middleware assembled for the server entrypoint. */
 export const frameAncestors = createFrameAncestorsMiddleware(() => readEmbedOrigins());
+
+/** CORS origin check assembled for the server entrypoint: the framing consoles only. */
+export const corsOrigin = createCorsOriginCheck(() => readEmbedOrigins());

@@ -20,11 +20,11 @@ export function createEmbedRouter(service: ReturnType<typeof createEmbedService>
     }
   });
 
-  router.post('/exchange', (req, res, next) => {
+  router.post('/exchange', async (req, res, next) => {
     try {
       const body = req.body as { assertion?: unknown } | undefined;
       res.setHeader('Cache-Control', 'no-store');
-      res.json(service.exchange(body?.assertion));
+      res.json(await service.exchange(body?.assertion));
     } catch (error) {
       next(error);
     }
@@ -53,5 +53,19 @@ export function createFrameAncestorsMiddleware(readOrigins: () => string[]): Req
     const sources = ["'self'", ...readOrigins()].join(' ');
     res.setHeader('Content-Security-Policy', `frame-ancestors ${sources}; ${FRAME_SRC}`);
     next();
+  };
+}
+
+type CorsOriginCallback = (error: Error | null, allow?: boolean) => void;
+
+/**
+ * Creates the `origin` option of the CORS middleware (fork): Studio's own pages
+ * are same-origin and need no CORS, so only the consoles allowed to frame it may
+ * read its answers from another origin. Before, any site could, and a fresh
+ * Studio's sign-up answered with its token to whatever page called it.
+ */
+export function createCorsOriginCheck(readOrigins: () => string[]) {
+  return (origin: string | undefined, callback: CorsOriginCallback) => {
+    callback(null, Boolean(origin) && readOrigins().includes(origin as string));
   };
 }

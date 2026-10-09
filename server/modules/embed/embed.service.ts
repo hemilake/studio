@@ -12,6 +12,15 @@ type AssertionClaims = {
   jti?: unknown;
   exp?: unknown;
   sub?: unknown;
+  // Optional: the console owner's name and e-mail, for Studio's git identity.
+  name?: unknown;
+  email?: unknown;
+};
+
+/** The owner's name and e-mail as the console's assertion states them, checked. */
+export type ConsoleIdentity = {
+  name: string;
+  email: string;
 };
 
 type EmbedDependencies = {
@@ -24,11 +33,18 @@ type EmbedDependencies = {
   users: {
     getFirstUser(): EmbedUser | undefined;
     /**
-     * Console-only mode: the instance's single account, created now when there
-     * is none, with a password nobody knows (password login is off anyway).
+     * The instance's single account, created now when there is none, with a
+     * password nobody knows: whoever holds a valid assertion is the console's
+     * owner, and in console-only mode password login is off anyway.
      */
     createConsoleOwner(): EmbedUser;
     updateLastLogin(userId: number): void;
+    /**
+     * Gives the account the console's name and e-mail as its git identity where
+     * it has none yet. Never replaces one the owner already has. Never rejects:
+     * a failure only means the onboarding asks for it.
+     */
+    seedGitIdentity(userId: number, identity: ConsoleIdentity): Promise<void>;
   };
   generateToken(user: EmbedUser): string;
   now(): number;
@@ -40,6 +56,26 @@ export const EMBED_ASSERTION_AUDIENCE = 'hemilake-studio';
 export const EMBED_ASSERTION_MAX_AGE_S = 120;
 
 const ASSERTION_SHAPE = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
+/** A console's jti is a UUID; anything much longer is not one of its assertions. */
+const MAX_JTI_LENGTH = 128;
+const MAX_NAME_LENGTH = 200;
+const MAX_EMAIL_LENGTH = 254;
+const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Control characters would let a value spill into another git config line.
+const CONTROL_CHARACTERS = /[\u0000-\u001f\u007f]/;
+
+/** The identity an assertion carries, when both values are there and look right; null otherwise. */
+export function readConsoleIdentity(claims: AssertionClaims): ConsoleIdentity | null {
+  const name = typeof claims.name === 'string' ? claims.name.trim() : '';
+  const email = typeof claims.email === 'string' ? claims.email.trim() : '';
+  if (!name || name.length > MAX_NAME_LENGTH || CONTROL_CHARACTERS.test(name) || name.startsWith('-')) {
+    return null;
+  }
+  if (email.length > MAX_EMAIL_LENGTH || CONTROL_CHARACTERS.test(email) || email.startsWith('-') || !EMAIL_SHAPE.test(email)) {
+    return null;
+  }
+  return { name, email };
+}
 
 function refused(message: string, code: string, statusCode = 401): AppError {
   return new AppError(message, { code, statusCode });
@@ -52,9 +88,11 @@ function refused(message: string, code: string, statusCode = 401): AppError {
  *
  * Studio stays single-user behind a console, as in platform mode: a valid
  * assertion signs in the instance's first active user. Each assertion is good
- * once; its `jti` is remembered until it would have expired anyway. In
- * console-only mode nobody can sign up, so the first valid assertion creates
- * that user.
+ * once; its `jti` is remembered until it would have expired anyway. When there
+ * is no user yet, the first valid assertion creates it, so a framed Studio
+ * never asks for a username and password: the console already signed its
+ * owner in. Whether password sign-up and login stay open next to it is
+ * CLOUDCLI_EMBED_ONLY's to say.
  */
 export function createEmbedService(dependencies: EmbedDependencies) {
   const spentAssertions = new Map<string, number>();
@@ -77,7 +115,7 @@ export function createEmbedService(dependencies: EmbedDependencies) {
       };
     },
 
-    exchange(assertionInput: unknown) {
+    async exchange(assertionInput: unknown) {
       const config = dependencies.readConfig();
       if (config.origins.length === 0 || config.secret === null) {
         throw refused('Embedded sign-in is not configured on this instance', 'EMBED_EXCHANGE_DISABLED', 404);
@@ -96,7 +134,7 @@ export function createEmbedService(dependencies: EmbedDependencies) {
       }
 
       const nowSeconds = Math.floor(dependencies.now() / 1000);
-      if (typeof claims.jti !== 'string' || !claims.jti || typeof claims.exp !== 'number') {
+      if (typeof claims.jti !== 'string' || !claims.jti || claims.jti.length > MAX_JTI_LENGTH || typeof claims.exp !== 'number') {
         throw refused('The assertion was not accepted', 'EMBED_ASSERTION_INVALID');
       }
       forgetExpired(nowSeconds);
@@ -105,17 +143,16 @@ export function createEmbedService(dependencies: EmbedDependencies) {
       }
       spentAssertions.set(claims.jti, Math.min(claims.exp, nowSeconds + EMBED_ASSERTION_MAX_AGE_S));
 
-      let user = dependencies.users.getFirstUser();
-      if (!user && config.only) {
-        // Console-only: sign-up is off, so the console's owner gets the account.
-        user = dependencies.users.createConsoleOwner();
-      }
-      if (!user) {
-        // A fresh instance has no account yet: the client falls back to setup.
-        throw refused('Studio has no account yet', 'EMBED_NO_USER', 409);
-      }
+      // A fresh instance has no account yet: the console's owner gets it. Nothing
+      // is awaited before this line, so two first exchanges cannot both create one.
+      const user = dependencies.users.getFirstUser() ?? dependencies.users.createConsoleOwner();
 
       dependencies.users.updateLastLogin(Number(user.id));
+      const identity = readConsoleIdentity(claims);
+      if (identity) {
+        // Before answering, so the onboarding that follows finds it.
+        await dependencies.users.seedGitIdentity(Number(user.id), identity);
+      }
       return {
         success: true,
         user: { id: user.id, username: user.username },

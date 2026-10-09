@@ -2,6 +2,18 @@
 
 One entry per customization, newest first. Keep the file list accurate: it is the conflict checklist for upstream merges.
 
+## No username or password inside the console
+
+- **Since:** 2026-10-09, on top of upstream v1.37.3 and the embed mode below.
+- **Branch:** `feat/embed-no-password`. Hemilake only.
+- **Why:** inside the Hemilake console a fresh Studio asked to create a username and password (`needsSetup` was checked before embed mode), and a failed console sign-in fell back to the password form. The console already signs its owner in. A security review of the change (Gemini 4 EAP, checked by hand) also found Studio's CORS open to any origin.
+- **What:** documented in `docs/fork/embed.md` (Sign-in, Git identity, Security notes).
+  - The exchange creates the `owner` account whenever there is none and the exchange is configured, not only in console-only mode; `EMBED_NO_USER` is gone. `jti` longer than 128 characters is refused.
+  - Framed without a user, `ProtectedRoute` goes to `EmbeddedSignIn` before `needsSetup`. A failure shows the code and Try again, never a form; only a Studio without the console's sign-in (no secret) and not console-only falls back to its own forms.
+  - Optional `name`/`email` claims seed the account's git identity before the exchange answers (`user.service` `seedGitIdentity`): what the account or the machine's git holds wins, git is written only for a missing value, values with control characters or a leading `-` are ignored. Framed, the onboarding starts at the agents when the identity is complete.
+  - CORS answers only the origins in `CLOUDCLI_EMBED_ORIGINS` (`createCorsOriginCheck`). Session JWTs are verified with `algorithms: ['HS256']`. `git config` writes put `--` before the key, so a value starting with `-` is never read as an option.
+- **Files:** `server/index.ts`, `server/modules/auth/auth.middleware.ts`, `server/modules/embed/{embed.module,embed.routes,embed.service,index}.ts`, `server/modules/embed/tests/{embed.service,embed.routes}.test.ts`, `server/modules/user/{index,user.module,user.service}.ts`, `server/modules/user/tests/user.service.test.ts`, `src/modules/auth/{ProtectedRoute,EmbeddedSignIn,ConsoleOnlySignIn}.tsx`, `src/modules/onboarding/Onboarding.tsx`, `src/modules/i18n/locales/{en,es}/auth.json`, `docs/fork/embed.md`, `docs/fork/CHANGES.md`.
+
 ## Share a Studio session read-only, publicly
 
 - **Since:** 2026-10-08, on top of upstream v1.37.3.

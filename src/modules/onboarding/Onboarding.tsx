@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import type { LLMProvider } from '@/shared/types';
 import { api } from '@/shared/api';
+import { getEmbedMode } from '@/shared/embedBridge';
 import { ProviderLoginModal, useProviderAuthStatus } from '@/modules/provider-auth';
 import AgentConnectionsStep from '@/modules/onboarding/AgentConnectionsStep';
 import GitConfigurationStep from '@/modules/onboarding/GitConfigurationStep';
@@ -54,6 +55,11 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
       }
       if (payload.gitEmail) {
         setGitEmail(payload.gitEmail);
+      }
+      // Fork (embed mode): the console's sign-in already named the owner (or the
+      // machine's git did), so the frame starts at the agents. Back still edits it.
+      if (getEmbedMode() && payload.gitName && payload.gitEmail && gitEmailPattern.test(payload.gitEmail)) {
+        setCurrentStep((previous) => (previous === 0 ? 1 : previous));
       }
     } catch (caughtError) {
       console.error('Error loading git config:', caughtError);

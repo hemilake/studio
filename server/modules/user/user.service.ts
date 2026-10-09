@@ -31,6 +31,7 @@ type UserDependencies = {
   };
   readSystemGitConfig(): Promise<GitConfig>;
   applyGlobalGitConfig(gitName: string, gitEmail: string): Promise<void>;
+  applyGlobalGitValue(key: 'user.name' | 'user.email', value: string): Promise<void>;
   logInfo(message: string): void;
   logError(message: string, error: unknown): void;
 };
@@ -129,6 +130,33 @@ export function createUserService(dependencies: UserDependencies) {
         dependencies.logError('Failed to apply global Git config', error);
       }
       return { success: true, gitName, gitEmail };
+    },
+
+    /**
+     * Fork (embed mode): the git identity the console's sign-in names, for an
+     * account that has none. What the account or the machine's git already
+     * holds wins; the machine's git only gets the values it lacks. Never throws.
+     */
+    async seedGitIdentity(userId: number, identity: { name: string; email: string }) {
+      try {
+        const stored = dependencies.users.getGitConfig(userId);
+        if (stored?.git_name && stored?.git_email) {
+          return;
+        }
+        const system = await dependencies.readSystemGitConfig();
+        const gitName = stored?.git_name || system.git_name || identity.name;
+        const gitEmail = stored?.git_email || system.git_email || identity.email;
+        dependencies.users.updateGitConfig(userId, gitName, gitEmail);
+        if (!system.git_name) {
+          await dependencies.applyGlobalGitValue('user.name', gitName);
+        }
+        if (!system.git_email) {
+          await dependencies.applyGlobalGitValue('user.email', gitEmail);
+        }
+        dependencies.logInfo(`Git identity for user ${userId} taken from the console`);
+      } catch (error) {
+        dependencies.logError('Failed to take the git identity from the console', error);
+      }
     },
 
     completeOnboarding(userId: number) {

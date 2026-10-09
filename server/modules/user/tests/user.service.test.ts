@@ -24,6 +24,7 @@ function createDependencies(overrides: Partial<UserDependencies> = {}): UserDepe
     },
     readSystemGitConfig: async () => ({ git_name: null, git_email: null }),
     applyGlobalGitConfig: async () => undefined,
+    applyGlobalGitValue: async () => undefined,
     logInfo: () => undefined,
     logError: () => undefined,
     ...overrides,
@@ -67,6 +68,78 @@ test('updateGitConfig persists valid input and invokes the Git adapter', async (
     'persist:Alice:alice@example.com',
     'git:Alice:alice@example.com',
   ]);
+});
+
+test('seedGitIdentity fills an empty account and the machine git from the console', async () => {
+  const operations: string[] = [];
+  const service = createUserService(createDependencies({
+    users: {
+      getGitConfig: () => undefined,
+      updateGitConfig: (_id, name, email) => operations.push(`persist:${name}:${email}`),
+      completeOnboarding: () => undefined,
+      hasCompletedOnboarding: () => false,
+    },
+    applyGlobalGitValue: async (key, value) => {
+      operations.push(`git:${key}:${value}`);
+    },
+  }));
+
+  await service.seedGitIdentity(4, { name: 'Alice', email: 'alice@example.com' });
+  assert.deepEqual(operations, [
+    'persist:Alice:alice@example.com',
+    'git:user.name:Alice',
+    'git:user.email:alice@example.com',
+  ]);
+});
+
+test('seedGitIdentity never replaces the identity the machine git already has', async () => {
+  const operations: string[] = [];
+  const service = createUserService(createDependencies({
+    users: {
+      getGitConfig: () => undefined,
+      updateGitConfig: (_id, name, email) => operations.push(`persist:${name}:${email}`),
+      completeOnboarding: () => undefined,
+      hasCompletedOnboarding: () => false,
+    },
+    readSystemGitConfig: async () => ({ git_name: 'Own Name', git_email: null }),
+    applyGlobalGitValue: async (key, value) => {
+      operations.push(`git:${key}:${value}`);
+    },
+  }));
+
+  await service.seedGitIdentity(4, { name: 'Alice', email: 'alice@example.com' });
+  assert.deepEqual(operations, [
+    'persist:Own Name:alice@example.com',
+    'git:user.email:alice@example.com',
+  ]);
+});
+
+test('seedGitIdentity leaves an account that has an identity alone, and never throws', async () => {
+  const operations: string[] = [];
+  const kept = createUserService(createDependencies({
+    users: {
+      getGitConfig: () => ({ git_name: 'Kept', git_email: 'kept@example.com' }),
+      updateGitConfig: () => operations.push('persist'),
+      completeOnboarding: () => undefined,
+      hasCompletedOnboarding: () => false,
+    },
+    readSystemGitConfig: async () => {
+      operations.push('read');
+      return { git_name: null, git_email: null };
+    },
+  }));
+  await kept.seedGitIdentity(4, { name: 'Alice', email: 'alice@example.com' });
+  assert.deepEqual(operations, []);
+
+  const errors: string[] = [];
+  const failing = createUserService(createDependencies({
+    readSystemGitConfig: async () => {
+      throw new Error('no git');
+    },
+    logError: (message) => errors.push(message),
+  }));
+  await failing.seedGitIdentity(4, { name: 'Alice', email: 'alice@example.com' });
+  assert.equal(errors.length, 1);
 });
 
 test('savePreferences forwards only the keys the client sent', () => {

@@ -30,9 +30,16 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <>{children}</>;
   }
 
+  if (!user && getEmbedMode()) {
+    // Fork (embed mode): inside a Hemilake console the console signs Studio in,
+    // and creates the account when there is none, so the frame asks for no
+    // username or password. Before needsSetup on purpose.
+    return <EmbeddedSignIn consoleOnly={consoleOnly} needsSetup={needsSetup} />;
+  }
+
   if (consoleOnly && !user) {
     // Fork (Hemilake): this Studio signs in through its console only, never by a form.
-    return getEmbedMode() ? <EmbeddedSignIn consoleOnly /> : <ConsoleOnlySignIn />;
+    return <ConsoleOnlySignIn />;
   }
 
   if (needsSetup) {
@@ -40,8 +47,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   }
 
   if (!user) {
-    // Fork (embed mode): inside a Hemilake console the console signs Studio in.
-    return getEmbedMode() ? <EmbeddedSignIn /> : <LoginForm />;
+    return <LoginForm />;
   }
 
   if (!hasCompletedOnboarding) {

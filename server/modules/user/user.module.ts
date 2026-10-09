@@ -55,9 +55,14 @@ const userService = createUserService({
     deleteDraft: (userId, scope) => sessionDraftsDb.deleteDraft(userId, scope),
   },
   readSystemGitConfig,
+  // `--` ends git's options: git takes options after the key too, so a value
+  // such as `--global` would otherwise be read as one (fork hardening).
   applyGlobalGitConfig: async (gitName, gitEmail) => {
-    await runGit(['config', '--global', 'user.name', gitName]);
-    await runGit(['config', '--global', 'user.email', gitEmail]);
+    await runGit(['config', '--global', '--', 'user.name', gitName]);
+    await runGit(['config', '--global', '--', 'user.email', gitEmail]);
+  },
+  applyGlobalGitValue: async (key, value) => {
+    await runGit(['config', '--global', '--', key, value]);
   },
   logInfo: (message) => console.log(message),
   logError: (message, error) => console.error(message, error),
@@ -65,3 +70,7 @@ const userService = createUserService({
 
 /** User router assembled for the authenticated server mount. */
 export const userRoutes = createUserRouter(userService);
+
+/** Fork (embed mode): the console's sign-in seeds the account's git identity through this. */
+export const seedGitIdentity = (userId: number, identity: { name: string; email: string }) =>
+  userService.seedGitIdentity(userId, identity);

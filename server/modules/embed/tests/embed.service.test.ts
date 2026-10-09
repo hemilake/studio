@@ -8,6 +8,7 @@ import {
   createEmbedService,
   EMBED_ASSERTION_AUDIENCE,
   EMBED_ASSERTION_MAX_AGE_S,
+  readConsoleIdentity,
 } from '../embed.service.js';
 
 type EmbedDependencies = Parameters<typeof createEmbedService>[0];
@@ -50,8 +51,9 @@ function createDependencies(overrides: Partial<EmbedDependencies> = {}): EmbedDe
     verifyAssertion,
     users: {
       getFirstUser: () => ({ id: 7, username: 'owner' }),
-      createConsoleOwner: () => assert.fail('only console-only mode creates an account'),
+      createConsoleOwner: () => assert.fail('an existing account is reused'),
       updateLastLogin: () => undefined,
+      seedGitIdentity: async () => undefined,
     },
     generateToken: (user) => `studio-token-for-${user.username}`,
     now: () => NOW,
@@ -59,8 +61,8 @@ function createDependencies(overrides: Partial<EmbedDependencies> = {}): EmbedDe
   };
 }
 
-function assertRefused(action: () => unknown, code: string, statusCode: number) {
-  assert.throws(action, (error: unknown) => {
+async function assertRefused(action: () => Promise<unknown>, code: string, statusCode: number) {
+  await assert.rejects(action, (error: unknown) => {
     assert.ok(error instanceof AppError);
     assert.equal(error.code, code);
     assert.equal(error.statusCode, statusCode);
@@ -80,17 +82,18 @@ test('public config says whether the exchange is usable without revealing the se
   );
 });
 
-test('a valid assertion signs in the first user and records the login', () => {
+test('a valid assertion signs in the first user and records the login', async () => {
   const logins: number[] = [];
   const service = createEmbedService(createDependencies({
     users: {
       getFirstUser: () => ({ id: 7, username: 'owner' }),
       createConsoleOwner: () => assert.fail('an existing account is reused'),
       updateLastLogin: (userId) => logins.push(userId),
+      seedGitIdentity: async () => assert.fail('an assertion without a name and e-mail seeds nothing'),
     },
   }));
 
-  assert.deepEqual(service.exchange(sign()), {
+  assert.deepEqual(await service.exchange(sign()), {
     success: true,
     user: { id: 7, username: 'owner' },
     token: 'studio-token-for-owner',
@@ -98,13 +101,13 @@ test('a valid assertion signs in the first user and records the login', () => {
   assert.deepEqual(logins, [7]);
 });
 
-test('an assertion is good once', () => {
+test('an assertion is good once', async () => {
   const service = createEmbedService(createDependencies());
-  service.exchange(sign({ jti: 'once' }));
-  assertRefused(() => service.exchange(sign({ jti: 'once' })), 'EMBED_ASSERTION_REPLAYED', 401);
+  await service.exchange(sign({ jti: 'once' }));
+  await assertRefused(() => service.exchange(sign({ jti: 'once' })), 'EMBED_ASSERTION_REPLAYED', 401);
 });
 
-test('wrong secret, audience, issuer, age or a missing jti are refused alike', () => {
+test('wrong secret, audience, issuer, age, a missing or oversized jti are refused alike', async () => {
   const service = createEmbedService(createDependencies());
   const iat = Math.floor(NOW / 1000);
   for (const assertion of [
@@ -114,12 +117,13 @@ test('wrong secret, audience, issuer, age or a missing jti are refused alike', (
     sign({ iat: iat - 600, exp: iat - 300 }),
     sign({ iat: iat - 3600, exp: iat + 3600 }),
     sign({ jti: undefined }),
+    sign({ jti: 'j'.repeat(129) }),
   ]) {
-    assertRefused(() => service.exchange(assertion), 'EMBED_ASSERTION_INVALID', 401);
+    await assertRefused(() => service.exchange(assertion), 'EMBED_ASSERTION_INVALID', 401);
   }
 });
 
-test('garbage is a bad request, not a verification attempt', () => {
+test('garbage is a bad request, not a verification attempt', async () => {
   let verified = false;
   const service = createEmbedService(createDependencies({
     verifyAssertion: () => {
@@ -127,28 +131,39 @@ test('garbage is a bad request, not a verification attempt', () => {
       return {};
     },
   }));
-  assertRefused(() => service.exchange('not-a-jwt'), 'EMBED_ASSERTION_REQUIRED', 400);
-  assertRefused(() => service.exchange(undefined), 'EMBED_ASSERTION_REQUIRED', 400);
+  await assertRefused(() => service.exchange('not-a-jwt'), 'EMBED_ASSERTION_REQUIRED', 400);
+  await assertRefused(() => service.exchange(undefined), 'EMBED_ASSERTION_REQUIRED', 400);
   assert.equal(verified, false);
 });
 
-test('without origins or a secret the exchange does not exist', () => {
+test('without origins or a secret the exchange does not exist', async () => {
   const noSecret = createEmbedService(createDependencies({ readConfig: () => ({ origins: [CONSOLE], secret: null, only: false }) }));
-  assertRefused(() => noSecret.exchange(sign()), 'EMBED_EXCHANGE_DISABLED', 404);
+  await assertRefused(() => noSecret.exchange(sign()), 'EMBED_EXCHANGE_DISABLED', 404);
   const noOrigins = createEmbedService(createDependencies({ readConfig: () => ({ origins: [], secret: SECRET, only: false }) }));
-  assertRefused(() => noOrigins.exchange(sign()), 'EMBED_EXCHANGE_DISABLED', 404);
+  await assertRefused(() => noOrigins.exchange(sign()), 'EMBED_EXCHANGE_DISABLED', 404);
 });
 
-test('an instance without an account answers 409 so the client can fall back to setup', () => {
-  const service = createEmbedService(createDependencies({
-    users: {
-      getFirstUser: () => undefined,
-      createConsoleOwner: () => assert.fail('only console-only mode creates an account'),
-      updateLastLogin: () => undefined,
-    },
-  }));
-  assertRefused(() => service.exchange(sign()), 'EMBED_NO_USER', 409);
-});
+for (const only of [false, true]) {
+  test(`the first valid assertion creates the account and reuses it after (console-only ${only})`, async () => {
+    const accounts: { id: number; username: string }[] = [];
+    const service = createEmbedService(createDependencies({
+      readConfig: () => ({ origins: [CONSOLE], secret: SECRET, only }),
+      users: {
+        getFirstUser: () => accounts[0],
+        createConsoleOwner: () => {
+          accounts.push({ id: 1, username: 'owner' });
+          return accounts[0];
+        },
+        updateLastLogin: () => undefined,
+        seedGitIdentity: async () => undefined,
+      },
+    }));
+
+    assert.equal((await service.exchange(sign({ jti: 'first' }))).token, 'studio-token-for-owner');
+    assert.equal((await service.exchange(sign({ jti: 'second' }))).token, 'studio-token-for-owner');
+    assert.equal(accounts.length, 1);
+  });
+}
 
 test('console-only mode says so in the public config', () => {
   const service = createEmbedService(createDependencies({
@@ -157,33 +172,60 @@ test('console-only mode says so in the public config', () => {
   assert.deepEqual(service.getPublicConfig(), { origins: [CONSOLE], exchange: true, only: true });
 });
 
-test('console-only mode creates the account on the first valid assertion, and reuses it after', () => {
-  const accounts: { id: number; username: string }[] = [];
-  const service = createEmbedService(createDependencies({
-    readConfig: () => ({ origins: [CONSOLE], secret: SECRET, only: true }),
-    users: {
-      getFirstUser: () => accounts[0],
-      createConsoleOwner: () => {
-        accounts.push({ id: 1, username: 'owner' });
-        return accounts[0];
+test('a refused assertion creates no account and seeds nothing', async () => {
+  for (const only of [false, true]) {
+    const service = createEmbedService(createDependencies({
+      readConfig: () => ({ origins: [CONSOLE], secret: SECRET, only }),
+      users: {
+        getFirstUser: () => undefined,
+        createConsoleOwner: () => assert.fail('a refused assertion creates no account'),
+        updateLastLogin: () => undefined,
+        seedGitIdentity: async () => assert.fail('a refused assertion seeds nothing'),
       },
-      updateLastLogin: () => undefined,
-    },
-  }));
-
-  assert.equal(service.exchange(sign({ jti: 'first' })).token, 'studio-token-for-owner');
-  assert.equal(service.exchange(sign({ jti: 'second' })).token, 'studio-token-for-owner');
-  assert.equal(accounts.length, 1);
+    }));
+    await assertRefused(
+      () => service.exchange(sign({ name: 'Alice', email: 'alice@example.com' }, 'x'.repeat(48))),
+      'EMBED_ASSERTION_INVALID',
+      401,
+    );
+  }
 });
 
-test('console-only mode creates nothing for an assertion it refuses', () => {
+test('the name and e-mail an assertion carries seed the git identity before the answer', async () => {
+  const seeded: unknown[] = [];
   const service = createEmbedService(createDependencies({
-    readConfig: () => ({ origins: [CONSOLE], secret: SECRET, only: true }),
     users: {
-      getFirstUser: () => undefined,
-      createConsoleOwner: () => assert.fail('a refused assertion creates no account'),
+      getFirstUser: () => ({ id: 7, username: 'owner' }),
+      createConsoleOwner: () => assert.fail('an existing account is reused'),
       updateLastLogin: () => undefined,
+      seedGitIdentity: async (userId, identity) => {
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        seeded.push([userId, identity]);
+      },
     },
   }));
-  assertRefused(() => service.exchange(sign({}, 'x'.repeat(48))), 'EMBED_ASSERTION_INVALID', 401);
+
+  await service.exchange(sign({ name: ' Alice Example ', email: 'alice@example.com' }));
+  assert.deepEqual(seeded, [[7, { name: 'Alice Example', email: 'alice@example.com' }]]);
+});
+
+test('an identity is only read when both values are there and look right', () => {
+  const ok = { name: 'Alice', email: 'alice@example.com' };
+  assert.deepEqual(readConsoleIdentity(ok), ok);
+  for (const claims of [
+    {},
+    { name: 'Alice' },
+    { email: 'alice@example.com' },
+    { name: '', email: 'alice@example.com' },
+    { name: 'Alice', email: 'not-an-email' },
+    { name: 'Alice\n[core]\n\tsshCommand = evil', email: 'alice@example.com' },
+    { name: 'Alice', email: 'alice@example.com\r\n' + 'x' },
+    { name: '--global', email: 'alice@example.com' },
+    { name: 'Alice', email: '-x@example.com' },
+    { name: 'A'.repeat(201), email: 'alice@example.com' },
+    { name: 'Alice', email: `${'a'.repeat(250)}@example.com` },
+    { name: 42, email: 'alice@example.com' },
+  ]) {
+    assert.equal(readConsoleIdentity(claims), null, JSON.stringify(claims));
+  }
 });

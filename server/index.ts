@@ -27,7 +27,7 @@ import {
     authRoutes,
     validateApiKey,
 } from './modules/auth/index.js';
-import { embedRoutes, frameAncestors } from './modules/embed/index.js';
+import { corsOrigin, embedRoutes, frameAncestors } from './modules/embed/index.js';
 import { publicShareRoutes, shareRoutes } from './modules/share/index.js';
 import { taskmasterRoutes } from './modules/taskmaster/index.js';
 import { commandsRoutes } from './modules/commands/index.js';
@@ -125,7 +125,8 @@ createWebSocketServer(server, {
     getPluginPort,
 });
 
-app.use(cors({ exposedHeaders: ['X-Refreshed-Token', 'X-Auth-Error'] }));
+// Fork: cross-origin reads only for the consoles in CLOUDCLI_EMBED_ORIGINS, never any site.
+app.use(cors({ origin: corsOrigin, exposedHeaders: ['X-Refreshed-Token', 'X-Auth-Error'] }));
 // Fork (embed mode): only Studio itself and the consoles in CLOUDCLI_EMBED_ORIGINS may frame it.
 app.use(frameAncestors);
 app.use(express.json({
