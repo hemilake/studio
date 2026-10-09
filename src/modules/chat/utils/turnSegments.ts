@@ -215,11 +215,19 @@ export function buildTranscript(
   }
 
   let turn: TurnStats = { start: null, end: null, steps: 0, lastTimestamp: null };
+  // Fork: footer ids must not depend on position. With `items.length` in the
+  // id, every "load earlier" page renamed every footer, so React remounted all
+  // of them and the browser lost the anchors it scrolls by. Two turns ending
+  // on the same timestamp get a counter.
+  const footerIds = new Map<string, number>();
   const closeTurn = () => {
     if (turn.steps > 0 && turn.lastTimestamp !== null) {
+      const base = `turn-footer-${String(turn.lastTimestamp)}`;
+      const seen = footerIds.get(base) ?? 0;
+      footerIds.set(base, seen + 1);
       items.push({
         kind: 'turn-footer',
-        id: `turn-footer-${String(turn.lastTimestamp)}-${items.length}`,
+        id: seen === 0 ? base : `${base}-${seen}`,
         steps: turn.steps,
         durationMs: turn.start !== null && turn.end !== null ? Math.max(0, turn.end - turn.start) : null,
         timestamp: turn.lastTimestamp,

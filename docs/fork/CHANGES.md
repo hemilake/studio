@@ -18,6 +18,21 @@ One entry per customization, newest first. Keep the file list accurate: it is th
   - `server/modules/database/{schema,migrations,index}.ts`, `server/index.ts`
   - `src/App.tsx`, `src/main.tsx`, `src/index.css`, `src/shared/{api,utils}.ts`, `src/modules/chat/index.ts`, `src/modules/chat/transcript/{Markdown,ChatMessagesPane}.tsx`, `src/modules/i18n/locales/en/chat.json`, `docs/fork/CHANGES.md`
 
+## Scrolling up a long session without jerks (pagination)
+
+- **Since:** 2026-10-09, on top of upstream v1.37.3.
+- **Branch:** `fix/pagination-scroll`. Upstream bugs; worth a PR upstream.
+- **Why:** on a long session (300+ messages) every "load earlier" page jerked the transcript by 200-3,000 px while scrolling up (11-14 visible jumps per pass, measured with Playwright and smooth scrolling). Four causes, each confirmed by tracing which rows changed at each jump:
+  1. The restore after a page ran in a layout effect keyed on `chatMessages.length`, but a page is shown by raising `visibleMessageCount` (the store already holds the messages). The restore skipped the commit that added the rows, the browser painted the jump, and the stale restore ran later and jumped back.
+  2. The restore anchored on the message element; if its row unmounted to a placeholder while the page loaded, it fell back to stale heights (600-2,000 px). Only one anchor was kept, and the first row is often an activity segment that merges with the page's tool calls and is replaced.
+  3. `.chat-message` had `content-visibility: auto` with `contain-intrinsic-size` 180/240/96 px (from upstream). Each message swapped that placeholder for its real height (28-36 px for a folded activity line) as it neared the viewport, right above what was being read.
+  4. Turn footer ids included the item's position, so every page renamed all footers and React remounted them.
+- **What:** `visibleMessageCount` in the restore effect's deps; up to four visible row wrappers (`[data-message-timestamp]`, never unmounted) captured as anchors, the first still in the DOM wins; no `content-visibility` on messages (LazyMessageRow already keeps only rows within 1,200 px mounted); footer ids from the turn's last timestamp plus a counter on collision. The early-mount band for prepended rows (`PREPENDED_MOUNTED_ROWS`) now finds them as "new rows before the first row already shown", since the old first key changes when segments merge.
+- **Result:** 0 visible jumps per pass on the 300+ message session and on the visuals session, two or three passes each. The only remaining movement the probe reports is the "Showing N of M" banner, which sits above the inserted rows and moves up by design.
+- **Tried and dropped:** holding the anchor for 700 ms after each page with a ResizeObserver: with the four fixes it never had to correct anything.
+- **Files:** `src/modules/chat/hooks/useChatSessionState.ts`, `src/modules/chat/transcript/ChatMessagesPane.tsx`, `src/modules/chat/utils/turnSegments.ts`, `src/index.css`, `src/modules/chat/tests/activityTranscript.test.tsx`.
+- **Verified:** typecheck, lint, client suite (494); probe scripts in `~/workspace/specs/studio-visuals/scroll` on think.
+
 ## Scrolling up past inline visuals without jerks
 
 - **Since:** 2026-10-09, on top of upstream v1.37.3.

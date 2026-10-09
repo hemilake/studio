@@ -713,20 +713,13 @@
     }
   }
 
+  /* Fork: no `content-visibility: auto` here. Its placeholder sizes (180/240/96 px)
+     swapped for the real height (often 28-36 px for a folded activity line) as each
+     message neared the viewport, right above what the owner was reading, which jerked
+     the transcript while scrolling up. LazyMessageRow already keeps only rows within
+     1,200 px of the viewport mounted. */
   .chat-message {
     contain: layout style paint;
-    content-visibility: auto;
-    contain-intrinsic-size: auto 180px;
-  }
-
-  .chat-message.assistant {
-    contain-intrinsic-size: auto 240px;
-  }
-
-  .chat-message.user,
-  .chat-message.tool,
-  .chat-message.error {
-    contain-intrinsic-size: auto 96px;
   }
 
   /* Mobile touch optimization and safe areas */

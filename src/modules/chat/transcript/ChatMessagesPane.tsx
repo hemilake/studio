@@ -197,20 +197,25 @@ function ChatMessagesPane({
     return getMessageKey(item.message);
   }, [getMessageKey]);
 
-  // Fork: which rows were just prepended above the previous first row (see
-  // PREPENDED_MOUNTED_ROWS). Adjusted during render, React's pattern for state
-  // derived from the previous render, so the new rows mount in the same pass.
-  const firstRowKey = transcript.items.length > 0 ? rowKeyOf(transcript.items[0]) : null;
-  const [previousFirstRowKey, setPreviousFirstRowKey] = useState(firstRowKey);
+  // Fork: which rows were just prepended above the rows already shown (see
+  // PREPENDED_MOUNTED_ROWS). Matched by "first row that was already there",
+  // not by the old first key: the first activity segment often merges with
+  // the tool calls a page adds before it and changes key. Adjusted during
+  // render, React's pattern for state derived from the previous render, so
+  // the new rows mount in the same pass.
+  const rowKeys = useMemo(() => transcript.items.map(rowKeyOf), [transcript.items, rowKeyOf]);
+  const [previousRowKeys, setPreviousRowKeys] = useState<ReadonlySet<string>>(() => new Set(rowKeys));
   const [prependedRows, setPrependedRows] = useState<{ from: number; to: number } | null>(null);
-  if (firstRowKey !== previousFirstRowKey) {
-    const oldFirstIndex = previousFirstRowKey === null
-      ? -1
-      : transcript.items.findIndex((item) => rowKeyOf(item) === previousFirstRowKey);
-    setPreviousFirstRowKey(firstRowKey);
-    setPrependedRows(oldFirstIndex > 0
-      ? { from: Math.max(0, oldFirstIndex - PREPENDED_MOUNTED_ROWS), to: oldFirstIndex }
+  if (rowKeys.length > 0 && !previousRowKeys.has(rowKeys[0]) && previousRowKeys.size > 0) {
+    const firstKnown = rowKeys.findIndex((key) => previousRowKeys.has(key));
+    setPreviousRowKeys(new Set(rowKeys));
+    setPrependedRows(firstKnown > 0
+      ? { from: Math.max(0, firstKnown - PREPENDED_MOUNTED_ROWS), to: firstKnown }
       : null);
+  } else if (rowKeys.length > 0 && rowKeys[rowKeys.length - 1] !== [...previousRowKeys].pop()) {
+    // Appended rows (a new turn) or a different session: remember the keys,
+    // nothing to mount early (the tail rows mount anyway).
+    setPreviousRowKeys(new Set(rowKeys));
   }
 
   return (

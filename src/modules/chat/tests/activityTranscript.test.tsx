@@ -83,6 +83,18 @@ describe('segmenting a turn', () => {
     expect(markup).not.toContain('Output');
   });
 
+  it('keeps a footer id when older turns are prepended (fork: no remounts on "load earlier")', () => {
+    const older = [user('first'), tool('Bash', { command: 'ls' }, 'a'), text('ok')];
+    const newer = [user('second'), tool('Bash', { command: 'pwd' }, 'b'), text('done')];
+    const footerIds = (messages: ChatMessage[]) =>
+      buildTranscript(messages).items.filter((item) => item.kind === 'turn-footer').map((item) => item.id);
+
+    const before = footerIds(newer);
+    const after = footerIds([...older, ...newer]);
+    expect(after).toHaveLength(2);
+    expect(after[1]).toBe(before[0]);
+  });
+
   it('counts the turn in its footer once the turn is over', () => {
     const { items } = buildTranscript([user('go'), tool('Bash', { command: 'ls' }, 'a'), tool('Bash', { command: 'pwd' }, 'b'), text('done')]);
     const footer = items[items.length - 1];

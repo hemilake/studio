@@ -98,23 +98,29 @@ type UseChatSessionStateArgs = {
 type ScrollRestoreState = {
   height: number;
   top: number;
-  anchor: HTMLElement | null;
-  anchorOffset: number | null;
+  /** Fork: visible rows in order, each with its offset from the pane's top; the restore uses the first still in the DOM. */
+  anchors: Array<{ element: HTMLElement; offset: number }>;
 };
 
 function captureScrollRestoreState(container: HTMLDivElement): ScrollRestoreState {
   const containerBounds = container.getBoundingClientRect();
-  const anchor = Array.from(container.querySelectorAll<HTMLElement>('.chat-message'))
-    .find((element) => element.getBoundingClientRect().bottom >= containerBounds.top)
-    ?? null;
+  // Fork: row wrappers (LazyMessageRow), not the message inside them: a
+  // message element goes away if its row unmounts to a placeholder while the
+  // page loads. Several candidates, because the first row is often an activity
+  // segment that merges with the tool calls the page adds and is replaced by a
+  // new element; restoring from stale heights instead jumped 600-2,000 px.
+  const anchors = Array.from(container.querySelectorAll<HTMLElement>('[data-message-timestamp]'))
+    .filter((element) => {
+      const bounds = element.getBoundingClientRect();
+      return bounds.bottom >= containerBounds.top && bounds.top <= containerBounds.bottom;
+    })
+    .slice(0, 4)
+    .map((element) => ({ element, offset: element.getBoundingClientRect().top - containerBounds.top }));
 
   return {
     height: container.scrollHeight,
     top: container.scrollTop,
-    anchor,
-    anchorOffset: anchor
-      ? anchor.getBoundingClientRect().top - containerBounds.top
-      : null,
+    anchors,
   };
 }
 
@@ -565,8 +571,10 @@ export function useChatSessionState({
 
     const container = scrollContainerRef.current;
     if (pendingScrollRestoreRef.current) {
-      const { height, top, anchor, anchorOffset } = pendingScrollRestoreRef.current;
-      if (anchor?.isConnected && anchorOffset !== null) {
+      const { height, top, anchors } = pendingScrollRestoreRef.current;
+      const kept = anchors.find(({ element }) => element.isConnected);
+      if (kept) {
+        const { element: anchor, offset: anchorOffset } = kept;
         const nextAnchorOffset = (
           anchor.getBoundingClientRect().top
           - container.getBoundingClientRect().top
@@ -584,7 +592,11 @@ export function useChatSessionState({
         ? scrollPositionRef.current.top
         : container.scrollHeight;
     }
-  }, [chatMessages.length, isActive, isUserScrolledUp]);
+    // Fork: `visibleMessageCount` is what grows when a page is prepended (the
+    // store already holds the messages). Without it the restore skipped the
+    // commit that added the rows, the browser painted the jump, and the stale
+    // restore ran later on an unrelated change and jumped back.
+  }, [chatMessages.length, isActive, isUserScrolledUp, visibleMessageCount]);
 
   // Reset scroll/pagination state on session change
   useEffect(() => {
