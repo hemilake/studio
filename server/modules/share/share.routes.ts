@@ -40,6 +40,7 @@ function readRequiredString(value: unknown, field: string): string {
 function parsePatchPayload(payload: unknown): {
   title?: string | null;
   hiddenIds?: string[];
+  focusId?: string | null;
   expiresAt?: string | null;
 } {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
@@ -53,6 +54,7 @@ function parsePatchPayload(payload: unknown): {
   const updates: {
     title?: string | null;
     hiddenIds?: string[];
+    focusId?: string | null;
     expiresAt?: string | null;
   } = {};
 
@@ -86,6 +88,26 @@ function parsePatchPayload(payload: unknown): {
     updates.hiddenIds = Array.from(
       new Set(body.hiddenIds.map((item) => item.trim()).filter(Boolean)),
     );
+  }
+
+  if ('focusId' in body) {
+    if (body.focusId === null) {
+      updates.focusId = null;
+    } else if (typeof body.focusId === 'string') {
+      const trimmed = body.focusId.trim();
+      if (body.focusId.length > 200 || trimmed.length > 200) {
+        throw new AppError('focusId must be 200 characters or fewer.', {
+          code: 'INVALID_FOCUS_ID',
+          statusCode: 400,
+        });
+      }
+      updates.focusId = trimmed || null;
+    } else {
+      throw new AppError('focusId must be a string or null.', {
+        code: 'INVALID_FOCUS_ID',
+        statusCode: 400,
+      });
+    }
   }
 
   if ('expiresAt' in body) {

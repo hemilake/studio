@@ -255,8 +255,9 @@ CREATE TABLE IF NOT EXISTS superseded_provider_sessions (
  *
  * `token` holds 32 random bytes encoded as base64url. `hidden_ids` is a JSON
  * array of candidate item ids that the owner has chosen to omit from the
- * public view. Revoked shares retain their row with `revoked_at` set so the
- * token can never be re-used.
+ * public view. `focus_id` optionally names the visible item where the shared
+ * view should open. Revoked shares retain their row with `revoked_at` set so
+ * the token can never be re-used.
  */
 export const SESSION_SHARES_TABLE_SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS session_shares (
@@ -267,6 +268,7 @@ CREATE TABLE IF NOT EXISTS session_shares (
     provider TEXT NOT NULL DEFAULT 'claude',
     title TEXT,
     hidden_ids TEXT NOT NULL DEFAULT '[]',
+    focus_id TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     revoked_at DATETIME,

@@ -432,6 +432,15 @@ const addForkedFromSessionIdColumn = (db: Database): void => {
 };
 
 /**
+ * Adds the `focus_id` column on `session_shares` for databases created before
+ * focus-item selection was introduced.
+ */
+const addSessionShareFocusIdColumn = (db: Database): void => {
+  const columnNames = getTableInfo(db, 'session_shares').map((column) => column.name);
+  addColumnToTableIfNotExists(db, 'session_shares', columnNames, 'focus_id', 'TEXT');
+};
+
+/**
  * Adds the `model` column that records which model each session runs with.
  *
  * Left NULL for pre-existing rows on purpose: the model resolver falls back to
@@ -587,6 +596,7 @@ export const runMigrations = (db: Database) => {
     ensureProjectsForSessionPaths(db);
     db.exec(SCHEDULED_MESSAGES_TABLE_SCHEMA_SQL);
     db.exec(SESSION_SHARES_TABLE_SCHEMA_SQL);
+    addSessionShareFocusIdColumn(db);
 
     db.exec('CREATE INDEX IF NOT EXISTS idx_session_shares_token ON session_shares(token)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_session_shares_session_user ON session_shares(session_id, user_id)');

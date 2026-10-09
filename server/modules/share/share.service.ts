@@ -26,6 +26,7 @@ type ShareDependencies = {
       provider: string;
       title?: string | null;
       hiddenIds?: string[];
+      focusId?: string | null;
       expiresAt?: string | null;
       nowIso?: string;
     }): SessionShareRow;
@@ -37,6 +38,7 @@ type ShareDependencies = {
       updates: {
         title?: string | null;
         hiddenIds?: string[];
+        focusId?: string | null;
         expiresAt?: string | null;
         nowIso?: string;
       },
@@ -66,6 +68,7 @@ export type OwnerSharePayload = {
   provider: string;
   title: string | null;
   hiddenIds: string[];
+  focusId: string | null;
   createdAt: string;
   updatedAt: string;
   expiresAt: string | null;
@@ -87,6 +90,7 @@ export type PublicSharePayload = {
   title: string;
   provider: string;
   items: SharedTranscriptItem[];
+  focusId: string | null;
   running: boolean;
   updatedAt: string;
 };
@@ -182,6 +186,7 @@ export function createShareService(dependencies: ShareDependencies) {
       provider: row.provider,
       title: resolvedTitle,
       hiddenIds: parseHiddenIds(row.hidden_ids),
+      focusId: row.focus_id ?? null,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       expiresAt: row.expires_at,
@@ -254,6 +259,7 @@ export function createShareService(dependencies: ShareDependencies) {
       updates: {
         title?: string | null;
         hiddenIds?: string[];
+        focusId?: string | null;
         expiresAt?: string | null;
       },
     ): OwnerSharePayload {
@@ -330,6 +336,10 @@ export function createShareService(dependencies: ShareDependencies) {
       const hiddenIds = parseHiddenIds(row.hidden_ids);
       const history = await dependencies.sessions.fetchHistory(row.session_id);
       const items = filterSharedItems(history.messages, hiddenIds);
+      const focusId =
+        row.focus_id && items.some((item) => item.id === row.focus_id)
+          ? row.focus_id
+          : null;
       const running = dependencies.sessions.isRunning(row.session_id);
       const lastItemTimestamp = items[items.length - 1]?.timestamp;
       const updatedAt = computeLatestTimestamp(
@@ -342,6 +352,7 @@ export function createShareService(dependencies: ShareDependencies) {
         title,
         provider: row.provider,
         items,
+        focusId,
         running,
         updatedAt,
       };

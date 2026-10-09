@@ -16,6 +16,7 @@ export type SessionShareRow = {
   provider: string;
   title: string | null;
   hidden_ids: string;
+  focus_id: string | null;
   created_at: string;
   updated_at: string;
   revoked_at: string | null;
@@ -23,7 +24,7 @@ export type SessionShareRow = {
 };
 
 const COLUMNS =
-  'id, token, user_id, session_id, provider, title, hidden_ids, created_at, updated_at, revoked_at, expires_at';
+  'id, token, user_id, session_id, provider, title, hidden_ids, focus_id, created_at, updated_at, revoked_at, expires_at';
 
 const SQLITE_UTC_TIMESTAMP_REGEX = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
 
@@ -54,6 +55,7 @@ function normalizeRow(row: SessionShareRow | undefined): SessionShareRow | undef
 
   return {
     ...row,
+    focus_id: row.focus_id ?? null,
     created_at: normalizeTimestamp(row.created_at) ?? row.created_at,
     updated_at: normalizeTimestamp(row.updated_at) ?? row.updated_at,
     revoked_at: normalizeTimestamp(row.revoked_at),
@@ -83,6 +85,7 @@ export const sessionSharesDb = {
     provider: string;
     title?: string | null;
     hiddenIds?: string[];
+    focusId?: string | null;
     expiresAt?: string | null;
     token?: string;
     nowIso?: string;
@@ -95,8 +98,8 @@ export const sessionSharesDb = {
 
     db.prepare(
       `INSERT INTO session_shares (
-         id, token, user_id, session_id, provider, title, hidden_ids, created_at, updated_at, expires_at
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+         id, token, user_id, session_id, provider, title, hidden_ids, focus_id, created_at, updated_at, expires_at
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       id,
       token,
@@ -105,6 +108,7 @@ export const sessionSharesDb = {
       input.provider,
       input.title ?? null,
       hiddenIdsJson,
+      input.focusId ?? null,
       nowIso,
       nowIso,
       input.expiresAt ?? null,
@@ -168,6 +172,7 @@ export const sessionSharesDb = {
     updates: {
       title?: string | null;
       hiddenIds?: string[];
+      focusId?: string | null;
       expiresAt?: string | null;
       nowIso?: string;
     },
@@ -182,14 +187,15 @@ export const sessionSharesDb = {
     const nextHiddenIds = updates.hiddenIds !== undefined
       ? JSON.stringify(updates.hiddenIds)
       : existing.hidden_ids;
+    const nextFocusId = updates.focusId !== undefined ? updates.focusId : existing.focus_id;
     const nextExpiresAt = updates.expiresAt !== undefined ? updates.expiresAt : existing.expires_at;
     const nowIso = updates.nowIso ?? new Date().toISOString();
 
     db.prepare(
       `UPDATE session_shares
-       SET title = ?, hidden_ids = ?, expires_at = ?, updated_at = ?
+       SET title = ?, hidden_ids = ?, focus_id = ?, expires_at = ?, updated_at = ?
        WHERE id = ?`
-    ).run(nextTitle, nextHiddenIds, nextExpiresAt, nowIso, id);
+    ).run(nextTitle, nextHiddenIds, nextFocusId, nextExpiresAt, nowIso, id);
 
     return this.getById(id);
   },

@@ -11,6 +11,7 @@ import type { NextFunction, Request, Response } from 'express';
 
 import {
   closeConnection,
+  getConnection,
   initializeDatabase,
   sessionSharesDb,
   sessionsDb,
@@ -462,4 +463,193 @@ test('public rate limit keys on the forwarded address behind a local tunnel', as
     },
     { maxRequestsPerMinute: 2 },
   );
+});
+
+test('focusId is saved, returned on public payload when visible, null when hidden or unknown, and validated', async () => {
+  await withShareTestServer(async ({ baseUrl, ownerId }) => {
+    const createRes = await fetch(`${baseUrl}/api/shares`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-test-user-id': String(ownerId),
+      },
+      body: JSON.stringify({ sessionId: SESSION_ID }),
+    });
+    assert.equal(createRes.status, 200);
+    const created = (await createRes.json()) as {
+      id: string;
+      token: string;
+      focusId: string | null;
+    };
+    assert.equal(created.focusId, null);
+
+    // Public payload has focusId: null initially.
+    const initialPublicRes = await fetch(`${baseUrl}/api/public/shares/${created.token}`);
+    const initialPublicBody = (await initialPublicRes.json()) as { focusId: string | null };
+    assert.equal(initialPublicBody.focusId, null);
+
+    // Set focusId to a visible item ('msg-a1').
+    const setFocusRes = await fetch(`${baseUrl}/api/shares/${created.id}`, {
+      method: 'PATCH',
+      headers: {
+        'content-type': 'application/json',
+        'x-test-user-id': String(ownerId),
+      },
+      body: JSON.stringify({ focusId: 'msg-a1' }),
+    });
+    assert.equal(setFocusRes.status, 200);
+    const setFocusBody = (await setFocusRes.json()) as { focusId: string | null };
+    assert.equal(setFocusBody.focusId, 'msg-a1');
+
+    // Preview payload includes focusId: 'msg-a1'.
+    const previewRes = await fetch(`${baseUrl}/api/shares/${created.id}/preview`, {
+      headers: { 'x-test-user-id': String(ownerId) },
+    });
+    const previewBody = (await previewRes.json()) as { focusId: string | null };
+    assert.equal(previewBody.focusId, 'msg-a1');
+
+    // Public payload includes focusId: 'msg-a1'.
+    const focusedPublicRes = await fetch(`${baseUrl}/api/public/shares/${created.token}`);
+    const focusedPublicBody = (await focusedPublicRes.json()) as { focusId: string | null };
+    assert.equal(focusedPublicBody.focusId, 'msg-a1');
+
+    // Hiding the focused item makes public focusId null while owner focusId remains 'msg-a1'.
+    const hideFocusedRes = await fetch(`${baseUrl}/api/shares/${created.id}`, {
+      method: 'PATCH',
+      headers: {
+        'content-type': 'application/json',
+        'x-test-user-id': String(ownerId),
+      },
+      body: JSON.stringify({ hiddenIds: ['msg-a1'] }),
+    });
+    assert.equal(hideFocusedRes.status, 200);
+    const hideFocusedOwner = (await hideFocusedRes.json()) as { focusId: string | null };
+    assert.equal(hideFocusedOwner.focusId, 'msg-a1');
+
+    const hiddenPublicRes = await fetch(`${baseUrl}/api/public/shares/${created.token}`);
+    const hiddenPublicBody = (await hiddenPublicRes.json()) as { focusId: string | null };
+    assert.equal(hiddenPublicBody.focusId, null);
+
+    // Setting focusId to an unknown or filtered-out item makes public focusId null.
+    const unknownFocusRes = await fetch(`${baseUrl}/api/shares/${created.id}`, {
+      method: 'PATCH',
+      headers: {
+        'content-type': 'application/json',
+        'x-test-user-id': String(ownerId),
+      },
+      body: JSON.stringify({ hiddenIds: [], focusId: 'msg-think' }),
+    });
+    assert.equal(unknownFocusRes.status, 200);
+    const unknownPublicRes = await fetch(`${baseUrl}/api/public/shares/${created.token}`);
+    const unknownPublicBody = (await unknownPublicRes.json()) as { focusId: string | null };
+    assert.equal(unknownPublicBody.focusId, null);
+
+    // Clearing focusId with null sets owner focusId back to null.
+    const clearFocusRes = await fetch(`${baseUrl}/api/shares/${created.id}`, {
+      method: 'PATCH',
+      headers: {
+        'content-type': 'application/json',
+        'x-test-user-id': String(ownerId),
+      },
+      body: JSON.stringify({ focusId: null }),
+    });
+    assert.equal(clearFocusRes.status, 200);
+    const clearFocusBody = (await clearFocusRes.json()) as { focusId: string | null };
+    assert.equal(clearFocusBody.focusId, null);
+
+    // Validation: focusId > 200 chars is rejected with 400.
+    const tooLongRes = await fetch(`${baseUrl}/api/shares/${created.id}`, {
+      method: 'PATCH',
+      headers: {
+        'content-type': 'application/json',
+        'x-test-user-id': String(ownerId),
+      },
+      body: JSON.stringify({ focusId: 'x'.repeat(201) }),
+    });
+    assert.equal(tooLongRes.status, 400);
+
+    // Validation: non-string / non-null focusId is rejected with 400.
+    const invalidTypeRes = await fetch(`${baseUrl}/api/shares/${created.id}`, {
+      method: 'PATCH',
+      headers: {
+        'content-type': 'application/json',
+        'x-test-user-id': String(ownerId),
+      },
+      body: JSON.stringify({ focusId: 42 }),
+    });
+    assert.equal(invalidTypeRes.status, 400);
+  });
+});
+
+test('migration adds focus_id to an existing session_shares table created without it', async () => {
+  const previousDatabasePath = process.env.DATABASE_PATH;
+  const tempDir = await mkdtemp(path.join(tmpdir(), 'session-shares-migration-'));
+
+  closeConnection();
+  process.env.DATABASE_PATH = path.join(tempDir, 'legacy.db');
+
+  try {
+    await initializeDatabase();
+    const owner = userDb.createUser('owner', 'hash');
+    sessionsDb.createAppSession('s-1', 'claude', tempDir, 'Legacy');
+
+    const db = getConnection();
+    db.exec(`
+      DROP TABLE session_shares;
+      CREATE TABLE session_shares (
+        id TEXT PRIMARY KEY,
+        token TEXT UNIQUE NOT NULL,
+        user_id INTEGER NOT NULL,
+        session_id TEXT NOT NULL,
+        provider TEXT NOT NULL DEFAULT 'claude',
+        title TEXT,
+        hidden_ids TEXT NOT NULL DEFAULT '[]',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        revoked_at DATETIME,
+        expires_at DATETIME,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (session_id) REFERENCES sessions(session_id) ON DELETE CASCADE
+      );
+    `);
+    db.prepare(`
+      INSERT INTO session_shares (
+        id, token, user_id, session_id, provider, title, hidden_ids
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      'legacy-share-1',
+      'legacy_token_01234567890123456789012345678901',
+      Number(owner.id),
+      's-1',
+      'claude',
+      'Legacy Share',
+      '[]',
+    );
+
+    const beforeColumns = (db.prepare('PRAGMA table_info(session_shares)').all() as Array<{ name: string }>)
+      .map((col) => col.name);
+    assert.ok(!beforeColumns.includes('focus_id'));
+
+    await initializeDatabase();
+
+    const afterColumns = (db.prepare('PRAGMA table_info(session_shares)').all() as Array<{ name: string }>)
+      .map((col) => col.name);
+    assert.ok(afterColumns.includes('focus_id'));
+
+    const legacyRow = sessionSharesDb.getById('legacy-share-1');
+    assert.ok(legacyRow);
+    assert.equal(legacyRow.focus_id, null);
+
+    const updatedRow = sessionSharesDb.update('legacy-share-1', { focusId: 'msg-a2' });
+    assert.ok(updatedRow);
+    assert.equal(updatedRow.focus_id, 'msg-a2');
+  } finally {
+    closeConnection();
+    if (previousDatabasePath === undefined) {
+      delete process.env.DATABASE_PATH;
+    } else {
+      process.env.DATABASE_PATH = previousDatabasePath;
+    }
+    await rm(tempDir, { recursive: true, force: true });
+  }
 });
