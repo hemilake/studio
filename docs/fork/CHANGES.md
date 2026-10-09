@@ -2,6 +2,14 @@
 
 One entry per customization, newest first. Keep the file list accurate: it is the conflict checklist for upstream merges.
 
+## Images in the conversation
+
+- **Since:** 2026-10-09, on top of upstream v1.37.3 and the inline visuals below.
+- **Branch:** `feat/image-cards`. The card could go upstream; the prompt paragraph is Hemilake's.
+- **Why:** the Hemilake plugin's `images` skill makes pictures with Google's image models and saves them in the project. Studio already showed workspace images as a small thumbnail; owners asked for them to read like the visuals, with a way to ask for a change.
+- **What:** documented in `docs/fork/images.md`. A workspace image in Markdown is a card with its alt text as the title and a hover toolbar (Ask to change with the file's path, Download, Copy path, Full screen); web and data images keep the plain thumbnail. Studio's appended system prompt gains a paragraph on images and the `images` skill.
+- **Files:** `src/modules/chat/transcript/MarkdownImage.tsx`, `src/modules/i18n/locales/{en,es}/chat.json`, `server/shared/studio-visuals-prompt.ts`, `docs/fork/images.md`, `docs/fork/CHANGES.md`.
+
 ## No username or password inside the console
 
 - **Since:** 2026-10-09, on top of upstream v1.37.3 and the embed mode below.

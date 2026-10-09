@@ -425,5 +425,13 @@
     "htmlPreview": "HTML preview",
     "nothingToExport": "This visual has no chart to export as an image.",
     "loadFailed": "The visual could not be loaded."
+  },
+  "image": {
+    "askToChange": "Ask to change",
+    "askToChangePrompt": "Update the \"{{title}}\" image ({{path}}): ",
+    "download": "Download",
+    "copyPath": "Copy path",
+    "pathCopied": "Path copied",
+    "fullScreen": "Full screen"
   }
 }

@@ -310,5 +310,13 @@
     "htmlPreview": "Vista previa HTML",
     "nothingToExport": "Este visual no tiene un gráfico que exportar como imagen.",
     "loadFailed": "No se pudo cargar el visual."
+  },
+  "image": {
+    "askToChange": "Pedir un cambio",
+    "askToChangePrompt": "Cambia la imagen \"{{title}}\" ({{path}}): ",
+    "download": "Descargar",
+    "copyPath": "Copiar ruta",
+    "pathCopied": "Ruta copiada",
+    "fullScreen": "Pantalla completa"
   }
 }
