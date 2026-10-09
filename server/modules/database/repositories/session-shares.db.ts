@@ -17,6 +17,12 @@ export type SessionShareRow = {
   title: string | null;
   hidden_ids: string;
   focus_id: string | null;
+  mode: 'local' | 'cloud';
+  cloud_id: string | null;
+  cloud_url: string | null;
+  cloud_expires_at: string | null;
+  cloud_synced_at: string | null;
+  cloud_error: string | null;
   created_at: string;
   updated_at: string;
   revoked_at: string | null;
@@ -24,7 +30,7 @@ export type SessionShareRow = {
 };
 
 const COLUMNS =
-  'id, token, user_id, session_id, provider, title, hidden_ids, focus_id, created_at, updated_at, revoked_at, expires_at';
+  'id, token, user_id, session_id, provider, title, hidden_ids, focus_id, mode, cloud_id, cloud_url, cloud_expires_at, cloud_synced_at, cloud_error, created_at, updated_at, revoked_at, expires_at';
 
 const SQLITE_UTC_TIMESTAMP_REGEX = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
 
@@ -56,6 +62,12 @@ function normalizeRow(row: SessionShareRow | undefined): SessionShareRow | undef
   return {
     ...row,
     focus_id: row.focus_id ?? null,
+    mode: row.mode === 'cloud' ? 'cloud' : 'local',
+    cloud_id: row.cloud_id ?? null,
+    cloud_url: row.cloud_url ?? null,
+    cloud_expires_at: normalizeTimestamp(row.cloud_expires_at),
+    cloud_synced_at: normalizeTimestamp(row.cloud_synced_at),
+    cloud_error: row.cloud_error ?? null,
     created_at: normalizeTimestamp(row.created_at) ?? row.created_at,
     updated_at: normalizeTimestamp(row.updated_at) ?? row.updated_at,
     revoked_at: normalizeTimestamp(row.revoked_at),
@@ -86,6 +98,12 @@ export const sessionSharesDb = {
     title?: string | null;
     hiddenIds?: string[];
     focusId?: string | null;
+    mode?: 'local' | 'cloud';
+    cloudId?: string | null;
+    cloudUrl?: string | null;
+    cloudExpiresAt?: string | null;
+    cloudSyncedAt?: string | null;
+    cloudError?: string | null;
     expiresAt?: string | null;
     token?: string;
     nowIso?: string;
@@ -95,11 +113,14 @@ export const sessionSharesDb = {
     const token = input.token ?? randomBytes(32).toString('base64url');
     const nowIso = input.nowIso ?? new Date().toISOString();
     const hiddenIdsJson = JSON.stringify(input.hiddenIds ?? []);
+    const mode = input.mode === 'cloud' ? 'cloud' : 'local';
 
     db.prepare(
       `INSERT INTO session_shares (
-         id, token, user_id, session_id, provider, title, hidden_ids, focus_id, created_at, updated_at, expires_at
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+         id, token, user_id, session_id, provider, title, hidden_ids, focus_id,
+         mode, cloud_id, cloud_url, cloud_expires_at, cloud_synced_at, cloud_error,
+         created_at, updated_at, expires_at
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       id,
       token,
@@ -109,6 +130,12 @@ export const sessionSharesDb = {
       input.title ?? null,
       hiddenIdsJson,
       input.focusId ?? null,
+      mode,
+      input.cloudId ?? null,
+      input.cloudUrl ?? null,
+      input.cloudExpiresAt ?? null,
+      input.cloudSyncedAt ?? null,
+      input.cloudError ?? null,
       nowIso,
       nowIso,
       input.expiresAt ?? null,
@@ -167,6 +194,34 @@ export const sessionSharesDb = {
     return normalizeRow(row);
   },
 
+  listActiveCloudShares(nowIso = new Date().toISOString()): SessionShareRow[] {
+    const rows = getConnection()
+      .prepare(
+        `SELECT ${COLUMNS} FROM session_shares
+         WHERE mode = 'cloud'
+           AND revoked_at IS NULL
+           AND (expires_at IS NULL OR expires_at > ?)
+         ORDER BY created_at ASC`
+      )
+      .all(nowIso) as SessionShareRow[];
+
+    return rows.map((row) => normalizeRow(row) as SessionShareRow);
+  },
+
+  listPendingCloudDeletes(): SessionShareRow[] {
+    const rows = getConnection()
+      .prepare(
+        `SELECT ${COLUMNS} FROM session_shares
+         WHERE mode = 'cloud'
+           AND revoked_at IS NOT NULL
+           AND cloud_id IS NOT NULL
+         ORDER BY updated_at ASC`
+      )
+      .all() as SessionShareRow[];
+
+    return rows.map((row) => normalizeRow(row) as SessionShareRow);
+  },
+
   update(
     id: string,
     updates: {
@@ -174,6 +229,11 @@ export const sessionSharesDb = {
       hiddenIds?: string[];
       focusId?: string | null;
       expiresAt?: string | null;
+      cloudId?: string | null;
+      cloudUrl?: string | null;
+      cloudExpiresAt?: string | null;
+      cloudSyncedAt?: string | null;
+      cloudError?: string | null;
       nowIso?: string;
     },
   ): SessionShareRow | undefined {
@@ -189,13 +249,34 @@ export const sessionSharesDb = {
       : existing.hidden_ids;
     const nextFocusId = updates.focusId !== undefined ? updates.focusId : existing.focus_id;
     const nextExpiresAt = updates.expiresAt !== undefined ? updates.expiresAt : existing.expires_at;
+    const nextCloudId = updates.cloudId !== undefined ? updates.cloudId : existing.cloud_id;
+    const nextCloudUrl = updates.cloudUrl !== undefined ? updates.cloudUrl : existing.cloud_url;
+    const nextCloudExpiresAt =
+      updates.cloudExpiresAt !== undefined ? updates.cloudExpiresAt : existing.cloud_expires_at;
+    const nextCloudSyncedAt =
+      updates.cloudSyncedAt !== undefined ? updates.cloudSyncedAt : existing.cloud_synced_at;
+    const nextCloudError = updates.cloudError !== undefined ? updates.cloudError : existing.cloud_error;
     const nowIso = updates.nowIso ?? new Date().toISOString();
 
     db.prepare(
       `UPDATE session_shares
-       SET title = ?, hidden_ids = ?, focus_id = ?, expires_at = ?, updated_at = ?
+       SET title = ?, hidden_ids = ?, focus_id = ?, expires_at = ?,
+           cloud_id = ?, cloud_url = ?, cloud_expires_at = ?, cloud_synced_at = ?, cloud_error = ?,
+           updated_at = ?
        WHERE id = ?`
-    ).run(nextTitle, nextHiddenIds, nextFocusId, nextExpiresAt, nowIso, id);
+    ).run(
+      nextTitle,
+      nextHiddenIds,
+      nextFocusId,
+      nextExpiresAt,
+      nextCloudId,
+      nextCloudUrl,
+      nextCloudExpiresAt,
+      nextCloudSyncedAt,
+      nextCloudError,
+      nowIso,
+      id,
+    );
 
     return this.getById(id);
   },

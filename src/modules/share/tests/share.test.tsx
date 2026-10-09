@@ -520,4 +520,174 @@ describe('SessionShareDialog', () => {
       assert.ok(screen.getByRole('button', { name: 'Create public link' }));
     });
   });
+
+  test('shows Upload to Hemilake disabled with reason when console is not configured, and creates a cloud share with expiry picker and cloud_url when configured', async () => {
+    let cloudAvailable = false;
+    let shareCreated = false;
+    let createdMode = 'local';
+    const postPayloads: Array<Record<string, unknown>> = [];
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      const method = init?.method || 'GET';
+
+      if (url === '/api/shares/config' && method === 'GET') {
+        return new Response(
+          JSON.stringify({
+            cloud: {
+              available: cloudAvailable,
+              reason: cloudAvailable
+                ? null
+                : 'Needs Hemilake: open Studio from your Hemilake console',
+            },
+          }),
+          { status: 200 },
+        );
+      }
+
+      if (url.startsWith('/api/shares?sessionId=') && method === 'GET') {
+        if (!shareCreated) {
+          return new Response(JSON.stringify({ error: 'Not found' }), { status: 404 });
+        }
+        return new Response(
+          JSON.stringify({
+            id: 'share-cloud-1',
+            token: 'local-tok-unused',
+            urlPath: 'https://share.hemilake.com/s/cloud_tok_abc',
+            url: 'https://share.hemilake.com/s/cloud_tok_abc',
+            mode: createdMode,
+            cloudId: 'c-1',
+            cloudUrl: 'https://share.hemilake.com/s/cloud_tok_abc',
+            cloudExpiresAt: '2026-11-08T12:00:00.000Z',
+            cloudSyncedAt: '2026-10-09T12:00:00.000Z',
+            cloudError: 'Sync warning test',
+            title: 'Cloud Demo',
+            hiddenIds: [],
+            focusId: null,
+            createdAt: '2026-10-09T12:00:00.000Z',
+            expiresAt: '2026-11-08T12:00:00.000Z',
+          }),
+          { status: 200 },
+        );
+      }
+
+      if (url === '/api/shares' && method === 'POST') {
+        const body = JSON.parse(String(init?.body || '{}')) as Record<string, unknown>;
+        postPayloads.push(body);
+        shareCreated = true;
+        createdMode = (body.mode as string) || 'local';
+        return new Response(
+          JSON.stringify({
+            id: 'share-cloud-1',
+            token: 'local-tok-unused',
+            urlPath: 'https://share.hemilake.com/s/cloud_tok_abc',
+            url: 'https://share.hemilake.com/s/cloud_tok_abc',
+            mode: createdMode,
+            cloudId: 'c-1',
+            cloudUrl: 'https://share.hemilake.com/s/cloud_tok_abc',
+            cloudExpiresAt: '2026-11-08T12:00:00.000Z',
+            cloudSyncedAt: '2026-10-09T12:00:00.000Z',
+            cloudError: 'Sync warning test',
+            title: 'Cloud Demo',
+            hiddenIds: [],
+            focusId: null,
+            createdAt: '2026-10-09T12:00:00.000Z',
+            expiresAt: '2026-11-08T12:00:00.000Z',
+          }),
+          { status: 200 },
+        );
+      }
+
+      if (url === '/api/shares/share-cloud-1/preview' && method === 'GET') {
+        return new Response(
+          JSON.stringify({
+            id: 'share-cloud-1',
+            token: 'local-tok-unused',
+            urlPath: 'https://share.hemilake.com/s/cloud_tok_abc',
+            url: 'https://share.hemilake.com/s/cloud_tok_abc',
+            mode: createdMode,
+            cloudId: 'c-1',
+            cloudUrl: 'https://share.hemilake.com/s/cloud_tok_abc',
+            cloudExpiresAt: '2026-11-08T12:00:00.000Z',
+            cloudSyncedAt: '2026-10-09T12:00:00.000Z',
+            cloudError: 'Sync warning test',
+            title: 'Cloud Demo',
+            hiddenIds: [],
+            focusId: null,
+            createdAt: '2026-10-09T12:00:00.000Z',
+            expiresAt: '2026-11-08T12:00:00.000Z',
+            running: false,
+            items: [
+              {
+                id: 'item-1',
+                role: 'user',
+                text: 'Cloud prompt',
+                timestamp: '2026-10-09T12:00:00.000Z',
+                hidden: false,
+              },
+            ],
+          }),
+          { status: 200 },
+        );
+      }
+
+      return new Response('Not found', { status: 404 });
+    });
+
+    const { unmount } = render(
+      <I18nextProvider i18n={i18n}>
+        <SessionShareDialog
+          sessionId="sess-cloud"
+          sessionTitle="Cloud Demo"
+          provider="claude"
+        />
+      </I18nextProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Share session' }));
+
+    await waitFor(() => {
+      assert.ok(screen.getByTestId('share-cloud-disabled-reason'));
+    });
+    assert.ok(screen.getByText('Needs Hemilake: open Studio from your Hemilake console'));
+
+    unmount();
+    cleanup();
+
+    // Now enable cloud config and create a cloud share with 90d expiry
+    cloudAvailable = true;
+    render(
+      <I18nextProvider i18n={i18n}>
+        <SessionShareDialog
+          sessionId="sess-cloud"
+          sessionTitle="Cloud Demo"
+          provider="claude"
+        />
+      </I18nextProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Share session' }));
+
+    await waitFor(() => {
+      assert.equal(screen.queryByTestId('share-cloud-disabled-reason'), null);
+    });
+
+    const cloudOption = screen.getByTestId('share-mode-cloud').querySelector('input');
+    assert.ok(cloudOption);
+    fireEvent.click(cloudOption);
+
+    const ninetyDayBtn = await screen.findByRole('button', { name: '90 d' });
+    fireEvent.click(ninetyDayBtn);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Create public link' }));
+
+    await waitFor(() => {
+      assert.equal(postPayloads.length, 1);
+      assert.equal(postPayloads[0].mode, 'cloud');
+      assert.ok(typeof postPayloads[0].expiresAt === 'string');
+      assert.ok(screen.getByDisplayValue('https://share.hemilake.com/s/cloud_tok_abc'));
+      assert.ok(screen.getByTestId('share-cloud-error'));
+      assert.ok(screen.getByTestId('share-cloud-synced-at'));
+    });
+  });
 });

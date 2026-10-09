@@ -228,6 +228,14 @@ export function createPublicShareRateLimiter(options: {
 export function createShareRouter(service: ShareService): express.Router {
   const router = express.Router();
 
+  router.get(
+    '/config',
+    asyncHandler(async (_req: Request, res: Response) => {
+      res.setHeader('Cache-Control', 'no-store');
+      res.json({ cloud: service.getCloudConfig() });
+    }),
+  );
+
   router.post(
     '/',
     asyncHandler(async (req: Request, res: Response) => {
@@ -237,8 +245,39 @@ export function createShareRouter(service: ShareService): express.Router {
       const provider = typeof body.provider === 'string' && body.provider.trim()
         ? body.provider.trim()
         : undefined;
+      let mode: 'local' | 'cloud' = 'local';
+      if ('mode' in body && body.mode !== undefined && body.mode !== null) {
+        if (body.mode !== 'local' && body.mode !== 'cloud') {
+          throw new AppError("mode must be 'local' or 'cloud'.", {
+            code: 'INVALID_SHARE_MODE',
+            statusCode: 400,
+          });
+        }
+        mode = body.mode;
+      }
 
-      const share = service.createOrGetShare(userId, { sessionId, provider });
+      let expiresAt: string | null | undefined;
+      if ('expiresAt' in body) {
+        if (body.expiresAt === null || body.expiresAt === '') {
+          expiresAt = null;
+        } else if (typeof body.expiresAt === 'string') {
+          const parsed = new Date(body.expiresAt);
+          if (Number.isNaN(parsed.getTime())) {
+            throw new AppError('expiresAt must be a valid ISO timestamp or null.', {
+              code: 'INVALID_EXPIRES_AT',
+              statusCode: 400,
+            });
+          }
+          expiresAt = parsed.toISOString();
+        } else {
+          throw new AppError('expiresAt must be a valid ISO timestamp or null.', {
+            code: 'INVALID_EXPIRES_AT',
+            statusCode: 400,
+          });
+        }
+      }
+
+      const share = await service.createOrGetShare(userId, { sessionId, provider, mode, expiresAt });
       res.setHeader('Cache-Control', 'no-store');
       res.json(share);
     }),
@@ -261,7 +300,7 @@ export function createShareRouter(service: ShareService): express.Router {
       const userId = readUserId(req);
       const id = readRequiredString(req.params.id, 'id');
       const updates = parsePatchPayload(req.body);
-      const share = service.updateShare(userId, id, updates);
+      const share = await service.updateShare(userId, id, updates);
       res.setHeader('Cache-Control', 'no-store');
       res.json(share);
     }),
@@ -272,7 +311,7 @@ export function createShareRouter(service: ShareService): express.Router {
     asyncHandler(async (req: Request, res: Response) => {
       const userId = readUserId(req);
       const id = readRequiredString(req.params.id, 'id');
-      const result = service.revokeShare(userId, id);
+      const result = await service.revokeShare(userId, id);
       res.setHeader('Cache-Control', 'no-store');
       res.json({ success: true, ...result });
     }),

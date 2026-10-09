@@ -441,6 +441,22 @@ const addSessionShareFocusIdColumn = (db: Database): void => {
 };
 
 /**
+ * Adds the cloud-share columns (`mode`, `cloud_id`, `cloud_url`,
+ * `cloud_expires_at`, `cloud_synced_at`, `cloud_error`) on `session_shares`
+ * for databases created before Hemilake cloud shares were introduced.
+ */
+const addSessionShareCloudColumns = (db: Database): void => {
+  const columnNames = getTableInfo(db, 'session_shares').map((column) => column.name);
+  addColumnToTableIfNotExists(db, 'session_shares', columnNames, 'mode', "TEXT NOT NULL DEFAULT 'local'");
+  addColumnToTableIfNotExists(db, 'session_shares', columnNames, 'cloud_id', 'TEXT');
+  addColumnToTableIfNotExists(db, 'session_shares', columnNames, 'cloud_url', 'TEXT');
+  addColumnToTableIfNotExists(db, 'session_shares', columnNames, 'cloud_expires_at', 'DATETIME');
+  addColumnToTableIfNotExists(db, 'session_shares', columnNames, 'cloud_synced_at', 'DATETIME');
+  addColumnToTableIfNotExists(db, 'session_shares', columnNames, 'cloud_error', 'TEXT');
+  db.exec("UPDATE session_shares SET mode = 'local' WHERE mode IS NULL OR trim(mode) = ''");
+};
+
+/**
  * Adds the `model` column that records which model each session runs with.
  *
  * Left NULL for pre-existing rows on purpose: the model resolver falls back to
@@ -597,6 +613,7 @@ export const runMigrations = (db: Database) => {
     db.exec(SCHEDULED_MESSAGES_TABLE_SCHEMA_SQL);
     db.exec(SESSION_SHARES_TABLE_SCHEMA_SQL);
     addSessionShareFocusIdColumn(db);
+    addSessionShareCloudColumns(db);
 
     db.exec('CREATE INDEX IF NOT EXISTS idx_session_shares_token ON session_shares(token)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_session_shares_session_user ON session_shares(session_id, user_id)');

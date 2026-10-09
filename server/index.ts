@@ -28,7 +28,12 @@ import {
     validateApiKey,
 } from './modules/auth/index.js';
 import { corsOrigin, embedRoutes, frameAncestors } from './modules/embed/index.js';
-import { publicShareRoutes, shareRoutes } from './modules/share/index.js';
+import {
+    closeCloudShareSync,
+    initializeCloudShareSync,
+    publicShareRoutes,
+    shareRoutes,
+} from './modules/share/index.js';
 import { taskmasterRoutes } from './modules/taskmaster/index.js';
 import { commandsRoutes } from './modules/commands/index.js';
 import { settingsRoutes } from './modules/settings/index.js';
@@ -399,6 +404,7 @@ async function startServer() {
             // Sends anything that came due while the server was not running,
             // then keeps polling.
             initializeScheduledMessageDispatcher(providerRuntimeService);
+            initializeCloudShareSync();
 
             // Start server-side plugin processes for enabled plugins
             startEnabledPluginServers().catch(err => {
@@ -410,6 +416,7 @@ async function startServer() {
         closeScheduledMessageDispatcher();
         // Clean up plugin processes on shutdown
         const shutdownRuntimeServices = async () => {
+            closeCloudShareSync();
             try {
                 await browserUseService.stopAllSessions();
             } catch (err) {

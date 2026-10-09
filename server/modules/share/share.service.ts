@@ -10,6 +10,7 @@ import {
   type SharedTranscriptItem,
   type SharedTranscriptPreviewItem,
 } from './share.filter.js';
+import type { CloudShareConfig, createCloudShareSyncService } from './share.sync.js';
 
 type ShareSessionRecord = {
   session_id: string;
@@ -17,6 +18,8 @@ type ShareSessionRecord = {
   custom_name: string | null;
   updated_at?: string | null;
 };
+
+type CloudSyncService = ReturnType<typeof createCloudShareSyncService>;
 
 type ShareDependencies = {
   shares: {
@@ -27,6 +30,12 @@ type ShareDependencies = {
       title?: string | null;
       hiddenIds?: string[];
       focusId?: string | null;
+      mode?: 'local' | 'cloud';
+      cloudId?: string | null;
+      cloudUrl?: string | null;
+      cloudExpiresAt?: string | null;
+      cloudSyncedAt?: string | null;
+      cloudError?: string | null;
       expiresAt?: string | null;
       nowIso?: string;
     }): SessionShareRow;
@@ -40,6 +49,11 @@ type ShareDependencies = {
         hiddenIds?: string[];
         focusId?: string | null;
         expiresAt?: string | null;
+        cloudId?: string | null;
+        cloudUrl?: string | null;
+        cloudExpiresAt?: string | null;
+        cloudSyncedAt?: string | null;
+        cloudError?: string | null;
         nowIso?: string;
       },
     ): SessionShareRow | undefined;
@@ -50,6 +64,7 @@ type ShareDependencies = {
     fetchHistory(sessionId: string): Promise<{ messages: NormalizedMessage[] }>;
     isRunning(sessionId: string): boolean;
   };
+  cloudSync?: CloudSyncService;
   now(): number;
 };
 
@@ -64,6 +79,12 @@ export type OwnerSharePayload = {
   token: string;
   urlPath: string;
   url: string;
+  mode: 'local' | 'cloud';
+  cloudId: string | null;
+  cloudUrl: string | null;
+  cloudExpiresAt: string | null;
+  cloudSyncedAt: string | null;
+  cloudError: string | null;
   sessionId: string;
   provider: string;
   title: string | null;
@@ -96,6 +117,8 @@ export type PublicSharePayload = {
 };
 
 const DUMMY_TOKEN_BUFFER = Buffer.alloc(43, 0x61);
+const DEFAULT_CLOUD_EXPIRY_DAYS = 30;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 function timingSafeMatchToken(storedToken: string | undefined, candidateToken: string): boolean {
   const storedBuffer = storedToken ? Buffer.from(storedToken, 'utf8') : DUMMY_TOKEN_BUFFER;
@@ -145,7 +168,7 @@ function forbiddenError(): AppError {
   });
 }
 
-function computeLatestTimestamp( candidates: Array<string | null | undefined>, fallback: string): string {
+function computeLatestTimestamp(candidates: Array<string | null | undefined>, fallback: string): string {
   let latestMs = Number.NEGATIVE_INFINITY;
   let latestIso = fallback;
 
@@ -172,7 +195,8 @@ function computeLatestTimestamp( candidates: Array<string | null | undefined>, f
 export function createShareService(dependencies: ShareDependencies) {
   const formatOwnerShare = (row: SessionShareRow, session?: ShareSessionRecord): OwnerSharePayload => {
     const resolvedSession = session ?? dependencies.sessions.getById(row.session_id);
-    const urlPath = `/share/${row.token}`;
+    const mode = row.mode === 'cloud' ? 'cloud' : 'local';
+    const urlPath = mode === 'cloud' ? (row.cloud_url ?? '') : `/share/${row.token}`;
     const resolvedTitle = row.title !== null
       ? row.title
       : (resolvedSession?.custom_name?.trim() || null);
@@ -181,7 +205,13 @@ export function createShareService(dependencies: ShareDependencies) {
       id: row.id,
       token: row.token,
       urlPath,
-      url: urlPath,
+      url: mode === 'cloud' ? (row.cloud_url ?? '') : urlPath,
+      mode,
+      cloudId: row.cloud_id ?? null,
+      cloudUrl: row.cloud_url ?? null,
+      cloudExpiresAt: row.cloud_expires_at ?? row.expires_at ?? null,
+      cloudSyncedAt: row.cloud_synced_at ?? null,
+      cloudError: row.cloud_error ?? null,
       sessionId: row.session_id,
       provider: row.provider,
       title: resolvedTitle,
@@ -208,16 +238,37 @@ export function createShareService(dependencies: ShareDependencies) {
   };
 
   return {
-    createOrGetShare(
+    getCloudConfig(): { available: boolean; reason: string | null } {
+      const cfg: CloudShareConfig | undefined = dependencies.cloudSync?.getCloudConfig();
+      if (!cfg) {
+        return {
+          available: false,
+          reason: 'Needs Hemilake: open Studio from your Hemilake console',
+        };
+      }
+      return {
+        available: cfg.available,
+        reason: cfg.reason,
+      };
+    },
+
+    async createOrGetShare(
       userId: number,
       input: {
         sessionId: string;
         provider?: string;
+        mode?: 'local' | 'cloud';
+        expiresAt?: string | null;
       },
-    ): OwnerSharePayload {
-      const nowIso = new Date(dependencies.now()).toISOString();
+    ): Promise<OwnerSharePayload> {
+      const nowMs = dependencies.now();
+      const nowIso = new Date(nowMs).toISOString();
       const existing = dependencies.shares.getActiveBySession(userId, input.sessionId, nowIso);
       if (existing && isShareRowActive(existing, nowIso)) {
+        if (existing.mode === 'cloud' && !existing.cloud_id && dependencies.cloudSync) {
+          const synced = await dependencies.cloudSync.syncShareNow(existing.id, { force: true });
+          return formatOwnerShare(synced ?? existing);
+        }
         return formatOwnerShare(existing);
       }
 
@@ -229,17 +280,45 @@ export function createShareService(dependencies: ShareDependencies) {
         });
       }
 
+      const mode = input.mode === 'cloud' ? 'cloud' : 'local';
+      if (mode === 'cloud') {
+        const cfg = dependencies.cloudSync?.getCloudConfig();
+        if (!cfg || !cfg.available) {
+          throw new AppError(
+            cfg?.reason ?? 'Needs Hemilake: open Studio from your Hemilake console',
+            {
+              code: 'CLOUD_SHARE_UNAVAILABLE',
+              statusCode: 409,
+            },
+          );
+        }
+      }
+
       const provider = session.provider || input.provider || 'claude';
       const initialTitle = session.custom_name?.trim() || null;
+      const defaultCloudExpiresAt =
+        mode === 'cloud'
+          ? (input.expiresAt ?? new Date(nowMs + DEFAULT_CLOUD_EXPIRY_DAYS * MS_PER_DAY).toISOString())
+          : (input.expiresAt ?? null);
 
-      const created = dependencies.shares.create({
+      let created = dependencies.shares.create({
         userId,
         sessionId: input.sessionId,
         provider,
         title: initialTitle,
         hiddenIds: [],
+        mode,
+        expiresAt: defaultCloudExpiresAt,
+        cloudExpiresAt: mode === 'cloud' ? defaultCloudExpiresAt : null,
         nowIso,
       });
+
+      if (mode === 'cloud' && dependencies.cloudSync) {
+        const synced = await dependencies.cloudSync.syncShareNow(created.id, { force: true });
+        if (synced) {
+          created = synced;
+        }
+      }
 
       return formatOwnerShare(created, session);
     },
@@ -253,7 +332,7 @@ export function createShareService(dependencies: ShareDependencies) {
       return formatOwnerShare(row);
     },
 
-    updateShare(
+    async updateShare(
       userId: number,
       id: string,
       updates: {
@@ -262,22 +341,32 @@ export function createShareService(dependencies: ShareDependencies) {
         focusId?: string | null;
         expiresAt?: string | null;
       },
-    ): OwnerSharePayload {
+    ): Promise<OwnerSharePayload> {
       const nowIso = new Date(dependencies.now()).toISOString();
-      requireOwnedActiveShare(userId, id, nowIso);
+      const existing = requireOwnedActiveShare(userId, id, nowIso);
 
-      const updated = dependencies.shares.update(id, {
+      let updated = dependencies.shares.update(id, {
         ...updates,
+        ...(existing.mode === 'cloud' && updates.expiresAt !== undefined
+          ? { cloudExpiresAt: updates.expiresAt }
+          : {}),
         nowIso,
       });
       if (!updated) {
         throw notFoundError();
       }
 
+      if (updated.mode === 'cloud' && dependencies.cloudSync) {
+        const synced = await dependencies.cloudSync.syncShareNow(updated.id, { force: true });
+        if (synced) {
+          updated = synced;
+        }
+      }
+
       return formatOwnerShare(updated);
     },
 
-    revokeShare(userId: number, id: string): { id: string; revokedAt: string } {
+    async revokeShare(userId: number, id: string): Promise<{ id: string; revokedAt: string }> {
       const nowIso = new Date(dependencies.now()).toISOString();
       const row = dependencies.shares.getById(id);
       if (!row) {
@@ -287,7 +376,10 @@ export function createShareService(dependencies: ShareDependencies) {
         throw forbiddenError();
       }
 
-      dependencies.shares.revoke(id, nowIso);
+      const revoked = dependencies.shares.revoke(id, nowIso);
+      if (row.mode === 'cloud' && dependencies.cloudSync) {
+        await dependencies.cloudSync.revokeCloudShare(revoked ?? row);
+      }
       return { id: row.id, revokedAt: nowIso };
     },
 
@@ -324,7 +416,12 @@ export function createShareService(dependencies: ShareDependencies) {
 
       const nowIso = new Date(dependencies.now()).toISOString();
       const row = dependencies.shares.getByToken(token);
-      if (!timingSafeMatchToken(row?.token, token) || !row || !isShareRowActive(row, nowIso)) {
+      if (
+        !timingSafeMatchToken(row?.token, token) ||
+        !row ||
+        row.mode === 'cloud' ||
+        !isShareRowActive(row, nowIso)
+      ) {
         throw notFoundError();
       }
 

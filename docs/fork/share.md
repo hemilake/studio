@@ -6,6 +6,11 @@ only the human's prompts and the assistant's text outputs, and keeps updating
 while the session runs. The owner can hide individual prompts or outputs from
 the shared view and revoke the link at any time.
 
+Two modes are offered when creating a share:
+
+- **Local link (`mode: 'local'`)**: served directly by this Studio instance at `/share/<token>`. Studio itself must be reachable by the reader.
+- **Upload to Hemilake (`mode: 'cloud'`)**: Studio pushes the already-filtered items to the local Hemilake console (`CLOUDCLI_CONSOLE_URL`), which relays them with the install's licence to Hemilake's share server (`https://share.hemilake.com/s/<token>`, gated by the `hemilake.studio.share` feature). Studio syncs changes every 5 s while the session runs (only when the payload hash changed, plus a final push when the run ends) and immediately on title, hide, focus, or expiry changes; revoking or expiring deletes the stored payload on the share server. A cloud share has no local public route (`/api/public/shares/:token` returns `404`).
+
 ## Routes
 
 ### Owner API (`/api/shares`, `authenticateToken` required)
@@ -15,10 +20,11 @@ authenticated user receives `403` (or `404` when querying by `sessionId`).
 
 | Method & path | Body / query | Response |
 |---|---|---|
-| `POST /api/shares` | `{ sessionId, provider? }` | Creates (or returns the existing active) share for the session: `{ id, token, urlPath, url, sessionId, provider, title, hiddenIds, focusId, createdAt, updatedAt, expiresAt }`. |
+| `GET /api/shares/config` | – | `{ cloud: { available: boolean, reason: string \| null } }` indicating whether `CLOUDCLI_CONSOLE_URL` and `CLOUDCLI_EMBED_SECRET(_FILE)` are configured for uploading shares to Hemilake. |
+| `POST /api/shares` | `{ sessionId, provider?, mode?: 'local' \| 'cloud', expiresAt? }` | Creates (or returns the existing active) share for the session: `{ id, token, urlPath, url, mode, cloudId, cloudUrl, cloudExpiresAt, cloudSyncedAt, cloudError, sessionId, provider, title, hiddenIds, focusId, createdAt, updatedAt, expiresAt }`. |
 | `GET /api/shares?sessionId=<id>` | `sessionId` query parameter | Active share for that session, or `404` when none is active. |
-| `PATCH /api/shares/:id` | `{ title?, hiddenIds?, focusId?, expiresAt? }` | Updates the share title, hidden item IDs, focus item ID (`string` ≤ 200 chars or `null`), or expiration timestamp, and returns the updated share. |
-| `DELETE /api/shares/:id` | – | Sets `revoked_at` on the share row. The token never works again (`404` on the public endpoint). |
+| `PATCH /api/shares/:id` | `{ title?, hiddenIds?, focusId?, expiresAt? }` | Updates the share title, hidden item IDs, focus item ID (`string` ≤ 200 chars or `null`), or expiration timestamp, pushes immediately to the console for cloud shares, and returns the updated share. |
+| `DELETE /api/shares/:id` | – | Sets `revoked_at` on the share row (`404` on the public endpoint) and, for cloud shares, sends `DELETE /api/studio/shares/:cloudId` to the console (retrying in the background loop if the console is unreachable). |
 | `GET /api/shares/:id/preview` | – | Returns the share metadata plus `items: [{ id, role, text, timestamp, hidden }]` and `running: boolean`, including hidden candidate items (`hidden: true`) so the owner UI can toggle them and pick an `"Open here"` focus block. |
 
 ### Public API (`/api/public/shares`, no authentication)

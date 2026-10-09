@@ -22,6 +22,15 @@ import { AppError } from '@/shared/utils.js';
 
 import { createPublicShareRouter, createShareRouter } from '../share.routes.js';
 import { createShareService } from '../share.service.js';
+import {
+  ConsoleShareError,
+  createCloudShareSyncService,
+  createConsoleShareClient,
+  readCloudShareConfig,
+  signStudioConsoleAssertion,
+  type ConsoleShareClient,
+  type ConsoleShareWritePayload,
+} from '../share.sync.js';
 
 const SESSION_ID = 'shared-session-1';
 
@@ -639,6 +648,12 @@ test('migration adds focus_id to an existing session_shares table created withou
     const legacyRow = sessionSharesDb.getById('legacy-share-1');
     assert.ok(legacyRow);
     assert.equal(legacyRow.focus_id, null);
+    assert.equal(legacyRow.mode, 'local');
+    assert.equal(legacyRow.cloud_id, null);
+    assert.equal(legacyRow.cloud_url, null);
+    assert.equal(legacyRow.cloud_expires_at, null);
+    assert.equal(legacyRow.cloud_synced_at, null);
+    assert.equal(legacyRow.cloud_error, null);
 
     const updatedRow = sessionSharesDb.update('legacy-share-1', { focusId: 'msg-a2' });
     assert.ok(updatedRow);
@@ -652,4 +667,275 @@ test('migration adds focus_id to an existing session_shares table created withou
     }
     await rm(tempDir, { recursive: true, force: true });
   }
+});
+
+test('cloud share lifecycle: no local public route, sync only PUTs on change, final PUT on run end, revoke DELETE with retry, errors surfaced', async () => {
+  const previousDatabasePath = process.env.DATABASE_PATH;
+  const tempDir = await mkdtemp(path.join(tmpdir(), 'cloud-shares-test-'));
+
+  closeConnection();
+  process.env.DATABASE_PATH = path.join(tempDir, 'auth.db');
+  await initializeDatabase();
+
+  try {
+    let nowMs = Date.UTC(2026, 9, 9, 12, 0, 0);
+    let isRunning = true;
+    let historyMessages: NormalizedMessage[] = [...SAMPLE_HISTORY];
+    let fetchHistoryCount = 0;
+
+    const owner = userDb.createUser('owner', 'hash-1');
+    sessionsDb.createAppSession(SESSION_ID, 'claude', tempDir, 'Cloud Session');
+
+    const consoleCalls: Array<{
+      op: 'create' | 'update' | 'delete';
+      cloudId?: string;
+      payload?: ConsoleShareWritePayload;
+    }> = [];
+    let failNextCreate: Error | null = null;
+    let failNextUpdate: Error | null = null;
+    let failNextDelete: Error | null = null;
+
+    const fakeConsoleClient: ConsoleShareClient = {
+      getConfig: () => ({
+        available: true,
+        consoleUrl: 'http://127.0.0.1:8095',
+        secret: 's'.repeat(48),
+        reason: null,
+      }),
+      createShare: async (payload) => {
+        consoleCalls.push({ op: 'create', payload });
+        if (failNextCreate) {
+          const err = failNextCreate;
+          failNextCreate = null;
+          throw err;
+        }
+        return {
+          id: 'cloud-row-1',
+          url: 'https://share.hemilake.com/s/cloud_tok_123',
+          expiresAt: payload.expiresAt || '2026-11-08T12:00:00.000Z',
+        };
+      },
+      updateShare: async (cloudId, payload) => {
+        consoleCalls.push({ op: 'update', cloudId, payload });
+        if (failNextUpdate) {
+          const err = failNextUpdate;
+          failNextUpdate = null;
+          throw err;
+        }
+        return {
+          id: cloudId,
+          url: 'https://share.hemilake.com/s/cloud_tok_123',
+          expiresAt: payload.expiresAt || '2026-11-08T12:00:00.000Z',
+          updatedAt: new Date(nowMs).toISOString(),
+        };
+      },
+      deleteShare: async (cloudId) => {
+        consoleCalls.push({ op: 'delete', cloudId });
+        if (failNextDelete) {
+          const err = failNextDelete;
+          failNextDelete = null;
+          throw err;
+        }
+      },
+    };
+
+    const sessionsAdapter = {
+      getById: (sessionId: string) => sessionsDb.getSessionById(sessionId) ?? undefined,
+      fetchHistory: async () => {
+        fetchHistoryCount += 1;
+        return { messages: historyMessages };
+      },
+      isRunning: () => isRunning,
+    };
+
+    const cloudSync = createCloudShareSyncService({
+      shares: {
+        getById: (id) => sessionSharesDb.getById(id),
+        listActiveCloudShares: (nowIso) => sessionSharesDb.listActiveCloudShares(nowIso),
+        listPendingCloudDeletes: () => sessionSharesDb.listPendingCloudDeletes(),
+        update: (id, updates) => sessionSharesDb.update(id, updates),
+      },
+      sessions: sessionsAdapter,
+      consoleClient: fakeConsoleClient,
+      now: () => nowMs,
+    });
+
+    const service = createShareService({
+      shares: {
+        create: (input) => sessionSharesDb.create(input),
+        getById: (id) => sessionSharesDb.getById(id),
+        getByToken: (token) => sessionSharesDb.getByToken(token),
+        getActiveBySession: (userId, sessionId, nowIso) =>
+          sessionSharesDb.getActiveBySession(userId, sessionId, nowIso),
+        update: (id, updates) => sessionSharesDb.update(id, updates),
+        revoke: (id, nowIso) => sessionSharesDb.revoke(id, nowIso),
+      },
+      sessions: sessionsAdapter,
+      cloudSync,
+      now: () => nowMs,
+    });
+
+    // 1. Create cloud share -> triggers immediate POST to console
+    const created = await service.createOrGetShare(Number(owner.id), {
+      sessionId: SESSION_ID,
+      mode: 'cloud',
+    });
+    assert.equal(created.mode, 'cloud');
+    assert.equal(created.cloudId, 'cloud-row-1');
+    assert.equal(created.cloudUrl, 'https://share.hemilake.com/s/cloud_tok_123');
+    assert.equal(created.url, 'https://share.hemilake.com/s/cloud_tok_123');
+    assert.equal(created.cloudError, null);
+    assert.equal(consoleCalls.length, 1);
+    assert.equal(consoleCalls[0].op, 'create');
+    assert.equal(consoleCalls[0].payload?.running, true);
+    assert.equal(consoleCalls[0].payload?.items.length, 4);
+
+    // 2. Cloud share has NO local public route: getPublicShare throws 404
+    await assert.rejects(
+      () => service.getPublicShare(created.token),
+      (err: unknown) => err instanceof AppError && err.statusCode === 404,
+    );
+
+    // 3. Periodic tick while running with NO content change -> does NOT PUT
+    nowMs += 5_000;
+    await cloudSync.tick();
+    assert.equal(consoleCalls.length, 1);
+
+    // 4. New user prompt arrives while running -> tick hashes payload and PUTs once
+    historyMessages = [
+      ...SAMPLE_HISTORY,
+      {
+        id: 'msg-u3',
+        sessionId: SESSION_ID,
+        timestamp: '2026-10-09T12:00:10.000Z',
+        provider: 'claude',
+        kind: 'text',
+        role: 'user',
+        content: 'Follow-up question while running',
+      },
+    ];
+    nowMs += 5_000;
+    await cloudSync.tick();
+    assert.equal(consoleCalls.length, 2);
+    assert.equal(consoleCalls[1].op, 'update');
+    assert.equal(consoleCalls[1].payload?.items.length, 5);
+    assert.equal(consoleCalls[1].payload?.running, true);
+
+    // 5. Run ends (`running: false`) -> tick performs one final PUT with `running: false`
+    isRunning = false;
+    nowMs += 5_000;
+    await cloudSync.tick();
+    assert.equal(consoleCalls.length, 3);
+    assert.equal(consoleCalls[2].op, 'update');
+    assert.equal(consoleCalls[2].payload?.running, false);
+
+    // 6. Subsequent ticks when not running and session updated_at unchanged -> skips fetchHistory and PUT
+    const historyFetchesBeforeIdleTick = fetchHistoryCount;
+    nowMs += 5_000;
+    await cloudSync.tick();
+    assert.equal(fetchHistoryCount, historyFetchesBeforeIdleTick);
+    assert.equal(consoleCalls.length, 3);
+
+    // 7. Owner metadata change (hide item + focus) -> immediate PUT; if console errors, error lands in cloudError
+    failNextUpdate = new ConsoleShareError(
+      'feature_not_licensed',
+      'Your Hemilake licence does not include Studio cloud shares (hemilake.studio.share).',
+      403,
+    );
+    const updatedWithError = await service.updateShare(Number(owner.id), created.id, {
+      hiddenIds: ['msg-u2'],
+      focusId: 'msg-a1',
+    });
+    assert.equal(consoleCalls.length, 4);
+    assert.ok(updatedWithError.cloudError?.includes('hemilake.studio.share'));
+
+    // Next tick retries because cloud_error is set, and clears cloudError on success
+    nowMs += 5_000;
+    await cloudSync.tick();
+    assert.equal(consoleCalls.length, 5);
+    const afterRecovery = service.getActiveShareBySession(Number(owner.id), SESSION_ID);
+    assert.equal(afterRecovery.cloudError, null);
+
+    // 8. Revoke when console is down -> revokes locally immediately, retains cloud_id, and retries DELETE on next tick
+    failNextDelete = new ConsoleShareError('admin_unreachable', 'Console down', 502);
+    await service.revokeShare(Number(owner.id), created.id);
+    assert.equal(consoleCalls.length, 6);
+    assert.equal(consoleCalls[5].op, 'delete');
+
+    // Locally revoked immediately
+    assert.throws(
+      () => service.getActiveShareBySession(Number(owner.id), SESSION_ID),
+      (err: unknown) => err instanceof AppError && err.statusCode === 404,
+    );
+    // Pending cloud delete remains queued because first DELETE failed
+    assert.equal(sessionSharesDb.listPendingCloudDeletes().length, 1);
+
+    // Next tick retries DELETE and clears cloud_id
+    nowMs += 5_000;
+    await cloudSync.tick();
+    assert.equal(consoleCalls.length, 7);
+    assert.equal(consoleCalls[6].op, 'delete');
+    assert.equal(sessionSharesDb.listPendingCloudDeletes().length, 0);
+  } finally {
+    closeConnection();
+    if (previousDatabasePath === undefined) {
+      delete process.env.DATABASE_PATH;
+    } else {
+      process.env.DATABASE_PATH = previousDatabasePath;
+    }
+    await rm(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('readCloudShareConfig and createConsoleShareClient sign valid Studio assertions and map console error codes', async () => {
+  const missingCfg = readCloudShareConfig({});
+  assert.equal(missingCfg.available, false);
+  assert.equal(missingCfg.reason, 'Needs Hemilake: open Studio from your Hemilake console');
+
+  const validEnv = {
+    CLOUDCLI_CONSOLE_URL: 'http://127.0.0.1:8095/',
+    CLOUDCLI_EMBED_SECRET: 'k'.repeat(48),
+  };
+  const validCfg = readCloudShareConfig(validEnv);
+  assert.equal(validCfg.available, true);
+  assert.equal(validCfg.consoleUrl, 'http://127.0.0.1:8095');
+
+  const jwt = signStudioConsoleAssertion('k'.repeat(48), 1_791_500_000_000, 'jti-test-1');
+  const [headerB64, claimsB64, sigB64] = jwt.split('.');
+  assert.ok(headerB64 && claimsB64 && sigB64);
+  const claims = JSON.parse(Buffer.from(claimsB64, 'base64url').toString('utf8')) as Record<string, unknown>;
+  assert.equal(claims.iss, 'hemilake-studio');
+  assert.equal(claims.aud, 'hemilake-console');
+  assert.equal(claims.jti, 'jti-test-1');
+  assert.equal(Number(claims.exp) - Number(claims.iat), 60);
+
+  let seenAuthHeader = '';
+  const client = createConsoleShareClient({
+    env: validEnv,
+    now: () => 1_791_500_000_000,
+    fetchImpl: async (_input, init) => {
+      const headers = init?.headers as Record<string, string>;
+      seenAuthHeader = headers.Authorization;
+      return new Response(
+        JSON.stringify({ code: 'feature_not_licensed', detail: 'Not licensed' }),
+        { status: 403, headers: { 'Content-Type': 'application/json' } },
+      );
+    },
+  });
+
+  await assert.rejects(
+    () =>
+      client.createShare({
+        title: 'Test',
+        items: [],
+        focusId: null,
+        running: false,
+        expiresAt: null,
+      }),
+    (err: unknown) =>
+      err instanceof ConsoleShareError &&
+      err.code === 'feature_not_licensed' &&
+      err.statusCode === 403,
+  );
+  assert.ok(seenAuthHeader.startsWith('Studio '));
 });

@@ -265,7 +265,13 @@ export const api = {
 
   // Fork (session share): owner endpoints (/api/shares) and public read-only endpoint (/api/public/shares).
   shares: {
-    create: (body: { sessionId: string; provider?: string }) => post('/api/shares', body),
+    config: () => get('/api/shares/config'),
+    create: (body: {
+      sessionId: string;
+      provider?: string;
+      mode?: 'local' | 'cloud';
+      expiresAt?: string | null;
+    }) => post('/api/shares', body),
     getBySession: (sessionId: string) => get(`/api/shares${query({ sessionId })}`),
     update: (
       id: string,
