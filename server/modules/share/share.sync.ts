@@ -238,6 +238,8 @@ function parseHiddenIds(rawJson: string): string[] {
  *
  * Consumed by `share.module.ts` and `share.service.test.ts`.
  */
+const CONSOLE_REQUEST_TIMEOUT_MS = 20_000;
+
 export function createConsoleShareClient(options: {
   env?: NodeJS.ProcessEnv;
   now?: () => number;
@@ -272,6 +274,8 @@ export function createConsoleShareClient(options: {
           ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
         },
         ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+        // A console that never answers would hold the sync tick (and every other share) forever.
+        signal: AbortSignal.timeout(CONSOLE_REQUEST_TIMEOUT_MS),
       });
     } catch (error) {
       const detail = error instanceof Error ? error.message : 'Console unreachable';
