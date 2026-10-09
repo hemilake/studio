@@ -46,6 +46,10 @@ type UseChatComposerStateArgs = {
   currentProviderEffort: string;
   /** Fork: adversaries the next turn asks Claude to consult; empty when adversarial mode is off. */
   adversaries?: string[];
+  /** Fork: called once a turn carrying adversaries is sent or queued, so the mode lasts one message. */
+  onAdversariesSent?: () => void;
+  /** Fork: called when a queued turn that carried adversaries goes back to the composer for editing. */
+  onAdversariesRestored?: () => void;
   isLoading: boolean;
   processingSessions?: SessionActivityMap;
   canAbortSession: boolean;
@@ -178,6 +182,8 @@ export function useChatComposerState({
   currentProviderModel,
   currentProviderEffort,
   adversaries,
+  onAdversariesSent,
+  onAdversariesRestored,
   isLoading,
   canAbortSession,
   tokenBudget,
@@ -720,6 +726,9 @@ export function useChatComposerState({
             attachments: durableDraft.uploadedAttachments,
           });
         }
+        if (Array.isArray(queuedOptions.adversaries) && queuedOptions.adversaries.length > 0) {
+          onAdversariesSent?.();
+        }
 
         // Recorded under the session the message was queued FOR, and before
         // the session-switch return below — the queued text must be
@@ -906,6 +915,10 @@ export function useChatComposerState({
         },
       });
       setEditingAnchorId(null);
+      // A flushed queued turn already turned the mode off when it was queued.
+      if (!queuedSubmission && turnAdversaries.length > 0) {
+        onAdversariesSent?.();
+      }
 
       // Recorded under the (possibly just-allocated) session id, so the first
       // message of a new chat lands in the history of the session the user is
@@ -935,6 +948,7 @@ export function useChatComposerState({
       editingAnchorId,
       executeCommand,
       isLoading,
+      onAdversariesSent,
       onSessionProcessing,
       onSessionEstablished,
       provider,
@@ -983,8 +997,13 @@ export function useChatComposerState({
     setInput(queuedDraft.content);
     inputValueRef.current = queuedDraft.content;
     setAttachedFiles(queuedDraft.attachments);
+    // Queuing turned adversarial mode off; editing puts the turn back as it was.
+    const queuedAdversaries = queuedDraft.options?.adversaries;
+    if (Array.isArray(queuedAdversaries) && queuedAdversaries.length > 0) {
+      onAdversariesRestored?.();
+    }
     textareaRef.current?.focus();
-  }, [queuedDraft]);
+  }, [onAdversariesRestored, queuedDraft]);
 
   const deleteQueuedDraft = useCallback(() => {
     setQueuedDraft(null);

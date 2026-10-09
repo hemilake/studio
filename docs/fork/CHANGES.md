@@ -2,6 +2,16 @@
 
 One entry per customization, newest first. Keep the file list accurate: it is the conflict checklist for upstream merges.
 
+## Gemini 4 EAP as an adversary, and adversarial mode for one message
+
+- **Since:** 2026-10-09, on top of the adversarial mode entry below.
+- **Branch:** `main` only, like adversarial mode. The command assumes this machine's LiteLLM gateway serves `gemini-early-exp` to the key Studio runs with.
+- **Why:** Pablo wanted Gemini 4 EAP as a third opinion, run through Claude Code. He also found the mode staying on after a send: the next message ran the review again unless he remembered to turn it off.
+- **What:**
+  - New adversary `gemini4` ("Gemini 4 EAP"): `claude -p --model 'gemini-early-exp[1m]' --effort high` with `--bare` (no hooks, CLAUDE.md or memory), `--restricted --tools Read Bash`, no MCP servers, `--no-session-persistence` (the run does not appear as a chat) and `--permission-mode dontAsk`. In dontAsk, Claude Code runs only the commands it classifies as read-only (`ls`, `rg`, `grep`, `git log`, `cat`, `sed -n`, `find`, pipes of them) and denies the rest. `--restricted` is there because dontAsk still honours `allow` rules in the settings files: a project whose `.claude/settings.local.json` allowed `Bash(touch:*)` let the reviewer create a file; restricted mode ignores user, project and local settings. Gemini 4 EAP found that gap reviewing this change. The brief goes in on stdin and the answer comes out on stdout into `<dir>/gemini4.md`. One review of this diff at high effort took 6.5 minutes.
+  - The toggle turns itself off once a turn that carried adversaries is sent or queued (`onAdversariesSent` from `useChatComposerState` to `useAdversarialMode.disable`). A queued turn keeps the adversaries it was queued with; flushing it later does not touch the toggle, in case the user turned it on again for the next message. Editing a queued turn that carried adversaries puts it back in the composer with the mode on (`onAdversariesRestored`); deleting it leaves the mode off.
+- **Files:** `server/shared/adversarial-review.ts`, `server/shared/tests/adversarial-review.test.ts`, `src/modules/chat/utils/adversarialMode.ts`, `src/modules/chat/hooks/useAdversarialMode.ts`, `src/modules/chat/hooks/useChatComposerState.ts`, `src/modules/chat/ChatInterface.tsx`, `src/modules/chat/tests/composerAdversarialOneShot.test.tsx` (new), `docs/fork/CHANGES.md`.
+
 ## Inline math with single dollars
 
 - **Since:** 2026-10-09, on top of upstream v1.37.3.

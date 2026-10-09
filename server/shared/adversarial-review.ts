@@ -17,8 +17,10 @@ type AdversaryDefinition = {
 };
 
 /**
- * Read-only by construction: Codex runs with its read-only sandbox and
- * Antigravity in plan mode, so neither can change the project while it reviews.
+ * Read-only by construction: Codex runs with its read-only sandbox,
+ * Antigravity in plan mode, and Claude Code restricted to Read and Bash in
+ * dontAsk mode, which runs only the commands it classifies as read-only and
+ * denies everything else. None of them can change the project while it reviews.
  */
 const ADVERSARIES: Record<string, AdversaryDefinition> = {
   antigravity: {
@@ -32,6 +34,18 @@ const ADVERSARIES: Record<string, AdversaryDefinition> = {
     command:
       'codex exec -C {project} -s read-only -m gpt-6-astra -c model_reasoning_effort=\'"high"\' --skip-git-repo-check '
       + '-o {dir}/codex.md - < {dir}/brief.md > {dir}/codex.log 2>&1',
+  },
+  gemini4: {
+    // Gemini 4 EAP behind the same LiteLLM gateway as Claude. --bare skips hooks,
+    // CLAUDE.md and memory so it starts from the brief alone. --restricted ignores
+    // the user, project and local settings files, whose `allow` rules dontAsk would
+    // otherwise honour (a project allowing `Bash(touch:*)` let it write). No MCP
+    // servers, and no session file, so the run does not show up as a chat.
+    label: 'Gemini 4 EAP (Claude Code)',
+    command:
+      'cd {project} && claude -p --model \'gemini-early-exp[1m]\' --effort high --bare --restricted --tools Read Bash '
+      + '--strict-mcp-config --mcp-config \'{"mcpServers":{}}\' --permission-mode dontAsk '
+      + '--no-session-persistence --add-dir {dir} --output-format text < {dir}/brief.md > {dir}/gemini4.md 2> {dir}/gemini4.err',
   },
 };
 

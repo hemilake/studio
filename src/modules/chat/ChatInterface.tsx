@@ -241,6 +241,8 @@ function ChatInterface({
     currentProviderModel,
     currentProviderEffort,
     adversaries: turnAdversaries,
+    onAdversariesSent: adversarialMode.disable,
+    onAdversariesRestored: adversarialMode.enable,
     isLoading: isProcessing,
     processingSessions,
     canAbortSession,
