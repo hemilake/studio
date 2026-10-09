@@ -21,14 +21,66 @@ import { useVisualActions, useVisualPending } from '@/modules/chat/visuals/Visua
  */
 
 const MIN_HEIGHT = 48;
-const MAX_INLINE_HEIGHT = 900;
+// Taller widgets scroll inside the frame, which captures the wheel; keep that rare.
+const MAX_INLINE_HEIGHT = 1600;
 const DEFAULT_HEIGHT = 240;
 
-// Last measured height per code, so a frame that remounts (a streaming block
-// settling, a row scrolling back into view, a theme change) keeps its space.
-const heightCache = new Map<string, number>();
+/**
+ * Last measured height per visual, kept across reloads (localStorage), so a
+ * frame mounts at its real size instead of growing from DEFAULT_HEIGHT once it
+ * has drawn: a row growing above the viewport is what jerks the transcript
+ * while the owner scrolls up. Keyed by the code and the window width (in
+ * 200 px steps), since a fluid visual's height depends on its width.
+ */
+const HEIGHTS_KEY = 'hemi-visual-heights';
+const HEIGHTS_MAX = 300;
+let heights: Map<string, number> | null = null;
 
-const cacheKey = (code: string): string => `${code.length}:${code.slice(0, 64)}:${code.slice(-64)}`;
+const loadHeights = (): Map<string, number> => {
+  if (!heights) {
+    heights = new Map();
+    try {
+      const stored = JSON.parse(localStorage.getItem(HEIGHTS_KEY) ?? '[]') as Array<[string, number]>;
+      for (const [key, value] of stored) heights.set(key, value);
+    } catch {
+      // A corrupt entry only costs the first-render size.
+    }
+  }
+  return heights;
+};
+
+const hashCode = (code: string): string => {
+  // FNV-1a, enough to tell visuals apart; collisions only cost a resize.
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < code.length; index += 1) {
+    hash ^= code.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return `${(hash >>> 0).toString(36)}:${code.length}`;
+};
+
+const cacheKey = (code: string): string =>
+  `${hashCode(code)}@${typeof window === 'undefined' ? 0 : Math.round(window.innerWidth / 200)}`;
+
+const readHeight = (code: string): number | undefined => loadHeights().get(cacheKey(code));
+
+const writeHeight = (code: string, height: number): void => {
+  const map = loadHeights();
+  const key = cacheKey(code);
+  if (map.get(key) === height) return;
+  map.delete(key);
+  map.set(key, height);
+  while (map.size > HEIGHTS_MAX) {
+    const oldest = map.keys().next().value;
+    if (oldest === undefined) break;
+    map.delete(oldest);
+  }
+  try {
+    localStorage.setItem(HEIGHTS_KEY, JSON.stringify([...map]));
+  } catch {
+    // Storage full or disabled: the in-memory map still serves this page.
+  }
+};
 
 // Tags that mean something to Studio or to Claude Code when they arrive in a user message.
 const RESERVED_TAGS = /<\/?(adversarial_review|system-reminder|files_input|command-name|command-message)[^>]*>/gi;
@@ -98,7 +150,7 @@ export const VisualFrame = forwardRef<VisualFrameHandle, VisualFrameProps>(funct
     actionsRef.current = actions;
   }, [actions]);
   const { theme, assets, failed } = useVisualEnvironment();
-  const [height, setHeight] = useState(() => heightCache.get(cacheKey(code)) ?? DEFAULT_HEIGHT);
+  const [height, setHeight] = useState(() => readHeight(code) ?? DEFAULT_HEIGHT);
   // Keyed by document, so an error from a previous theme's frame is not shown.
   const [scriptError, setScriptError] = useState<{ doc: string; message: string } | null>(null);
   const pendingExports = useRef(new Map<string, (data: string | null) => void>());
@@ -123,7 +175,7 @@ export const VisualFrame = forwardRef<VisualFrameHandle, VisualFrameProps>(funct
       }
       if (data.type === 'size' && typeof data.height === 'number' && Number.isFinite(data.height)) {
         const next = Math.max(MIN_HEIGHT, Math.ceil(data.height));
-        heightCache.set(cacheKey(code), next);
+        writeHeight(code, next);
         setHeight(next);
       } else if (data.type === 'prompt' && typeof data.text === 'string') {
         const text = data.text.slice(0, SEND_PROMPT_MAX_CHARS).replace(RESERVED_TAGS, '').trim();

@@ -59,8 +59,10 @@ function bootstrapSource(frameId: string): string {
   function post(message) { message.__hemiVisual = 1; message.frame = FRAME; parent.postMessage(message, '*'); }
   var last = -1;
   function measure() {
+    // The content's own height, not scrollHeight: that never drops below the
+    // frame's current height, so a visual could grow but never shrink.
     var body = document.body;
-    var height = Math.ceil(Math.max(document.documentElement.scrollHeight, body ? body.scrollHeight : 0));
+    var height = Math.ceil(Math.max(document.documentElement.getBoundingClientRect().height, body ? body.getBoundingClientRect().bottom : 0));
     if (height !== last) { last = height; post({ type: 'size', height: height }); }
   }
   var observer = new ResizeObserver(measure);

@@ -17,6 +17,18 @@ One entry per customization, newest first. Keep the file list accurate: it is th
   - `server/modules/database/{schema,migrations,index}.ts`, `server/index.ts`
   - `src/App.tsx`, `src/main.tsx`, `src/shared/{api,utils}.ts`, `src/modules/chat/index.ts`, `src/modules/chat/transcript/{Markdown,ChatMessagesPane}.tsx`, `src/modules/i18n/locales/en/chat.json`, `docs/fork/CHANGES.md`
 
+## Scrolling up past inline visuals without jerks
+
+- **Since:** 2026-10-09, on top of upstream v1.37.3.
+- **Branch:** `fix/visual-scroll`. The pagination part could go upstream.
+- **Why:** scrolling up through a session with visuals jerked the content down by ~900-1,100 px. "Load earlier" prepended rows as 100 px placeholders that mounted a frame later; when they landed in view, their real height replaced the estimate on screen, and browser scroll anchoring cannot correct a change in the visible rows themselves. A row with a visual is 600-1,200 px, so it was the worst case. Measured with Playwright and smooth scrolling on a real session: 2-3 visible jumps of 920-1,107 px per pass before, none after (two passes each).
+- **What:**
+  - `ChatMessagesPane`: up to 20 rows prepended right above the previous first row (`PREPENDED_MOUNTED_ROWS`) mount with real content on their first commit, so the existing scroll restore works with real heights. "Load all" still prepends placeholders beyond that band.
+  - Visuals: the frame's height is remembered per visual and window width in `localStorage` (`hemi-visual-heights`, 300 entries), so a frame mounts at its size instead of growing from 240 px after it draws; the frame measures its content's own height, so it can shrink too; the inline cap goes from 900 to 1,600 px (a taller frame scrolls inside and captures the wheel).
+  - Tried and dropped: turning browser anchoring off and correcting every resize above the viewport with a ResizeObserver. It made things worse (13 jumps), since anchoring covers cases the rows' resizes do not.
+- **Files:** `src/modules/chat/transcript/ChatMessagesPane.tsx`, `src/modules/chat/visuals/{VisualBlock.tsx,visualDocument.ts}`, `src/modules/chat/tests/visualBlock.test.tsx`, `docs/fork/visuals.md`.
+- **Verified:** typecheck, lint, client suite (493); the Playwright jank probe in `~/workspace/specs/studio-visuals/scroll` on think (not in the repo).
+
 ## Inline visuals: ```visual blocks drawn with D3 in a sandboxed frame
 
 - **Since:** 2026-10-08, on top of upstream v1.37.3.

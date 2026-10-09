@@ -89,7 +89,7 @@ test('the frame takes the height the document reports', async () => {
   post(frame, { type: 'size', height: 333 });
   assert.equal(frame.style.height, '333px');
   post(frame, { type: 'size', height: 5000 });
-  assert.equal(frame.style.height, '900px', 'capped inline; full screen shows the rest');
+  assert.equal(frame.style.height, '1600px', 'capped inline; full screen shows the rest');
 });
 
 test('an ```html block stays code and offers a sandboxed preview', async () => {

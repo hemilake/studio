@@ -32,7 +32,7 @@ Studio draws charts, diagrams, KPI rows and small interactive widgets inside the
 - `sendPrompt(text)` (also `hemi.sendPrompt`): posts a follow-up message in the owner's name. It only works from a click or key press (`navigator.userActivation`), up to 2,000 characters. Outside bypass mode it sends; in bypass it fills the composer and the owner presses Enter.
 - Links open in a new tab through Studio, `http(s)` only.
 
-The frame is about 720 px wide in the chat, 320–430 px on a phone, and full width in full screen. It grows to its content's height up to 900 px inline. A theme or dark-mode change rebuilds the frame, so a chart that reads colours at runtime redraws with the new ones (widget state resets).
+The frame is about 720 px wide in the chat, 320–430 px on a phone, and full width in full screen. It grows (and shrinks) to its content's height, up to 1,600 px inline; heights are remembered per visual and window width in `localStorage` (`hemi-visual-heights`), so a frame mounts at its size instead of growing after it draws. A theme or dark-mode change rebuilds the frame, so a chart that reads colours at runtime redraws with the new ones (widget state resets).
 
 ## Security
 

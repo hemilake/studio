@@ -27,6 +27,17 @@ import { SessionShareDialog } from '@/modules/share';
  */
 const INITIAL_MOUNTED_TAIL_ROWS = 30;
 
+/**
+ * Fork: how many rows that "load earlier" prepends right above the old first
+ * row mount with real content on their first commit. They land next to (often
+ * inside) the viewport; as placeholders they mounted a frame later and swapped
+ * 100 px estimates for their real height on screen, which browser scroll
+ * anchoring cannot correct when the changing rows are the visible ones. Rows
+ * with inline visuals (often 600-1,200 px) made it a jerk of ~900 px while
+ * scrolling up. "Load all" still prepends placeholders beyond this band.
+ */
+const PREPENDED_MOUNTED_ROWS = 20;
+
 /** A folded activity line, for the placeholder of a segment never measured. */
 const ACTIVITY_ROW_HEIGHT_PX = 32;
 
@@ -180,6 +191,28 @@ function ChatMessagesPane({
     [messageKeyMap],
   );
 
+  const rowKeyOf = useCallback((item: (typeof transcript.items)[number]) => {
+    if (item.kind === 'turn-footer') return item.id;
+    if (item.kind === 'activity') return `activity-${getMessageKey(item.messages[0])}`;
+    return getMessageKey(item.message);
+  }, [getMessageKey]);
+
+  // Fork: which rows were just prepended above the previous first row (see
+  // PREPENDED_MOUNTED_ROWS). Adjusted during render, React's pattern for state
+  // derived from the previous render, so the new rows mount in the same pass.
+  const firstRowKey = transcript.items.length > 0 ? rowKeyOf(transcript.items[0]) : null;
+  const [previousFirstRowKey, setPreviousFirstRowKey] = useState(firstRowKey);
+  const [prependedRows, setPrependedRows] = useState<{ from: number; to: number } | null>(null);
+  if (firstRowKey !== previousFirstRowKey) {
+    const oldFirstIndex = previousFirstRowKey === null
+      ? -1
+      : transcript.items.findIndex((item) => rowKeyOf(item) === previousFirstRowKey);
+    setPreviousFirstRowKey(firstRowKey);
+    setPrependedRows(oldFirstIndex > 0
+      ? { from: Math.max(0, oldFirstIndex - PREPENDED_MOUNTED_ROWS), to: oldFirstIndex }
+      : null);
+  }
+
   return (
     <div
       ref={scrollContainerRef}
@@ -296,7 +329,8 @@ function ChatMessagesPane({
               // Rows near the tail mount their content on first commit so the
               // initial scroll-to-bottom measures real heights; older rows
               // start as placeholders and mount when scrolled toward.
-              const initiallyNearViewport = index >= rowCount - INITIAL_MOUNTED_TAIL_ROWS;
+              const initiallyNearViewport = index >= rowCount - INITIAL_MOUNTED_TAIL_ROWS
+                || (prependedRows !== null && index >= prependedRows.from && index < prependedRows.to);
 
               if (item.kind === 'turn-footer') {
                 return <TurnFooter key={item.id} steps={item.steps} durationMs={item.durationMs} />;
