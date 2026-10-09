@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ArrowDown } from 'lucide-react';
 
 import { Markdown } from '@/modules/chat';
 import { api } from '@/shared/api';
@@ -16,6 +17,7 @@ type PublicShareResponse = {
   title: string;
   provider: string;
   items: SharedItem[];
+  focusId?: string | null;
   running: boolean;
   updatedAt: string;
 };
@@ -27,6 +29,56 @@ type PublicSharePageProps = {
 const RUNNING_POLL_INTERVAL_MS = 3_000;
 const IDLE_POLL_INTERVAL_MS = 15_000;
 const SCROLL_BOTTOM_THRESHOLD_PX = 48;
+const FOCUS_HIGHLIGHT_DURATION_MS = 3_600;
+
+function readHashItemId(): string | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  const rawHash = window.location.hash.replace(/^#/, '');
+  if (!rawHash) {
+    return null;
+  }
+  try {
+    const decoded = decodeURIComponent(rawHash).trim();
+    return decoded || null;
+  } catch {
+    return rawHash.trim() || null;
+  }
+}
+
+function findItemElementById(container: HTMLElement, itemId: string): HTMLElement | null {
+  if (!itemId) {
+    return null;
+  }
+  if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
+    const escaped = CSS.escape(itemId);
+    const found = container.querySelector<HTMLElement>(`#${escaped}`);
+    if (found) {
+      return found;
+    }
+  }
+  const byId = typeof document !== 'undefined' ? document.getElementById(itemId) : null;
+  if (byId && container.contains(byId)) {
+    return byId;
+  }
+  const candidates = container.querySelectorAll<HTMLElement>('[id]');
+  for (const candidate of candidates) {
+    if (candidate.id === itemId) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+function computeIsNearBottom(container: HTMLElement, fallbackNearBottom: boolean): boolean {
+  if (container.scrollHeight === 0 && container.clientHeight === 0) {
+    return fallbackNearBottom;
+  }
+  const distanceFromBottom =
+    container.scrollHeight - container.scrollTop - container.clientHeight;
+  return distanceFromBottom <= SCROLL_BOTTOM_THRESHOLD_PX;
+}
 
 function resolveProviderDisplayName(provider: string, translate: (key: string, options?: Record<string, unknown>) => string): string {
   switch (provider) {
@@ -72,19 +124,72 @@ export function PublicSharePage({ token }: PublicSharePageProps) {
   const [isTabVisible, setIsTabVisible] = useState(
     () => typeof document === 'undefined' || document.visibilityState === 'visible',
   );
+  // Holds the item id currently showing the temporary focus highlight on first load.
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
+  // Tracks whether the reader is near the bottom of the scroll container to toggle the Jump button.
+  const [isNearBottom, setIsNearBottom] = useState(true);
+  // Set to true when new items arrive on a poll while the reader is not at the bottom.
+  const [hasNewItems, setHasNewItems] = useState(false);
 
   const etagRef = useRef<string | null>(null);
+  const headerRef = useRef<HTMLElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
-  const isAtBottomRef = useRef(true);
+  const hasHandledInitialLoadRef = useRef(false);
+  const readerReachedBottomRef = useRef(false);
+  const isNearBottomRef = useRef(false);
+  const initialProgrammaticScrollTopRef = useRef<number | null>(null);
+  const seenItemIdsRef = useRef<Set<string> | null>(null);
+  const shareDataRef = useRef<PublicShareResponse | null>(null);
 
   const handleScroll = useCallback(() => {
     const container = scrollContainerRef.current;
     if (!container) {
       return;
     }
-    const distanceFromBottom =
-      container.scrollHeight - container.scrollTop - container.clientHeight;
-    isAtBottomRef.current = distanceFromBottom <= SCROLL_BOTTOM_THRESHOLD_PX;
+    const nearBottom = computeIsNearBottom(container, container.scrollTop > 0);
+    isNearBottomRef.current = nearBottom;
+    setIsNearBottom(nearBottom);
+
+    if (
+      initialProgrammaticScrollTopRef.current !== null &&
+      container.scrollTop === initialProgrammaticScrollTopRef.current
+    ) {
+      initialProgrammaticScrollTopRef.current = null;
+      return;
+    }
+    initialProgrammaticScrollTopRef.current = null;
+
+    if (nearBottom) {
+      readerReachedBottomRef.current = true;
+      setHasNewItems(false);
+      if (shareDataRef.current) {
+        seenItemIdsRef.current = new Set(shareDataRef.current.items.map((item) => item.id));
+      }
+    } else {
+      readerReachedBottomRef.current = false;
+    }
+  }, []);
+
+  const handleJumpToLatest = useCallback(() => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+      const items = shareDataRef.current?.items;
+      const lastItem = items && items.length > 0 ? items[items.length - 1] : null;
+      if (lastItem) {
+        const lastEl = findItemElementById(container, lastItem.id);
+        if (lastEl && typeof lastEl.scrollIntoView === 'function') {
+          lastEl.scrollIntoView({ block: 'end' });
+        }
+      }
+    }
+    readerReachedBottomRef.current = true;
+    isNearBottomRef.current = true;
+    setIsNearBottom(true);
+    setHasNewItems(false);
+    if (shareDataRef.current) {
+      seenItemIdsRef.current = new Set(shareDataRef.current.items.map((item) => item.id));
+    }
   }, []);
 
   useEffect(() => {
@@ -108,11 +213,84 @@ export function PublicSharePage({ token }: PublicSharePageProps) {
 
   useEffect(() => {
     const container = scrollContainerRef.current;
-    if (!container || !isAtBottomRef.current) {
-      return;
+    if (!container || !shareData) {
+      return undefined;
     }
-    container.scrollTop = container.scrollHeight;
-  }, [shareData?.items]);
+
+    if (!hasHandledInitialLoadRef.current) {
+      hasHandledInitialLoadRef.current = true;
+
+      const hashId = readHashItemId();
+      const matchedHashId =
+        hashId && shareData.items.some((item) => item.id === hashId) ? hashId : null;
+      const matchedFocusId =
+        shareData.focusId && shareData.items.some((item) => item.id === shareData.focusId)
+          ? shareData.focusId
+          : null;
+      const targetId = matchedHashId ?? matchedFocusId;
+
+      if (targetId) {
+        const targetEl = findItemElementById(container, targetId);
+        if (targetEl) {
+          if (typeof targetEl.scrollIntoView === 'function') {
+            targetEl.scrollIntoView({ block: 'start' });
+          }
+          const headerHeight = headerRef.current?.offsetHeight ?? 0;
+          const targetRect = targetEl.getBoundingClientRect();
+          const containerRect = container.getBoundingClientRect();
+          if (targetRect.height > 0 && containerRect.height > 0) {
+            const offsetInsideContainer =
+              targetRect.top - containerRect.top + container.scrollTop;
+            container.scrollTop = Math.max(0, offsetInsideContainer - 16);
+          } else if (targetEl.offsetTop > 0) {
+            container.scrollTop = Math.max(0, targetEl.offsetTop - headerHeight);
+          }
+          initialProgrammaticScrollTopRef.current = container.scrollTop;
+        }
+      } else {
+        container.scrollTop = 0;
+      }
+
+      const nearBottom =
+        shareData.items.length === 0
+          ? true
+          : computeIsNearBottom(container, false);
+      isNearBottomRef.current = nearBottom;
+      queueMicrotask(() => {
+        setIsNearBottom(nearBottom);
+      });
+      return undefined;
+    }
+
+    if (readerReachedBottomRef.current && isNearBottomRef.current) {
+      container.scrollTop = container.scrollHeight;
+      isNearBottomRef.current = true;
+      queueMicrotask(() => {
+        setIsNearBottom(true);
+      });
+    } else {
+      const nearBottom =
+        shareData.items.length === 0
+          ? true
+          : computeIsNearBottom(container, false);
+      isNearBottomRef.current = nearBottom;
+      queueMicrotask(() => {
+        setIsNearBottom(nearBottom);
+      });
+    }
+
+    return undefined;
+  }, [shareData]);
+
+  useEffect(() => {
+    if (!highlightedId) {
+      return undefined;
+    }
+    const timer = window.setTimeout(() => {
+      setHighlightedId(null);
+    }, FOCUS_HIGHLIGHT_DURATION_MS);
+    return () => window.clearTimeout(timer);
+  }, [highlightedId]);
 
   const fetchShare = useCallback(
     async (signal?: AbortSignal): Promise<'ok' | 'not_modified' | 'unavailable' | 'error'> => {
@@ -144,6 +322,32 @@ export function PublicSharePage({ token }: PublicSharePageProps) {
         }
 
         const payload = (await response.json()) as PublicShareResponse;
+        shareDataRef.current = payload;
+
+        if (seenItemIdsRef.current === null) {
+          seenItemIdsRef.current = new Set(payload.items.map((item) => item.id));
+          setHasNewItems(false);
+
+          const hashId = readHashItemId();
+          const matchedHashId =
+            hashId && payload.items.some((item) => item.id === hashId) ? hashId : null;
+          const matchedFocusId =
+            payload.focusId && payload.items.some((item) => item.id === payload.focusId)
+              ? payload.focusId
+              : null;
+          setHighlightedId(matchedHashId ?? matchedFocusId);
+        } else {
+          const hasUnseen = payload.items.some((item) => !seenItemIdsRef.current?.has(item.id));
+          if (readerReachedBottomRef.current && isNearBottomRef.current) {
+            for (const item of payload.items) {
+              seenItemIdsRef.current.add(item.id);
+            }
+            setHasNewItems(false);
+          } else if (hasUnseen) {
+            setHasNewItems(true);
+          }
+        }
+
         setShareData(payload);
         setIsLoading(false);
         return 'ok';
@@ -160,6 +364,12 @@ export function PublicSharePage({ token }: PublicSharePageProps) {
 
   useEffect(() => {
     etagRef.current = null;
+    hasHandledInitialLoadRef.current = false;
+    readerReachedBottomRef.current = false;
+    isNearBottomRef.current = false;
+    initialProgrammaticScrollTopRef.current = null;
+    seenItemIdsRef.current = null;
+    shareDataRef.current = null;
     const controller = new AbortController();
     void Promise.resolve().then(() => fetchShare(controller.signal));
     return () => controller.abort();
@@ -187,10 +397,15 @@ export function PublicSharePage({ token }: PublicSharePageProps) {
   }, [fetchShare, isLoading, isTabVisible, isUnavailable, shareData?.running]);
 
   const providerLabel = resolveProviderDisplayName(shareData?.provider || 'claude', t);
+  const showJumpToLatest =
+    !isUnavailable && !isLoading && (shareData?.items.length ?? 0) > 0 && !isNearBottom;
 
   return (
     <div className="flex h-dvh min-h-0 flex-col bg-background text-foreground">
-      <header className="sticky top-0 z-20 border-b border-border/70 bg-background/95 backdrop-blur">
+      <header
+        ref={headerRef}
+        className="sticky top-0 z-20 border-b border-border/70 bg-background/95 backdrop-blur"
+      >
         <div className="mx-auto flex w-full max-w-[54.25rem] items-center justify-between gap-3 px-4 py-3">
           <div className="flex min-w-0 items-center gap-2.5">
             <div className="flex items-center gap-2 text-foreground" aria-label={brandName}>
@@ -260,13 +475,18 @@ export function PublicSharePage({ token }: PublicSharePageProps) {
           ) : (
             shareData?.items.map((item) => {
               const timeLabel = formatShortTime(item.timestamp);
+              const isHighlighted = highlightedId === item.id;
 
               if (item.role === 'user') {
                 return (
                   <div
                     key={item.id}
+                    id={item.id}
                     data-testid="share-item-user"
-                    className="flex justify-end"
+                    data-highlighted={isHighlighted ? 'true' : undefined}
+                    className={`flex scroll-mt-16 justify-end ${
+                      isHighlighted ? 'hemi-share-focus-highlight -mx-3 p-3' : ''
+                    }`}
                   >
                     <div className="max-w-full rounded-2xl rounded-br-md border border-border/60 bg-muted/60 px-3.5 py-2.5 text-foreground shadow-sm dark:bg-gray-800/60 sm:max-w-[85%] sm:px-4">
                       <div dir="auto" className="break-words text-[15px] leading-[1.65]">
@@ -291,8 +511,12 @@ export function PublicSharePage({ token }: PublicSharePageProps) {
               return (
                 <div
                   key={item.id}
+                  id={item.id}
                   data-testid="share-item-assistant"
-                  className="w-full"
+                  data-highlighted={isHighlighted ? 'true' : undefined}
+                  className={`w-full scroll-mt-16 ${
+                    isHighlighted ? 'hemi-share-focus-highlight -mx-3 p-3' : ''
+                  }`}
                 >
                   <div className="mb-2 flex items-center gap-2">
                     <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md p-0.5 text-foreground">
@@ -321,6 +545,25 @@ export function PublicSharePage({ token }: PublicSharePageProps) {
           )}
         </div>
       </main>
+
+      {showJumpToLatest && (
+        <button
+          type="button"
+          data-testid="share-jump-to-latest"
+          onClick={handleJumpToLatest}
+          className="fixed bottom-5 right-5 z-20 inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-accent"
+        >
+          {hasNewItems && (
+            <span
+              data-testid="share-jump-to-latest-dot"
+              aria-hidden="true"
+              className="h-2 w-2 rounded-full bg-hemi-copper"
+            />
+          )}
+          <span>{t('share.public.jumpToLatest', { defaultValue: 'Jump to latest' })}</span>
+          <ArrowDown className="h-3.5 w-3.5 text-muted-foreground" />
+        </button>
+      )}
     </div>
   );
 }

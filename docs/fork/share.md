@@ -15,11 +15,11 @@ authenticated user receives `403` (or `404` when querying by `sessionId`).
 
 | Method & path | Body / query | Response |
 |---|---|---|
-| `POST /api/shares` | `{ sessionId, provider? }` | Creates (or returns the existing active) share for the session: `{ id, token, urlPath, url, sessionId, provider, title, hiddenIds, createdAt, updatedAt, expiresAt }`. |
+| `POST /api/shares` | `{ sessionId, provider? }` | Creates (or returns the existing active) share for the session: `{ id, token, urlPath, url, sessionId, provider, title, hiddenIds, focusId, createdAt, updatedAt, expiresAt }`. |
 | `GET /api/shares?sessionId=<id>` | `sessionId` query parameter | Active share for that session, or `404` when none is active. |
-| `PATCH /api/shares/:id` | `{ title?, hiddenIds?, expiresAt? }` | Updates the share title, hidden item IDs, or expiration timestamp, and returns the updated share. |
+| `PATCH /api/shares/:id` | `{ title?, hiddenIds?, focusId?, expiresAt? }` | Updates the share title, hidden item IDs, focus item ID (`string` ≤ 200 chars or `null`), or expiration timestamp, and returns the updated share. |
 | `DELETE /api/shares/:id` | – | Sets `revoked_at` on the share row. The token never works again (`404` on the public endpoint). |
-| `GET /api/shares/:id/preview` | – | Returns the share metadata plus `items: [{ id, role, text, timestamp, hidden }]` and `running: boolean`, including hidden candidate items (`hidden: true`) so the owner UI can toggle them. |
+| `GET /api/shares/:id/preview` | – | Returns the share metadata plus `items: [{ id, role, text, timestamp, hidden }]` and `running: boolean`, including hidden candidate items (`hidden: true`) so the owner UI can toggle them and pick an `"Open here"` focus block. |
 
 ### Public API (`/api/public/shares`, no authentication)
 
@@ -28,7 +28,7 @@ accessible without a JWT or API key.
 
 | Method & path | Headers | Response |
 |---|---|---|
-| `GET /api/public/shares/:token` | Optional `If-None-Match` | `200` `{ title, provider, items: [{ id, role: 'user' \| 'assistant', text, timestamp }], running: boolean, updatedAt }` with `ETag`, `Cache-Control: no-store`, `X-Robots-Tag: noindex, nofollow`, `Referrer-Policy: no-referrer`; `304` when `If-None-Match` matches `ETag`; `404` `{ error: "Share not found" }` for unknown, revoked, or expired tokens; `429` when per-IP rate limit (120 requests/min) is exceeded. From a loopback peer (cloudflared or a local reverse proxy) the visitor is `CF-Connecting-IP`, else the first `X-Forwarded-For` entry; from any other peer those headers are ignored. |
+| `GET /api/public/shares/:token` | Optional `If-None-Match` | `200` `{ title, provider, items: [{ id, role: 'user' \| 'assistant', text, timestamp }], focusId: string \| null, running: boolean, updatedAt }` with `ETag`, `Cache-Control: no-store`, `X-Robots-Tag: noindex, nofollow`, `Referrer-Policy: no-referrer`; `304` when `If-None-Match` matches `ETag`; `404` `{ error: "Share not found" }` for unknown, revoked, or expired tokens; `429` when per-IP rate limit (120 requests/min) is exceeded. `focusId` is included only when it matches a visible (non-hidden, present) item; otherwise `null`. From a loopback peer (cloudflared or a local reverse proxy) the visitor is `CF-Connecting-IP`, else the first `X-Forwarded-For` entry; from any other peer those headers are ignored. |
 
 ### Public page (`/share/:token`)
 
@@ -42,8 +42,13 @@ Rendered in `src/App.tsx` outside `AuthProvider`, `ProtectedRoute`,
 - Polls every 3 s while the browser tab is visible and `running` is `true`, and
   every 15 s otherwise. Stops polling on `404` and shows
   `"This link is no longer available"`.
-- Preserves the reader's scroll position, auto-scrolling only when already at
-  the bottom.
+- Opens at the top by default. When `focusId` is set (or `#<item id>` is in the URL,
+  which wins over `focusId`), scrolls that item to the top of the viewport (accounting
+  for the sticky header via `scroll-margin-top`) and gives it a short copper highlight
+  that fades (respecting `prefers-reduced-motion`).
+- Later polls never move the reader unless the reader has reached the bottom by
+  themselves. A floating `"Jump to latest"` button appears at the bottom-right when not
+  near the bottom and shows an unread dot when new items arrive.
 
 ## Server-side filtering (`server/modules/share/share.filter.ts`)
 

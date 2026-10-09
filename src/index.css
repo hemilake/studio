@@ -652,6 +652,35 @@
     }
   }
 
+  /* Fork (session share focus): short copper highlight on the focused or
+     hash-linked item when the shared view opens, fading out smoothly and
+     disabling animation under prefers-reduced-motion. */
+  @keyframes hemi-share-focus-fade {
+    0%,
+    65% {
+      background-color: hsl(var(--hemi-copper) / 0.14);
+      box-shadow: 0 0 0 2px hsl(var(--hemi-copper) / 0.45);
+    }
+    100% {
+      background-color: transparent;
+      box-shadow: 0 0 0 0px hsl(var(--hemi-copper) / 0);
+    }
+  }
+
+  .hemi-share-focus-highlight {
+    border-radius: 1rem;
+    background-color: hsl(var(--hemi-copper) / 0.14);
+    box-shadow: 0 0 0 2px hsl(var(--hemi-copper) / 0.45);
+    animation: hemi-share-focus-fade 3.6s ease-out forwards;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hemi-share-focus-highlight {
+      animation: none;
+      transition: none;
+    }
+  }
+
   /* Copy · MD · read aloud of an assistant block: on hover or focus, over the
      block's bottom right corner (the end of a paragraph's last line is
      usually empty), taking no height. Where nothing hovers they stay in the

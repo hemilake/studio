@@ -11,6 +11,8 @@ import { resolvePublicShareTokenFromPathname } from '@/shared/utils';
 
 afterEach(() => {
   cleanup();
+  window.history.replaceState(null, '', '/');
+  vi.restoreAllMocks();
 });
 
 describe('resolvePublicShareTokenFromPathname', () => {
@@ -119,12 +121,239 @@ describe('PublicSharePage', () => {
     });
     assert.ok(screen.getByText('This link is no longer available'));
   });
+
+  test('opens at the top by default without scrolling to bottom', async () => {
+    const scrollIntoViewSpy = vi.fn();
+    HTMLElement.prototype.scrollIntoView = scrollIntoViewSpy;
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url === '/api/appearance') {
+        return new Response(JSON.stringify({ theme: 'hemilake' }), { status: 200 });
+      }
+      return new Response(
+        JSON.stringify({
+          title: 'Top Default Session',
+          provider: 'claude',
+          focusId: null,
+          running: false,
+          updatedAt: '2026-10-08T12:00:00.000Z',
+          items: [
+            { id: 'u-1', role: 'user', text: 'First prompt', timestamp: '2026-10-08T12:00:00.000Z' },
+            { id: 'a-1', role: 'assistant', text: 'First answer', timestamp: '2026-10-08T12:00:05.000Z' },
+          ],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      );
+    });
+
+    const { container } = render(
+      <I18nextProvider i18n={i18n}>
+        <ThemeProvider>
+          <PublicSharePage token="top-token" />
+        </ThemeProvider>
+      </I18nextProvider>,
+    );
+
+    await waitFor(() => {
+      assert.ok(screen.getByText('First prompt'));
+    });
+
+    const mainEl = container.querySelector('main');
+    assert.ok(mainEl);
+    assert.equal(mainEl.scrollTop, 0);
+    assert.equal(scrollIntoViewSpy.mock.calls.length, 0);
+    assert.equal(container.querySelector('[data-highlighted="true"]'), null);
+  });
+
+  test('scrolls to focusId on first load and highlights the focused item', async () => {
+    const scrolledElementIds: string[] = [];
+    HTMLElement.prototype.scrollIntoView = function scrollIntoViewMock() {
+      scrolledElementIds.push((this as HTMLElement).id);
+    };
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url === '/api/appearance') {
+        return new Response(JSON.stringify({ theme: 'hemilake' }), { status: 200 });
+      }
+      return new Response(
+        JSON.stringify({
+          title: 'Focused Session',
+          provider: 'claude',
+          focusId: 'a-2',
+          running: false,
+          updatedAt: '2026-10-08T12:00:00.000Z',
+          items: [
+            { id: 'u-1', role: 'user', text: 'First prompt', timestamp: '2026-10-08T12:00:00.000Z' },
+            { id: 'a-1', role: 'assistant', text: 'First answer', timestamp: '2026-10-08T12:00:05.000Z' },
+            { id: 'u-2', role: 'user', text: 'Second prompt', timestamp: '2026-10-08T12:01:00.000Z' },
+            { id: 'a-2', role: 'assistant', text: 'Focused answer', timestamp: '2026-10-08T12:01:05.000Z' },
+          ],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      );
+    });
+
+    render(
+      <I18nextProvider i18n={i18n}>
+        <ThemeProvider>
+          <PublicSharePage token="focus-token" />
+        </ThemeProvider>
+      </I18nextProvider>,
+    );
+
+    await waitFor(() => {
+      assert.ok(screen.getByText('Focused answer'));
+    });
+
+    assert.deepEqual(scrolledElementIds, ['a-2']);
+    const focusedEl = document.getElementById('a-2');
+    assert.ok(focusedEl);
+    assert.equal(focusedEl.getAttribute('data-highlighted'), 'true');
+    assert.ok(focusedEl.className.includes('hemi-share-focus-highlight'));
+    assert.ok(focusedEl.className.includes('scroll-mt-16'));
+  });
+
+  test('URL #<item id> hash wins over focusId and handles special characters', async () => {
+    const scrolledElementIds: string[] = [];
+    HTMLElement.prototype.scrollIntoView = function scrollIntoViewMock() {
+      scrolledElementIds.push((this as HTMLElement).id);
+    };
+
+    window.history.replaceState(null, '', '/share/hash-token#item%3A2.special');
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url === '/api/appearance') {
+        return new Response(JSON.stringify({ theme: 'hemilake' }), { status: 200 });
+      }
+      return new Response(
+        JSON.stringify({
+          title: 'Hash Override Session',
+          provider: 'claude',
+          focusId: 'u-1',
+          running: false,
+          updatedAt: '2026-10-08T12:00:00.000Z',
+          items: [
+            { id: 'u-1', role: 'user', text: 'Prompt 1', timestamp: '2026-10-08T12:00:00.000Z' },
+            { id: 'item:2.special', role: 'assistant', text: 'Hash target answer', timestamp: '2026-10-08T12:00:05.000Z' },
+          ],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      );
+    });
+
+    render(
+      <I18nextProvider i18n={i18n}>
+        <ThemeProvider>
+          <PublicSharePage token="hash-token" />
+        </ThemeProvider>
+      </I18nextProvider>,
+    );
+
+    await waitFor(() => {
+      assert.ok(screen.getByText('Hash target answer'));
+    });
+
+    assert.deepEqual(scrolledElementIds, ['item:2.special']);
+    const hashEl = document.getElementById('item:2.special');
+    assert.ok(hashEl);
+    assert.equal(hashEl.getAttribute('data-highlighted'), 'true');
+  });
+
+  test('later polls do not move the reader and Jump to latest shows a dot on new items then scrolls to end', async () => {
+    let pollCount = 0;
+    const scrolledElementIds: string[] = [];
+    HTMLElement.prototype.scrollIntoView = function scrollIntoViewMock() {
+      scrolledElementIds.push((this as HTMLElement).id);
+    };
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url === '/api/appearance') {
+        return new Response(JSON.stringify({ theme: 'hemilake' }), { status: 200 });
+      }
+      pollCount += 1;
+      const items =
+        pollCount === 1
+          ? [
+              { id: 'u-1', role: 'user', text: 'First prompt', timestamp: '2026-10-08T12:00:00.000Z' },
+              { id: 'a-1', role: 'assistant', text: 'First answer', timestamp: '2026-10-08T12:00:05.000Z' },
+            ]
+          : [
+              { id: 'u-1', role: 'user', text: 'First prompt', timestamp: '2026-10-08T12:00:00.000Z' },
+              { id: 'a-1', role: 'assistant', text: 'First answer', timestamp: '2026-10-08T12:00:05.000Z' },
+              { id: 'u-2', role: 'user', text: 'Newly arrived prompt', timestamp: '2026-10-08T12:00:10.000Z' },
+            ];
+
+      return new Response(
+        JSON.stringify({
+          title: 'Polling Session',
+          provider: 'claude',
+          focusId: null,
+          running: true,
+          updatedAt: `2026-10-08T12:00:0${pollCount}.000Z`,
+          items,
+        }),
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            ETag: `"etag-${pollCount}"`,
+          },
+        },
+      );
+    });
+
+    const { container } = render(
+      <I18nextProvider i18n={i18n}>
+        <ThemeProvider>
+          <PublicSharePage token="poll-token" />
+        </ThemeProvider>
+      </I18nextProvider>,
+    );
+
+    await waitFor(() => {
+      assert.ok(screen.getByText('First answer'));
+    });
+
+    const mainEl = container.querySelector('main') as HTMLElement;
+    assert.ok(mainEl);
+    Object.defineProperty(mainEl, 'scrollHeight', { value: 1200, configurable: true });
+    Object.defineProperty(mainEl, 'clientHeight', { value: 400, configurable: true });
+    mainEl.scrollTop = 0;
+
+    // Jump to latest button is visible, initially without the new-items dot.
+    const jumpButton = screen.getByTestId('share-jump-to-latest');
+    assert.ok(jumpButton);
+    assert.equal(screen.queryByTestId('share-jump-to-latest-dot'), null);
+
+    // Wait for the 3s running poll to bring in u-2.
+    await waitFor(
+      () => {
+        assert.ok(screen.getByText('Newly arrived prompt'));
+      },
+      { timeout: 4500 },
+    );
+
+    // Reader was not moved by the poll (scrollTop stayed 0), and the dot is now shown.
+    assert.equal(mainEl.scrollTop, 0);
+    assert.ok(screen.getByTestId('share-jump-to-latest-dot'));
+
+    // Clicking Jump to latest scrolls to the end and hides the button/dot.
+    fireEvent.click(screen.getByTestId('share-jump-to-latest'));
+    assert.equal(mainEl.scrollTop, 1200);
+    assert.ok(scrolledElementIds.includes('u-2'));
+    assert.equal(screen.queryByTestId('share-jump-to-latest'), null);
+  });
 });
 
 describe('SessionShareDialog', () => {
-  test('creates a share link, toggles hidden items via PATCH, and revokes with confirmation', async () => {
+  test('creates a share link, toggles hidden items and focusId via PATCH, and revokes with confirmation', async () => {
     let shareCreated = false;
     let hiddenIds: string[] = [];
+    let focusId: string | null = null;
     const patchPayloads: Array<Record<string, unknown>> = [];
 
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
@@ -142,6 +371,7 @@ describe('SessionShareDialog', () => {
             urlPath: '/share/tok-xyz',
             title: 'Demo Session',
             hiddenIds,
+            focusId,
             createdAt: '2026-10-08T12:00:00.000Z',
             expiresAt: null,
           }),
@@ -158,6 +388,7 @@ describe('SessionShareDialog', () => {
             urlPath: '/share/tok-xyz',
             title: 'Demo Session',
             hiddenIds: [],
+            focusId: null,
             createdAt: '2026-10-08T12:00:00.000Z',
             expiresAt: null,
           }),
@@ -173,6 +404,7 @@ describe('SessionShareDialog', () => {
             urlPath: '/share/tok-xyz',
             title: 'Demo Session',
             hiddenIds,
+            focusId,
             createdAt: '2026-10-08T12:00:00.000Z',
             expiresAt: null,
             running: false,
@@ -203,6 +435,9 @@ describe('SessionShareDialog', () => {
         if (Array.isArray(body.hiddenIds)) {
           hiddenIds = body.hiddenIds as string[];
         }
+        if ('focusId' in body) {
+          focusId = (body.focusId as string | null) ?? null;
+        }
         return new Response(
           JSON.stringify({
             id: 'share-1',
@@ -210,6 +445,7 @@ describe('SessionShareDialog', () => {
             urlPath: '/share/tok-xyz',
             title: typeof body.title === 'string' ? body.title : 'Demo Session',
             hiddenIds,
+            focusId,
             createdAt: '2026-10-08T12:00:00.000Z',
             expiresAt: null,
           }),
@@ -247,13 +483,32 @@ describe('SessionShareDialog', () => {
       assert.ok(screen.getByText('First prompt in session'));
     });
 
+    // Mark second item as "Open here"
+    const openHereButtons = screen.getAllByRole('button', { name: 'Open here' });
+    fireEvent.click(openHereButtons[1]);
+
+    await waitFor(() => {
+      assert.equal(patchPayloads.length, 1);
+      assert.equal(patchPayloads[0].focusId, 'item-2');
+      assert.ok(screen.getByTestId('share-preview-focus-badge'));
+    });
+
+    // Clear focus with "From the beginning"
+    fireEvent.click(screen.getByRole('button', { name: 'From the beginning' }));
+
+    await waitFor(() => {
+      assert.equal(patchPayloads.length, 2);
+      assert.equal(patchPayloads[1].focusId, null);
+      assert.equal(screen.queryByTestId('share-preview-focus-badge'), null);
+    });
+
     // Toggle hiding the first item
     const hideButtons = screen.getAllByRole('button', { name: 'Hide from shared view' });
     fireEvent.click(hideButtons[0]);
 
     await waitFor(() => {
-      assert.equal(patchPayloads.length, 1);
-      assert.deepEqual(patchPayloads[0].hiddenIds, ['item-1']);
+      assert.equal(patchPayloads.length, 3);
+      assert.deepEqual(patchPayloads[2].hiddenIds, ['item-1']);
     });
 
     // Stop sharing requires confirmation

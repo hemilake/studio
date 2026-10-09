@@ -303,6 +303,9 @@
     "noItems": "No shareable prompts or outputs in this session yet.",
     "roleUser": "Prompt",
     "roleAssistant": "Assistant",
+    "fromBeginning": "From the beginning",
+    "openHere": "Open here",
+    "opensHere": "Opens here",
     "showItem": "Show in shared view",
     "hideItem": "Hide from shared view",
     "hiddenBadge": "Hidden",
@@ -319,6 +322,7 @@
     "public": {
       "live": "Live",
       "readOnly": "Read-only",
+      "jumpToLatest": "Jump to latest",
       "unavailable": "This link is no longer available",
       "unavailableHint": "The owner may have stopped sharing this session or the link has expired.",
       "loading": "Loading shared conversation…",

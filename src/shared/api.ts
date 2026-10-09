@@ -269,7 +269,12 @@ export const api = {
     getBySession: (sessionId: string) => get(`/api/shares${query({ sessionId })}`),
     update: (
       id: string,
-      body: { title?: string | null; hiddenIds?: string[]; expiresAt?: string | null },
+      body: {
+        title?: string | null;
+        hiddenIds?: string[];
+        focusId?: string | null;
+        expiresAt?: string | null;
+      },
     ) => patch(`/api/shares/${encodeURIComponent(id)}`, body),
     revoke: (id: string) => del(`/api/shares/${encodeURIComponent(id)}`),
     preview: (id: string) => get(`/api/shares/${encodeURIComponent(id)}/preview`),

@@ -30,6 +30,7 @@ type ShareRecord = {
   urlPath: string;
   title: string | null;
   hiddenIds: string[];
+  focusId?: string | null;
   createdAt: string;
   expiresAt: string | null;
 };
@@ -93,6 +94,8 @@ export function SessionShareDialog({
   const [copied, setCopied] = useState(false);
   // Tracks which item id is currently saving a hide/show toggle.
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  // Tracks whether a focusId update is currently in flight.
+  const [updatingFocus, setUpdatingFocus] = useState(false);
   // Requires a second click to confirm revoking the public link.
   const [confirmingRevoke, setConfirmingRevoke] = useState(false);
   // Stores any user-facing error message from share API calls.
@@ -245,6 +248,44 @@ export function SessionShareDialog({
       );
     } finally {
       setTogglingId(null);
+    }
+  };
+
+  const handleSetFocusId = async (nextFocusId: string | null) => {
+    if (!preview) {
+      return;
+    }
+
+    const currentFocusId = preview.focusId ?? null;
+    if (currentFocusId === nextFocusId) {
+      return;
+    }
+
+    setUpdatingFocus(true);
+    setErrorMessage(null);
+
+    setPreview((current) =>
+      current ? { ...current, focusId: nextFocusId } : current,
+    );
+
+    try {
+      const response = await api.shares.update(preview.id, {
+        focusId: nextFocusId,
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update focus item');
+      }
+      const updated = (await response.json()) as ShareRecord;
+      setPreview((current) =>
+        current ? { ...current, focusId: updated.focusId ?? nextFocusId } : current,
+      );
+    } catch {
+      await loadShareAndPreview(preview.id);
+      setErrorMessage(
+        t('share.errors.updateFailed', { defaultValue: 'Unable to save changes.' }),
+      );
+    } finally {
+      setUpdatingFocus(false);
     }
   };
 
@@ -414,19 +455,38 @@ export function SessionShareDialog({
               </div>
 
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-muted-foreground">
-                    {t('share.itemsHeading', {
-                      defaultValue: 'Messages in shared view',
-                    })}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {t('share.itemsVisibleCount', {
-                      visible: preview.items.filter((item) => !item.hidden).length,
-                      total: preview.items.length,
-                      defaultValue: '{{visible}} of {{total}} visible',
-                    })}
-                  </span>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      {t('share.itemsHeading', {
+                        defaultValue: 'Messages in shared view',
+                      })}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      ·{' '}
+                      {t('share.itemsVisibleCount', {
+                        visible: preview.items.filter((item) => !item.hidden).length,
+                        total: preview.items.length,
+                        defaultValue: '{{visible}} of {{total}} visible',
+                      })}
+                    </span>
+                  </div>
+
+                  {preview.items.length > 0 && (
+                    <button
+                      type="button"
+                      disabled={updatingFocus}
+                      aria-pressed={!preview.focusId}
+                      onClick={() => void handleSetFocusId(null)}
+                      className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors ${
+                        !preview.focusId
+                          ? 'border-hemi-copper/50 bg-hemi-copper/10 text-hemi-copper-text'
+                          : 'border-border/70 bg-background text-muted-foreground hover:bg-accent hover:text-foreground'
+                      }`}
+                    >
+                      {t('share.fromBeginning', { defaultValue: 'From the beginning' })}
+                    </button>
+                  )}
                 </div>
 
                 {preview.items.length === 0 ? (
@@ -437,54 +497,85 @@ export function SessionShareDialog({
                   </div>
                 ) : (
                   <div className="max-h-60 divide-y divide-border/60 overflow-y-auto rounded-lg border border-border/70 bg-muted/20">
-                    {preview.items.map((item) => (
-                      <div
-                        key={item.id}
-                        className={`flex items-start justify-between gap-3 px-3 py-2.5 text-xs transition-opacity ${
-                          item.hidden ? 'opacity-50' : ''
-                        }`}
-                      >
-                        <div className="min-w-0 flex-1 space-y-0.5">
-                          <span className="inline-block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                            {item.role === 'user'
-                              ? t('share.roleUser', { defaultValue: 'Prompt' })
-                              : t('share.roleAssistant', { defaultValue: 'Assistant' })}
-                          </span>
-                          <p className="break-words text-foreground">
-                            {truncatePreviewText(item.text)}
-                          </p>
-                        </div>
+                    {preview.items.map((item) => {
+                      const isFocused = preview.focusId === item.id;
 
-                        <button
-                          type="button"
-                          disabled={togglingId === item.id}
-                          onClick={() => void handleToggleItemHidden(item)}
-                          aria-label={
-                            item.hidden
-                              ? t('share.showItem', { defaultValue: 'Show in shared view' })
-                              : t('share.hideItem', { defaultValue: 'Hide from shared view' })
-                          }
-                          title={
-                            item.hidden
-                              ? t('share.showItem', { defaultValue: 'Show in shared view' })
-                              : t('share.hideItem', { defaultValue: 'Hide from shared view' })
-                          }
-                          className="inline-flex flex-shrink-0 items-center gap-1 rounded-md border border-border/70 bg-background px-2 py-1 text-[11px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+                      return (
+                        <div
+                          key={item.id}
+                          data-focused={isFocused ? 'true' : undefined}
+                          className={`flex items-start justify-between gap-3 px-3 py-2.5 text-xs transition-opacity ${
+                            isFocused ? 'bg-hemi-copper/5' : ''
+                          } ${item.hidden ? 'opacity-50' : ''}`}
                         >
-                          {item.hidden ? (
-                            <>
-                              <EyeOff className="h-3.5 w-3.5" />
-                              <span>{t('share.hiddenBadge', { defaultValue: 'Hidden' })}</span>
-                            </>
-                          ) : (
-                            <>
-                              <Eye className="h-3.5 w-3.5" />
-                              <span>{t('share.visibleBadge', { defaultValue: 'Visible' })}</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    ))}
+                          <div className="min-w-0 flex-1 space-y-0.5">
+                            <div className="flex items-center gap-1.5">
+                              <span className="inline-block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                {item.role === 'user'
+                                  ? t('share.roleUser', { defaultValue: 'Prompt' })
+                                  : t('share.roleAssistant', { defaultValue: 'Assistant' })}
+                              </span>
+                              {isFocused && (
+                                <span
+                                  data-testid="share-preview-focus-badge"
+                                  className="rounded-full border border-hemi-copper/40 bg-hemi-copper/10 px-1.5 py-0 text-[10px] font-medium text-hemi-copper-text"
+                                >
+                                  {t('share.opensHere', { defaultValue: 'Opens here' })}
+                                </span>
+                              )}
+                            </div>
+                            <p className="break-words text-foreground">
+                              {truncatePreviewText(item.text)}
+                            </p>
+                          </div>
+
+                          <div className="flex flex-shrink-0 items-center gap-1.5">
+                            <button
+                              type="button"
+                              disabled={updatingFocus}
+                              aria-pressed={isFocused}
+                              onClick={() => void handleSetFocusId(isFocused ? null : item.id)}
+                              className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors ${
+                                isFocused
+                                  ? 'border-hemi-copper/50 bg-hemi-copper/10 text-hemi-copper-text'
+                                  : 'border-border/70 bg-background text-muted-foreground hover:bg-accent hover:text-foreground'
+                              }`}
+                            >
+                              <span>{t('share.openHere', { defaultValue: 'Open here' })}</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              disabled={togglingId === item.id}
+                              onClick={() => void handleToggleItemHidden(item)}
+                              aria-label={
+                                item.hidden
+                                  ? t('share.showItem', { defaultValue: 'Show in shared view' })
+                                  : t('share.hideItem', { defaultValue: 'Hide from shared view' })
+                              }
+                              title={
+                                item.hidden
+                                  ? t('share.showItem', { defaultValue: 'Show in shared view' })
+                                  : t('share.hideItem', { defaultValue: 'Hide from shared view' })
+                              }
+                              className="inline-flex flex-shrink-0 items-center gap-1 rounded-md border border-border/70 bg-background px-2 py-1 text-[11px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+                            >
+                              {item.hidden ? (
+                                <>
+                                  <EyeOff className="h-3.5 w-3.5" />
+                                  <span>{t('share.hiddenBadge', { defaultValue: 'Hidden' })}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Eye className="h-3.5 w-3.5" />
+                                  <span>{t('share.visibleBadge', { defaultValue: 'Visible' })}</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
