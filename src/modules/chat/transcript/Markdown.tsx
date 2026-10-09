@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { MermaidDiagram } from '@/modules/code-editor';
 import { HtmlPreviewModal, VisualBlock } from '@/modules/chat/visuals';
 import { MarkdownImage } from '@/modules/chat/transcript/MarkdownImage';
-import { normalizeInlineCodeFences } from '@/modules/chat/utils/chatFormatting';
+import { normalizeInlineCodeFences, promoteInlineMath } from '@/modules/chat/utils/chatFormatting';
 import { copyTextToClipboard } from '@/shared/utils';
 import { SyntaxHighlighter } from '@/shared/syntaxHighlighter';
 import { usePaletteOps } from '@/modules/command-palette';
@@ -69,8 +69,9 @@ const childrenToText = (children: React.ReactNode): string => {
   return '';
 };
 
-// The delimiters `remark-math` recognizes with `singleDollarTextMath` off.
-const MATH_DELIMITER = /\$\$|\\\(|\\\[/;
+// The delimiter `remark-math` recognizes with `singleDollarTextMath` off; `$…$`,
+// `\(…\)` and `\[…\]` reach it as `$$` through promoteInlineMath.
+const MATH_DELIMITER = /\$\$/;
 
 const EMPTY_PLUGINS: never[] = [];
 
@@ -283,7 +284,7 @@ function MarkdownBodyRenderer({
   disableWorkspaceLinks = false,
 }: Omit<MarkdownProps, 'className'>) {
   const content = useMemo(
-    () => normalizeInlineCodeFences(String(children ?? '')),
+    () => promoteInlineMath(normalizeInlineCodeFences(String(children ?? ''))),
     [children],
   );
   // Math support costs a remark tree pass plus a full KaTeX walk on every

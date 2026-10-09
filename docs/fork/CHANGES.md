@@ -2,6 +2,14 @@
 
 One entry per customization, newest first. Keep the file list accurate: it is the conflict checklist for upstream merges.
 
+## Inline math with single dollars
+
+- **Since:** 2026-10-09, on top of upstream v1.37.3.
+- **Branch:** `fix/inline-math`. Could go upstream.
+- **Why:** upstream keeps remark-math's `singleDollarTextMath` off so that prices ("$5 and $10") stay text, but models write inline math as `$…$`, and it showed as raw TeX. `\(…\)` and `\[…\]` were detected as math and never rendered either.
+- **What:** `promoteInlineMath` (in `chatFormatting.ts`) rewrites, before parsing, `$…$` into `$$…$$` when it follows Pandoc's rule (no space just inside either dollar, no digit right after the closing one) and reads as TeX (a command, `^`, `_`, braces, or a single letter); `\(…\)` and one-line `\[…\]` into `$$…$$`, and `\[`/`\]` on lines of their own into `$$`. Fenced and indented code and code spans are untouched. `MATH_DELIMITER` now only looks for `$$`.
+- **Files:** `src/modules/chat/utils/chatFormatting.ts`, `src/modules/chat/transcript/Markdown.tsx`, `src/modules/chat/tests/chatFormatting.test.ts`, `docs/fork/CHANGES.md`.
+
 ## Images in the conversation
 
 - **Since:** 2026-10-09, on top of upstream v1.37.3 and the inline visuals below.
