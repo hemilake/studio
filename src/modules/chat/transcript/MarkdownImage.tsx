@@ -39,14 +39,25 @@ const toWorkspacePath = (src: string): string => {
   return workspacePath;
 };
 
-type LoadedImage = { key: string; url: string | null; failed: boolean };
+// Why a workspace image could not be shown. The files route answers 403 for a
+// path outside the project (a screenshot left in /tmp, say) and 404 for a file
+// that is not there; the card names the cause instead of a bare broken icon.
+type ImageFailure = 'outside' | 'missing' | 'error';
+
+const failureFromStatus = (status: number): ImageFailure => {
+  if (status === 403) return 'outside';
+  if (status === 404) return 'missing';
+  return 'error';
+};
+
+type LoadedImage = { key: string; url: string | null; failure: ImageFailure | null };
 
 /**
  * Resolves a markdown image src to something an <img> can display. Web, data
  * and blob URLs pass through untouched; workspace paths are fetched as blobs
  * (a bare <img src> cannot carry the auth header) and exposed as object URLs.
  */
-function useMarkdownImageSrc(src: string, projectId: string | null): { src: string | null; failed: boolean } {
+function useMarkdownImageSrc(src: string, projectId: string | null): { src: string | null; failure: ImageFailure | null } {
   const passthrough = isBrowserLoadableSrc(src);
   // Keyed by what was requested so a src change reads as "loading" until the
   // new fetch settles, without resetting state synchronously in the effect.
@@ -65,17 +76,17 @@ function useMarkdownImageSrc(src: string, projectId: string | null): { src: stri
       try {
         const response = await api.readFileBlob(projectId, toWorkspacePath(src), { signal: controller.signal });
         if (!response.ok) {
-          setLoaded({ key, url: null, failed: true });
+          setLoaded({ key, url: null, failure: failureFromStatus(response.status) });
           return;
         }
         const blob = await response.blob();
         objectUrl = URL.createObjectURL(blob);
-        setLoaded({ key, url: objectUrl, failed: false });
+        setLoaded({ key, url: objectUrl, failure: null });
       } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') {
           return;
         }
-        setLoaded({ key, url: null, failed: true });
+        setLoaded({ key, url: null, failure: 'error' });
       }
     };
 
@@ -90,13 +101,13 @@ function useMarkdownImageSrc(src: string, projectId: string | null): { src: stri
   }, [key, passthrough, projectId, src]);
 
   if (passthrough) {
-    return { src, failed: false };
+    return { src, failure: null };
   }
   if (!projectId) {
-    return { src: null, failed: true };
+    return { src: null, failure: 'error' };
   }
   const current = loaded && loaded.key === key ? loaded : null;
-  return { src: current?.url ?? null, failed: current?.failed ?? false };
+  return { src: current?.url ?? null, failure: current?.failure ?? null };
 }
 
 function ToolbarButton({ label, onClick, children }: { label: string; onClick: () => void; children: ReactNode }) {
@@ -129,7 +140,7 @@ export function MarkdownImage({ node: _node, src, alt, title }: MarkdownImagePro
   const projectId = useMarkdownWorkspaceProjectId();
   const actions = useVisualActions();
   const source = src ?? '';
-  const { src: resolved, failed } = useMarkdownImageSrc(source, projectId);
+  const { src: resolved, failure } = useMarkdownImageSrc(source, projectId);
   const [expanded, setExpanded] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
 
@@ -144,14 +155,20 @@ export function MarkdownImage({ node: _node, src, alt, title }: MarkdownImagePro
 
   const label = alt || title || source;
 
-  if (failed) {
+  if (failure) {
+    const reason = failure === 'outside'
+      ? t('chat:image.outsideProject', { defaultValue: 'outside the project' })
+      : failure === 'missing'
+        ? t('chat:image.notFound', { defaultValue: 'not found' })
+        : t('chat:image.loadFailed', { defaultValue: 'could not be loaded' });
     return (
       <span
         className="my-1 inline-flex max-w-full items-center gap-1.5 rounded-md border border-border/60 bg-muted px-2 py-1 text-xs text-muted-foreground"
-        title={source}
+        title={`${source} (${reason})`}
       >
         <ImageOff className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         <span className="truncate">{label}</span>
+        <span className="shrink-0 opacity-80">· {reason}</span>
       </span>
     );
   }

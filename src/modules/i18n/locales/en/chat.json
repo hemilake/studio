@@ -432,6 +432,9 @@
     "download": "Download",
     "copyPath": "Copy path",
     "pathCopied": "Path copied",
-    "fullScreen": "Full screen"
+    "fullScreen": "Full screen",
+    "outsideProject": "outside the project",
+    "notFound": "not found",
+    "loadFailed": "could not be loaded"
   }
 }

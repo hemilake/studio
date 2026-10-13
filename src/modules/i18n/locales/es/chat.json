@@ -317,6 +317,9 @@
     "download": "Descargar",
     "copyPath": "Copiar ruta",
     "pathCopied": "Ruta copiada",
-    "fullScreen": "Pantalla completa"
+    "fullScreen": "Pantalla completa",
+    "outsideProject": "fuera del proyecto",
+    "notFound": "no encontrada",
+    "loadFailed": "no se pudo cargar"
   }
 }

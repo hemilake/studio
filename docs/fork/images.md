@@ -10,7 +10,7 @@ A Markdown image with a short title as the alt text and the path relative to the
 ![Lemon in watercolour](images/20261009-153750-lemon.png)
 ```
 
-An absolute path works too while it stays inside the project. The file is fetched through the authenticated files route (`api.readFileBlob`) and shown from a blob URL, since a bare `<img src>` cannot carry the session token.
+An absolute path works too while it stays inside the project. A file outside it (a screenshot left in `/tmp`, say) is refused by the files route with a 403, so the prompt tells the model to copy it into `images/` first, and the card that fails says why: "outside the project" for a 403, "not found" for a 404. The file is fetched through the authenticated files route (`api.readFileBlob`) and shown from a blob URL, since a bare `<img src>` cannot carry the session token.
 
 ## The card
 
