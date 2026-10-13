@@ -35,10 +35,10 @@ test('appendAdversarialReviewTag names only the chosen adversaries with read-onl
   assert.match(both, /antigravity\.done, codex\.done/);
 });
 
-test('Gemini 4 EAP runs in Claude Code restricted to Read and Bash, without settings files or MCP servers', () => {
+test('Gemini 4 Argon runs in Claude Code restricted to Read and Bash, without settings files or MCP servers', () => {
   const prompt = appendAdversarialReviewTag('x', ['gemini4', 'codex'], '/p');
   assert.match(prompt, /adversaries="codex,gemini4"/);
-  assert.match(prompt, /cd '\/p' && claude -p --model 'gemini-early-exp\[1m\]' /);
+  assert.match(prompt, /cd '\/p' && claude -p --model 'gemini-4-argon\[1m\]' /);
   assert.match(prompt, /--bare --restricted --tools Read Bash /);
   assert.match(prompt, /--permission-mode dontAsk /);
   assert.match(prompt, /--strict-mcp-config --mcp-config '\{"mcpServers":\{\}\}' /);

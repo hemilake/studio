@@ -15,7 +15,7 @@ export type AdversaryOption = {
 export const ADVERSARY_OPTIONS: AdversaryOption[] = [
   { id: 'antigravity', label: 'Antigravity', model: 'Gemini 3.8 Flash (high)' },
   { id: 'codex', label: 'Codex', model: 'GPT-6 Astra (high)' },
-  { id: 'gemini4', label: 'Gemini 4 EAP', model: 'gemini-early-exp in Claude Code (high)' },
+  { id: 'gemini4', label: 'Gemini 4 Argon', model: 'gemini-4-argon in Claude Code (high)' },
 ];
 
 /** What one click on the toggle turns on until the user picks otherwise. */

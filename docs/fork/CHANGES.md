@@ -2,6 +2,14 @@
 
 One entry per customization, newest first. Keep the file list accurate: it is the conflict checklist for upstream merges.
 
+## Gemini 4 Argon replaces Gemini 4 EAP as an adversary
+
+- **Since:** 2026-10-13, on top of the entry below.
+- **Branch:** `main` only.
+- **Why:** Google withdrew the EAP model (`gemini-early-exp`) on 2026-10-12 and Gemini 4 Argon went GA on Vertex. This machine's LiteLLM gateway serves it as `gemini-4-argon`.
+- **What:** the `gemini4` adversary runs `claude -p --model 'gemini-4-argon[1m]'` with the same flags, and the menu shows "Gemini 4 Argon". The id stays `gemini4` so the saved `adversaries` preference keeps working.
+- **Files:** `server/shared/adversarial-review.ts`, `server/shared/tests/adversarial-review.test.ts`, `src/modules/chat/utils/adversarialMode.ts`, `docs/fork/CHANGES.md`.
+
 ## Gemini 4 EAP as an adversary, and adversarial mode for one message
 
 - **Since:** 2026-10-09, on top of the adversarial mode entry below.

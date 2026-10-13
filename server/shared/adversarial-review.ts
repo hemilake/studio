@@ -36,14 +36,15 @@ const ADVERSARIES: Record<string, AdversaryDefinition> = {
       + '-o {dir}/codex.md - < {dir}/brief.md > {dir}/codex.log 2>&1',
   },
   gemini4: {
-    // Gemini 4 EAP behind the same LiteLLM gateway as Claude. --bare skips hooks,
+    // Gemini 4 Argon behind the same LiteLLM gateway as Claude (Gemini 4 EAP until
+    // 2026-10-13; the id stays `gemini4` so saved selections keep working). --bare skips hooks,
     // CLAUDE.md and memory so it starts from the brief alone. --restricted ignores
     // the user, project and local settings files, whose `allow` rules dontAsk would
     // otherwise honour (a project allowing `Bash(touch:*)` let it write). No MCP
     // servers, and no session file, so the run does not show up as a chat.
-    label: 'Gemini 4 EAP (Claude Code)',
+    label: 'Gemini 4 Argon (Claude Code)',
     command:
-      'cd {project} && claude -p --model \'gemini-early-exp[1m]\' --effort high --bare --restricted --tools Read Bash '
+      'cd {project} && claude -p --model \'gemini-4-argon[1m]\' --effort high --bare --restricted --tools Read Bash '
       + '--strict-mcp-config --mcp-config \'{"mcpServers":{}}\' --permission-mode dontAsk '
       + '--no-session-persistence --add-dir {dir} --output-format text < {dir}/brief.md > {dir}/gemini4.md 2> {dir}/gemini4.err',
   },
