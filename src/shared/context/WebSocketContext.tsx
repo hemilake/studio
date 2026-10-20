@@ -3,6 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useAuth } from '@/modules/auth';
 import { IS_PLATFORM } from '@/shared/utils';
 import { expireAuthSession, isAuthTokenExpired } from '@/shared/authToken';
+import { checkEdgeSession } from '@/shared/edgeSession';
 import type { ServerEvent } from '@/shared/types';
 
 
@@ -108,6 +109,9 @@ const useWebSocketProviderState = (): WebSocketContextType => {
         }
         setIsConnected(false);
         wsRef.current = null;
+        // Fork (edge session): a socket that drops or never opens may be the
+        // proxy's login expiring; reconnecting would fail forever.
+        void checkEdgeSession();
 
         // Attempt to reconnect after 3 seconds
         reconnectTimeoutRef.current = setTimeout(() => {

@@ -2,6 +2,14 @@
 
 One entry per customization, newest first. Keep the file list accurate: it is the conflict checklist for upstream merges.
 
+## Reload through the proxy login when it expires
+
+- **Since:** 2026-10-20.
+- **Branch:** `main`. Could go upstream: nothing in it is specific to Cloudflare beyond the redirect.
+- **Why:** `cloudcli.almansa.dev` sits behind Cloudflare Access. When its cookie expires, Access answers every request with a redirect to its login page. After the first load the app only makes fetches and websocket upgrades, which cannot follow that redirect, so Studio looked broken until Pablo reloaded by hand.
+- **What:** `checkEdgeSession` (in `src/shared/edgeSession.ts`) asks `/health` with `redirect: 'manual'`. Studio answers that route without a token, so an opaque redirect can only come from the proxy, and then the page reloads and the browser signs in again (Access redirects to Google on its own). It runs when a fetch fails with a TypeError, when the chat websocket closes, when the tab comes back to the foreground and when the network returns. Concurrent checks share one probe, checks are at least 15 s apart, the page reloads at most once a minute (sessionStorage) and never inside a frame, where the login page cannot render. Without a proxy the probe gets a 200 and nothing happens. Chat drafts survive the reload through their localStorage mirror.
+- **Files:** `src/shared/edgeSession.ts` (new), `src/shared/tests/edgeSession.test.ts` (new), `src/shared/api.ts`, `src/shared/context/WebSocketContext.tsx`, `src/main.tsx`, `.oxlintrc.json`, `docs/fork/CHANGES.md`.
+
 ## Gemini 4 Argon replaces Gemini 4 EAP as an adversary
 
 - **Since:** 2026-10-13, on top of the entry below.

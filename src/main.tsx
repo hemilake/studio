@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { scan } from 'react-scan'
 
 import App from '@/App'
+import { startEdgeSessionWatch } from '@/shared/edgeSession'
 import { startEmbedBridge } from '@/shared/embedBridge'
 import { resolvePublicShareTokenFromPathname } from '@/shared/utils'
 import '@/index.css'
@@ -32,6 +33,8 @@ if (!isPublicShareRoute && 'serviceWorker' in navigator) {
 // first render so the sign-in exchange can begin straight away.
 if (!isPublicShareRoute) {
   void startEmbedBridge()
+  // Fork (edge session): reload through the proxy's login when it expires.
+  startEdgeSessionWatch()
 }
 
 const rootElement = document.getElementById('root')
