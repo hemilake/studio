@@ -442,6 +442,82 @@ test('an edited prompt replaces the one it superseded instead of stacking on it'
   }
 });
 
+test('API request logs in the transcript do not repeat the turn', { concurrency: false }, async () => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'claude-request-blobs-'));
+  const sessionId = 'request-blob-session';
+
+  try {
+    // The shape Claude Code 2.1.300 writes: each API request is logged as
+    // `api-request-blob` rows holding the request's messages, with no uuid and
+    // no timestamp, next to the turn's real rows.
+    const rows = [
+      {
+        type: 'user', uuid: 'u1', parentUuid: null, sessionId,
+        timestamp: '2026-10-20T06:37:16.571Z',
+        message: { role: 'user', content: 'does it pick up CLAI tickets?' },
+      },
+      {
+        type: 'api-request-blob', sessionId, hash: 'h1',
+        message: {
+          role: 'user',
+          content: [
+            { type: 'text', text: '<system-reminder>\ninstructions\n</system-reminder>' },
+            { type: 'text', text: 'does it pick up CLAI tickets?' },
+          ],
+        },
+      },
+      {
+        type: 'assistant', uuid: 'a1', parentUuid: 'u1', sessionId,
+        timestamp: '2026-10-20T06:37:22.676Z',
+        message: {
+          role: 'assistant', model: 'claude-opus-5-5',
+          content: [{ type: 'tool_use', id: 'toolu_1', name: 'Bash', input: { command: 'ls' } }],
+        },
+      },
+      {
+        type: 'user', uuid: 'r1', parentUuid: 'a1', sessionId,
+        timestamp: '2026-10-20T06:37:22.707Z',
+        message: { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'toolu_1', content: 'ok' }] },
+      },
+      {
+        type: 'api-request-blob', sessionId, hash: 'h2',
+        message: {
+          role: 'assistant',
+          content: [{ type: 'tool_use', id: 'toolu_1', name: 'Bash', input: { command: 'ls' } }],
+        },
+      },
+      {
+        type: 'api-request-blob', sessionId, hash: 'h3',
+        message: { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'toolu_1', content: 'ok' }] },
+      },
+      { type: 'last-prompt', lastPrompt: 'does it pick up CLAI tickets?', leafUuid: 'r1', sessionId },
+      {
+        type: 'assistant', uuid: 'a2', parentUuid: 'r1', sessionId,
+        timestamp: '2026-10-20T06:37:37.103Z',
+        message: { role: 'assistant', model: 'claude-opus-5-5', content: [{ type: 'text', text: 'Yes.' }] },
+      },
+    ];
+    const transcriptPath = path.join(tempRoot, `${sessionId}.jsonl`);
+    await writeFile(transcriptPath, `${rows.map((row) => JSON.stringify(row)).join('\n')}\n`, 'utf8');
+
+    await withIsolatedDatabase(async () => {
+      const now = new Date().toISOString();
+      sessionsDb.createSession(sessionId, 'claude', tempRoot, 'Request blobs', now, now, transcriptPath);
+
+      const history = await new ClaudeSessionsProvider().fetchHistory(sessionId, { providerSessionId: sessionId });
+      const shape = history.messages.map((message) => `${message.kind}:${message.role ?? ''}:${message.content ?? message.toolName}`);
+
+      assert.deepEqual(shape, [
+        'text:user:does it pick up CLAI tickets?',
+        'tool_use::Bash',
+        'text:assistant:Yes.',
+      ]);
+    });
+  } finally {
+    await rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
 test('parallel tool calls are not mistaken for an edit', { concurrency: false }, async () => {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'claude-parallel-tools-'));
   const sessionId = 'claude-parallel-session';

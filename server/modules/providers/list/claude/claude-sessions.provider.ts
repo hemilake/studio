@@ -29,6 +29,24 @@ import { summarizeClaudeTokenUsage } from '@/modules/providers/services/provider
 
 const PROVIDER = 'claude';
 
+/**
+ * True for a transcript row the CLI writes for its own bookkeeping rather than
+ * as part of the conversation.
+ *
+ * Since 2.1.300 Claude Code logs every API request into the transcript:
+ * `api-request-blob` rows carry the request's messages (the prompt, then each
+ * tool round) under `message`, with no `uuid` and no `timestamp`. Read as
+ * conversation they repeat the prompt and every tool call once more, stamped
+ * with the time of the read. Only `user` and `assistant` rows are turns; a row
+ * with no `type` is a live SDK event and is left alone.
+ */
+export function isClaudeBookkeepingRow(row: AnyRecord): boolean {
+  return typeof row.type === 'string'
+    && row.type !== 'user'
+    && row.type !== 'assistant'
+    && row.message !== undefined;
+}
+
 /** Tokens the way the CLI writes them: 725k rather than 724,871. */
 const formatTokenCount = (tokens: number): string => {
   if (tokens >= 1_000_000) {
@@ -114,6 +132,9 @@ async function readClaudeSubagentTranscript(filePath: string): Promise<ClaudeSub
 
       try {
         const entry = JSON.parse(line) as AnyRecord;
+        if (isClaudeBookkeepingRow(entry)) {
+          continue;
+        }
         const timestamp = typeof entry.timestamp === 'string' ? entry.timestamp : undefined;
 
         if (entry.message?.role === 'assistant' && Array.isArray(entry.message?.content)) {
@@ -341,7 +362,7 @@ async function readTranscriptRows(jsonlPath: string, providerSessionId: string):
     }
     try {
       const entry = JSON.parse(line) as AnyRecord;
-      if (entry.sessionId === providerSessionId) {
+      if (entry.sessionId === providerSessionId && !isClaudeBookkeepingRow(entry)) {
         rows.push(entry);
       }
     } catch {
@@ -695,6 +716,10 @@ export class ClaudeSessionsProvider implements IProviderSessions {
     }
     if (raw.type === 'content_block_stop') {
       return [createNormalizedMessage({ kind: 'stream_end', sessionId, provider: PROVIDER })];
+    }
+
+    if (isClaudeBookkeepingRow(raw)) {
+      return [];
     }
 
     const messages: NormalizedMessage[] = [];

@@ -7,6 +7,7 @@ import { rgPath } from '@vscode/ripgrep';
 
 import { stripAnsiSequences } from '@/shared/utils.js';
 import { projectsDb, sessionsDb } from '@/modules/database/index.js';
+import { isClaudeBookkeepingRow } from '@/modules/providers/list/claude/claude-sessions.provider.js';
 
 type AnyRecord = Record<string, any>;
 type SearchableProvider = 'claude' | 'codex';
@@ -421,7 +422,7 @@ type ClaudeSearchableMessage = {
  * of those rows rather than the raw wrapper syntax.
  */
 function extractClaudeSearchableMessage(entry: AnyRecord): ClaudeSearchableMessage | null {
-  if (!entry.message?.content || entry.isApiErrorMessage) {
+  if (!entry.message?.content || entry.isApiErrorMessage || isClaudeBookkeepingRow(entry)) {
     return null;
   }
 
