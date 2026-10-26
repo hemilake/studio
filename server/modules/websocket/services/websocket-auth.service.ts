@@ -1,5 +1,6 @@
 import type { VerifyClientCallbackSync } from 'ws';
 
+import { authenticateE2EWebSocketUpgrade } from '@/modules/e2e/index.js';
 import type { AuthenticatedWebSocketRequest } from '@/shared/types.js';
 
 type WebSocketAuthDependencies = {
@@ -25,8 +26,27 @@ export function verifyWebSocketClient(
   if (loggedUrl.searchParams.has('token')) {
     loggedUrl.searchParams.set('token', 'REDACTED');
   }
+  if (loggedUrl.searchParams.has('e2e_auth')) {
+    loggedUrl.searchParams.set('e2e_auth', 'REDACTED');
+  }
 
   console.log('WebSocket connection attempt to:', `${loggedUrl.pathname}${loggedUrl.search}`);
+
+  const e2eKid = upgradeUrl.searchParams.get('e2e');
+  let decryptedToken: string | null = null;
+  if (e2eKid) {
+    const e2eAuth = authenticateE2EWebSocketUpgrade(
+      e2eKid,
+      upgradeUrl.searchParams.get('e2e_auth'),
+    );
+    if (!e2eAuth) {
+      console.log('[WARN] E2E WebSocket upgrade authentication failed');
+      return false;
+    }
+    request.e2eSession = e2eAuth.session;
+    request.e2eTargetPath = e2eAuth.path;
+    decryptedToken = e2eAuth.token;
+  }
 
   // Platform mode: use the first DB user and skip token checks.
   if (dependencies.isPlatform) {
@@ -41,8 +61,9 @@ export function verifyWebSocketClient(
     return true;
   }
 
-  // OSS mode: read JWT from query string first, then Authorization header.
+  // OSS mode: read JWT from E2E envelope first, then query string, then Authorization header.
   const token =
+    decryptedToken ??
     upgradeUrl.searchParams.get('token') ??
     request.headers.authorization?.split(' ')[1] ??
     null;

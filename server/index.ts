@@ -28,6 +28,7 @@ import {
     validateApiKey,
 } from './modules/auth/index.js';
 import { corsOrigin, embedRoutes, frameAncestors } from './modules/embed/index.js';
+import { createE2EMiddleware } from './modules/e2e/index.js';
 import {
     closeCloudShareSync,
     initializeCloudShareSync,
@@ -131,9 +132,11 @@ createWebSocketServer(server, {
 });
 
 // Fork: cross-origin reads only for the consoles in CLOUDCLI_EMBED_ORIGINS, never any site.
-app.use(cors({ origin: corsOrigin, exposedHeaders: ['X-Refreshed-Token', 'X-Auth-Error'] }));
+app.use(cors({ origin: corsOrigin, exposedHeaders: ['X-Refreshed-Token', 'X-Auth-Error', 'X-E2E-Error', 'X-E2E-Stream'] }));
 // Fork (embed mode): only Studio itself and the consoles in CLOUDCLI_EMBED_ORIGINS may frame it.
 app.use(frameAncestors);
+// Fork (E2E transport): application-layer AES-256-GCM tunnel so TLS-intercepting proxies (e.g. Netskope) cannot inspect API or WebSocket payloads.
+app.use(createE2EMiddleware(app));
 app.use(express.json({
     limit: '50mb',
     type: (req) => {

@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { scan } from 'react-scan'
 
 import App from '@/App'
+import { initE2ETransport } from '@/shared/e2eTransport'
 import { startEdgeSessionWatch } from '@/shared/edgeSession'
 import { startEmbedBridge } from '@/shared/embedBridge'
 import { resolvePublicShareTokenFromPathname } from '@/shared/utils'
@@ -32,6 +33,7 @@ if (!isPublicShareRoute && 'serviceWorker' in navigator) {
 // Fork (embed mode): inside a Hemilake console, start talking to it before the
 // first render so the sign-in exchange can begin straight away.
 if (!isPublicShareRoute) {
+  void initE2ETransport()
   void startEmbedBridge()
   // Fork (edge session): reload through the proxy's login when it expires.
   startEdgeSessionWatch()

@@ -104,6 +104,7 @@
           "src/shared/chatDrafts.ts",
           "src/shared/edgeSession.ts",
           "src/shared/embedBridge.ts",
+          "src/shared/e2eTransport.ts",
           "src/shared/syntaxHighlighter.ts"
         ],
         "mode": "file"

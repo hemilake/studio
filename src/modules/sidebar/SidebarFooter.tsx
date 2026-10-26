@@ -1,10 +1,12 @@
-import { Settings, AlertTriangle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Lock, Settings, AlertTriangle } from 'lucide-react';
 import type { TFunction } from 'i18next';
 
 import { IS_PLATFORM } from '@/shared/utils';
 import type { ReleaseInfo } from '@/shared/types';
 import { UPSTREAM_NAME, UPSTREAM_REPO_URL } from '@/shared/constants';
 import { useThemeDefinition } from '@/shared/context/ThemeContext';
+import { getE2EStatus, subscribeE2EStatus } from '@/shared/e2eTransport';
 
 // Fork: the update banner and the Report Issue / Discord links are not rendered.
 // The props stay in the type so callers are untouched (see docs/fork/CHANGES.md).
@@ -22,6 +24,10 @@ type SidebarFooterProps = {
 /** Rendered by SidebarContent at the bottom of the panel for settings and restart status. */
 export default function SidebarFooter({ restartRequired, currentVersion, onShowSettings, t }: SidebarFooterProps) {
   const { footerName } = useThemeDefinition();
+  const [e2eStatus, setE2eStatus] = useState(() => getE2EStatus());
+
+  useEffect(() => subscribeE2EStatus(setE2eStatus), []);
+
   return (
     <div className="flex-shrink-0" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0)' }}>
       {/* Restart-required banner: the running server version differs from the
@@ -56,7 +62,7 @@ export default function SidebarFooter({ restartRequired, currentVersion, onShowS
 
       {/* Desktop version brand line (OSS mode only) */}
       {!IS_PLATFORM && (
-        <div className="hidden px-3 py-2 text-center md:block">
+        <div className="hidden items-center justify-center gap-1.5 px-3 py-2 text-center md:flex">
           <a
             href={UPSTREAM_REPO_URL}
             target="_blank"
@@ -65,6 +71,15 @@ export default function SidebarFooter({ restartRequired, currentVersion, onShowS
           >
             {footerName} · {UPSTREAM_NAME} v{currentVersion}
           </a>
+          {e2eStatus.active && (
+            <span
+              title={`End-to-end encrypted (AES-256-GCM) · Server key sha256:${e2eStatus.fingerprint ?? ''}`}
+              className="inline-flex items-center gap-0.5 rounded bg-hemi-ok/15 px-1 py-0.5 font-mono text-[9.5px] font-medium text-hemi-ok"
+            >
+              <Lock className="h-2.5 w-2.5" />
+              E2E
+            </span>
+          )}
         </div>
       )}
 

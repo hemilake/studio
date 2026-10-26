@@ -1,6 +1,8 @@
 import type { IncomingMessage } from 'node:http';
 import type { Readable } from 'node:stream';
 
+import type { E2ESession } from '@/modules/e2e/index.js';
+
 //----------------- HTTP RESPONSE SHAPES ------------
 /**
  * Canonical success envelope used by backend APIs that return a structured payload.
@@ -56,6 +58,8 @@ export type AuthenticatedWebSocketUser = {
  */
 export type AuthenticatedWebSocketRequest = IncomingMessage & {
   user?: AuthenticatedWebSocketUser;
+  e2eSession?: E2ESession;
+  e2eTargetPath?: string | null;
 };
 
 // ---------------------------

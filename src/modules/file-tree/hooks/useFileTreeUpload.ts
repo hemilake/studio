@@ -6,6 +6,7 @@ import type { FileTreeUploadProgressState, Project } from '@/shared/types';
 import { api } from '@/shared/api';
 import { expireAuthSession, getStoredAuthToken, storeAuthToken } from '@/shared/authToken';
 import { MAX_FILE_UPLOAD_SIZE_BYTES, MAX_FILE_UPLOAD_SIZE_LABEL } from '@/shared/constants';
+import { getE2EStatus, sendE2EXhrUpload } from '@/shared/e2eTransport';
 
 type UseFileTreeUploadOptions = {
   selectedProject: Project | null;
@@ -95,17 +96,51 @@ const buildUploadFormData = (files: File[], targetPath: string) => {
   return formData;
 };
 
-const uploadFormDataWithProgress = (
+const uploadFormDataWithProgress = async (
   projectId: string,
   formData: FormData,
   onProgress: (progress: number) => void,
-) =>
-  new Promise<UploadResponse>((resolve, reject) => {
+): Promise<UploadResponse> => {
+  const token = getStoredAuthToken();
+  const headers: Record<string, string> = {};
+  if (!IS_PLATFORM && token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  if (getE2EStatus().active) {
+    const e2eResult = await sendE2EXhrUpload({
+      url: api.uploadFilesUrl(projectId),
+      headers,
+      formData,
+      onProgress,
+    });
+    if (e2eResult) {
+      const refreshedToken = e2eResult.headers['x-refreshed-token'];
+      if (refreshedToken) {
+        storeAuthToken(refreshedToken);
+      }
+      const authError = e2eResult.headers['x-auth-error'];
+      if (authError) {
+        expireAuthSession(`${authError} upload`);
+      }
+      let payload: UploadResponse = {};
+      try {
+        payload = e2eResult.bodyText ? (JSON.parse(e2eResult.bodyText) as UploadResponse) : {};
+      } catch {
+        payload = {};
+      }
+      if (e2eResult.status >= 200 && e2eResult.status < 300) {
+        return payload;
+      }
+      throw new Error(payload.error || payload.message || `Upload failed with status ${e2eResult.status}`);
+    }
+  }
+
+  return new Promise<UploadResponse>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
 
     xhr.open('POST', api.uploadFilesUrl(projectId));
 
-    const token = getStoredAuthToken();
     if (!IS_PLATFORM && token) {
       xhr.setRequestHeader('Authorization', `Bearer ${token}`);
     }
@@ -144,6 +179,7 @@ const uploadFormDataWithProgress = (
 
     xhr.send(formData);
   });
+};
 
 // Helper function to read all files from a directory entry recursively
 const readAllDirectoryEntries = async (directoryEntry: FileSystemDirectoryEntry, basePath = ''): Promise<File[]> => {

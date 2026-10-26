@@ -2,6 +2,7 @@ import type { Server as HttpServer } from 'node:http';
 
 import { WebSocket, WebSocketServer, type VerifyClientCallbackSync } from 'ws';
 
+import { wrapServerWebSocketWithE2E } from '@/modules/e2e/index.js';
 import { handleChatConnection } from '@/modules/websocket/services/chat-websocket.service.js';
 import { verifyWebSocketClient } from '@/modules/websocket/services/websocket-auth.service.js';
 import { handlePluginWsProxy } from '@/modules/websocket/services/plugin-websocket-proxy.service.js';
@@ -95,8 +96,12 @@ export function createWebSocketServer(
     attachWebSocketHeartbeat(ws);
 
     const incomingRequest = request as AuthenticatedWebSocketRequest;
+    if (incomingRequest.e2eSession) {
+      wrapServerWebSocketWithE2E(ws, incomingRequest.e2eSession);
+    }
+
     const url = incomingRequest.url ?? '/';
-    const pathname = new URL(url, 'http://localhost').pathname;
+    const pathname = incomingRequest.e2eTargetPath || new URL(url, 'http://localhost').pathname;
 
     if (pathname === '/shell') {
       handleShellConnection(ws, dependencies.shell);
