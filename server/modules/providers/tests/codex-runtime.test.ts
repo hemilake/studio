@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 
@@ -7,6 +8,10 @@ import type { Thread, ThreadOptions } from '@openai/codex-sdk';
 
 import { codexRuntime } from '@/modules/providers/list/codex/codex-runtime.provider.js';
 import type { ProviderRuntimeContext } from '@/shared/index.js';
+
+// Keep these turns on the single default account whatever accounts the
+// machine running the suite has registered.
+process.env.CLOUDCLI_CODEX_ACCOUNTS_DIR = path.join(tmpdir(), `codex-runtime-test-no-accounts-${process.pid}`);
 
 for (const resumed of [false, true]) {
   for (const permissionMode of [undefined, 'default', 'unknown', 'acceptEdits', 'bypassPermissions']) {

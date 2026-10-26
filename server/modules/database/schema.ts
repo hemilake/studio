@@ -284,6 +284,23 @@ CREATE TABLE IF NOT EXISTS session_shares (
 );
 `;
 
+/**
+ * Which Codex account each session runs on (multi-account Codex).
+ *
+ * Kept apart from `sessions` because only Codex sessions have one and the
+ * value is routing state, not part of the session's identity: deleting the
+ * row just lets the next turn pick an account afresh. `account_id` matches
+ * an id in the Codex accounts registry (`accounts.json`), which lives on
+ * disk next to the account homes rather than in this database.
+ */
+export const CODEX_SESSION_ACCOUNTS_TABLE_SCHEMA_SQL = `
+CREATE TABLE IF NOT EXISTS codex_session_accounts (
+    session_id TEXT PRIMARY KEY,
+    account_id TEXT NOT NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+`;
+
 export const INIT_SCHEMA_SQL = `
 -- Initialize authentication database
 PRAGMA foreign_keys = ON;
@@ -339,6 +356,8 @@ ${SESSION_DRAFTS_TABLE_SCHEMA_SQL}
 ${SUPERSEDED_PROVIDER_SESSIONS_TABLE_SCHEMA_SQL}
 
 ${SESSION_SHARES_TABLE_SCHEMA_SQL}
+
+${CODEX_SESSION_ACCOUNTS_TABLE_SCHEMA_SQL}
 CREATE INDEX IF NOT EXISTS idx_session_shares_token ON session_shares(token);
 CREATE INDEX IF NOT EXISTS idx_session_shares_session_user ON session_shares(session_id, user_id);
 `;

@@ -3,6 +3,7 @@ import {
   getStoredAuthToken,
   storeAuthToken,
 } from '@/shared/authToken';
+import { checkEdgeSession } from '@/shared/edgeSession';
 import type { RecentConversationsOrigin } from '@/shared/types';
 import { IS_PLATFORM } from '@/shared/utils';
 import { readVoiceConfig, voiceConfigHeaders } from '@/shared/voiceConfig';
@@ -47,6 +48,13 @@ export const authenticatedFetch = (
       expireAuthSession(`${authError} ${response.status} ${url}`);
     }
     return response;
+  }, (error: unknown) => {
+    // Fork (edge session): an expired proxy login turns every request into a
+    // cross-origin redirect, which fetch reports as a TypeError.
+    if (error instanceof TypeError) {
+      void checkEdgeSession();
+    }
+    throw error;
   });
 };
 

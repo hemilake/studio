@@ -404,7 +404,40 @@
       "button": "Login",
       "reLoginButton": "Re-login"
     },
-    "error": "Error: {{error}}"
+    "error": "Error: {{error}}",
+    "codexAccounts": {
+      "title": "Codex accounts",
+      "description": "Each session sticks to one account and moves to another only when it runs out.",
+      "refresh": "Refresh",
+      "add": "Add account",
+      "labelPlaceholder": "Name, e.g. Work",
+      "addAndSignIn": "Add and sign in",
+      "mode": "New sessions",
+      "modeBackup": "Primary + backups",
+      "modeRoundRobin": "Round robin",
+      "modeBackupHelp": "Always the primary; the others in list order when it runs out.",
+      "modeRoundRobinHelp": "Each new session goes to the next account with room, in list order.",
+      "minHeadroom": "Minimum room before a turn",
+      "minHeadroomHelp": "Percent of a Plus-sized window; ×2 for high effort, ×3 for xhigh. Bigger plans count their room bigger (Pro ×6).",
+      "primary": "Primary",
+      "limitReached": "Limit reached",
+      "notSignedIn": "Not signed in",
+      "sessions_one": "{{count}} session",
+      "sessions_other": "{{count}} sessions",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "rename": "Rename",
+      "remove": "Remove",
+      "enabled": "Use this account",
+      "makePrimary": "Make primary",
+      "resetsIn": "resets in {{span}}",
+      "confirmRemove": "Remove the Codex account \"{{label}}\"? Its login is deleted; sessions stay.",
+      "window": {
+        "week": "Week",
+        "days": "{{count}} d",
+        "hours": "{{count}} h"
+      }
+    }
   },
   "permissions": {
     "title": "Permission Settings",

@@ -102,6 +102,7 @@
           "src/shared/codeEditorSettings.ts",
           "src/shared/userSettings.ts",
           "src/shared/chatDrafts.ts",
+          "src/shared/edgeSession.ts",
           "src/shared/embedBridge.ts",
           "src/shared/syntaxHighlighter.ts"
         ],

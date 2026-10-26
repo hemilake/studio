@@ -2,6 +2,30 @@
 
 One entry per customization, newest first. Keep the file list accurate: it is the conflict checklist for upstream merges.
 
+## Several Codex accounts, picked by usage
+
+- **Since:** 2026-10-26.
+- **Branch:** `feat/codex-multi-account`. Fork-only: upstream has no notion of a second Codex login.
+- **Why:** Pablo wanted to add more than one Codex subscription and have Studio spread work across them by how much each has left.
+- **What:**
+  - Each extra account is its own `CODEX_HOME` under `~/.cloudcli/codex-accounts/<id>/` (or `$CLOUDCLI_CODEX_ACCOUNTS_DIR`). It holds its own `auth.json`, `cache`, `models_cache.json`, logs and control socket; everything else is a symlink into `~/.codex`, so sessions, config, skills, hooks and thread databases stay shared and a session started on one account resumes on another. Checked with codex-cli 0.153.4: a thread started in `~/.codex` resumes from such a home, and SQLite follows the symlinked databases without a stray WAL. Links are re-synced before each turn, so files a Codex upgrade adds get linked too.
+  - `accounts.json` in that directory is the registry: accounts in priority order, `mode` (`backup` or `round_robin`), `primaryAccountId`, `minHeadroomPercent`, optional `planWeights`, and `roundRobinCursor`. The default `~/.codex` is always account `default`. The Codex Usage plugin (hemilake/studio-plugin-codex-usage) reads the same file, so its shape is a contract.
+  - Usage comes from `codex app-server` (`account/read` and `account/rateLimits/read`) run with the account's `CODEX_HOME`. Reads are cached; before a turn, entries older than 2 minutes are re-read, waiting at most 4 s.
+  - The selector (`codex-accounts.selector.ts`, pure) keeps a session on its account while it has room. Otherwise backup mode tries the primary and then the list in order, and round robin takes the next account after the cursor. "Room" is the free percent of the tightest window times a plan weight relative to Plus (Pro 6, Go 0.5, Free 0.25, unknown 1), compared with `minHeadroomPercent` times an effort factor (high 2, xhigh 3). With nobody qualifying, the account with the most weighted room runs the turn so the user sees Codex's own message.
+  - The session → account mapping is the new `codex_session_accounts` table.
+  - A turn that fails on a usage limit before doing any work is re-run on the next account (resuming the same thread) and the client gets a status line saying so. The failed account counts as empty until a read at least a minute later shows room. The re-run can leave the user message twice in the Codex transcript.
+  - With only the default account nothing changes: no usage reads, and Codex runs with the server's own environment.
+  - Settings > Agents > Codex > Account gets a "Codex accounts" card: add (opens the login shell with `CODEX_HOME` set, device auth first and browser login as fallback), sign in again, rename, reorder, enable/disable, remove, make primary, mode, minimum room, and per-window usage bars.
+- **Files:** `server/modules/providers/list/codex/accounts/` (new: `codex-accounts.types.ts`, `.registry.ts`, `.selector.ts`, `.usage.ts`, `.service.ts`), `server/modules/providers/list/codex/codex-app-server.client.ts`, `server/modules/providers/list/codex/codex-runtime.provider.ts`, `server/modules/providers/provider.routes.ts`, `server/modules/database/{schema.ts,migrations.ts,index.ts}`, `server/modules/database/repositories/codex-session-accounts.db.ts` (new), `server/modules/providers/tests/codex-accounts-{selector,registry,usage,runtime}.test.ts` (new), `server/modules/providers/tests/codex-runtime.test.ts`, `src/modules/settings/tabs/agents-settings/sections/content/{CodexAccountsSection.tsx (new),AccountContent.tsx}`, `src/modules/i18n/locales/{en,es}/settings.json`, `docs/fork/CHANGES.md`.
+
+## Reload through the proxy login when it expires
+
+- **Since:** 2026-10-20.
+- **Branch:** `main`. Could go upstream: nothing in it is specific to Cloudflare beyond the redirect.
+- **Why:** `cloudcli.almansa.dev` sits behind Cloudflare Access. When its cookie expires, Access answers every request with a redirect to its login page. After the first load the app only makes fetches and websocket upgrades, which cannot follow that redirect, so Studio looked broken until Pablo reloaded by hand.
+- **What:** `checkEdgeSession` (in `src/shared/edgeSession.ts`) asks `/health` with `redirect: 'manual'`. Studio answers that route without a token, so an opaque redirect can only come from the proxy, and then the page reloads and the browser signs in again (Access redirects to Google on its own). It runs when a fetch fails with a TypeError, when the chat websocket closes, when the tab comes back to the foreground and when the network returns. Concurrent checks share one probe, checks are at least 15 s apart, the page reloads at most once a minute (sessionStorage) and never inside a frame, where the login page cannot render. Without a proxy the probe gets a 200 and nothing happens. Chat drafts survive the reload through their localStorage mirror.
+- **Files:** `src/shared/edgeSession.ts` (new), `src/shared/tests/edgeSession.test.ts` (new), `src/shared/api.ts`, `src/shared/context/WebSocketContext.tsx`, `src/main.tsx`, `.oxlintrc.json`, `docs/fork/CHANGES.md`.
+
 ## Gemini 4 Argon replaces Gemini 4 EAP as an adversary
 
 - **Since:** 2026-10-13, on top of the entry below.

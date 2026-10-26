@@ -2,6 +2,7 @@ import { Database } from 'better-sqlite3';
 
 import {
   APP_CONFIG_TABLE_SCHEMA_SQL,
+  CODEX_SESSION_ACCOUNTS_TABLE_SCHEMA_SQL,
   LAST_SCANNED_AT_SQL,
   NOTIFICATION_CHANNEL_ENDPOINTS_TABLE_SCHEMA_SQL,
   PROJECTS_TABLE_SCHEMA_SQL,
@@ -612,6 +613,7 @@ export const runMigrations = (db: Database) => {
     ensureProjectsForSessionPaths(db);
     db.exec(SCHEDULED_MESSAGES_TABLE_SCHEMA_SQL);
     db.exec(SESSION_SHARES_TABLE_SCHEMA_SQL);
+    db.exec(CODEX_SESSION_ACCOUNTS_TABLE_SCHEMA_SQL);
     addSessionShareFocusIdColumn(db);
     addSessionShareCloudColumns(db);
 
