@@ -22,6 +22,11 @@ import {
   createNormalizedMessage,
 } from '@/shared/index.js';
 import { notifyRunFailed, notifyRunStopped } from '@/modules/notifications/index.js';
+import {
+  codexAccountsService,
+  isUsageLimitMessage,
+  type CodexTurnAccount,
+} from '@/modules/providers/list/codex/accounts/codex-accounts.service.js';
 import type { AnyRecord, ProviderRuntimeContext, ProviderRuntimeWriter } from '@/shared/index.js';
 
 type ActiveCodexSession = {
@@ -289,8 +294,8 @@ async function queryCodex(
     ? effort as ModelReasoningEffort
     : undefined;
 
-  let codex: Codex;
-  let thread: Thread;
+  let codex!: Codex;
+  let thread!: Thread;
   // Provider-native thread id (starts as the resume id, or is captured from
   // the stream for brand-new sessions).
   let capturedSessionId = providerSessionId;
@@ -307,12 +312,21 @@ async function queryCodex(
   // the provider-native thread id once captured (legacy/direct API callers).
   const sessionKey = () => sessionId || capturedSessionId || null;
 
+  // Fork (Hemilake Studio): multi-account Codex. Each turn runs as one of
+  // the registered accounts (its own CODEX_HOME); a turn stopped by the
+  // account's usage limit before doing anything is re-run on the next one.
+  const triedAccounts = new Set<string>();
+  let turnAccount: CodexTurnAccount | null = null;
+  try {
+    turnAccount = await codexAccountsService.resolveForTurn({ sessionId: sessionId || null, effort: resolvedEffort ?? null });
+  } catch (error) {
+    console.warn('[Codex] Could not pick an account, using the default home:', error);
+  }
+
   try {
     // Fork (Hemilake bundle): without the Codex package's own binary the SDK
     // cannot find one, so CODEX_CLI_PATH names the installed CLI.
     const codexPathOverride = process.env.CODEX_CLI_PATH?.trim();
-    codex = new Codex(codexPathOverride ? { codexPathOverride } : undefined);
-
     const threadOptions: ThreadOptions = {
       workingDirectory,
       skipGitRepoCheck: true,
@@ -321,12 +335,22 @@ async function queryCodex(
       model: resolvedModel,
       modelReasoningEffort: resolvedEffort,
     };
-
-    if (providerSessionId) {
-      thread = codex.resumeThread(providerSessionId, threadOptions);
-    } else {
-      thread = codex.startThread(threadOptions);
-    }
+    const openThread = () => {
+      // A lone default account runs with the server's own environment,
+      // exactly as before accounts existed.
+      const environment = turnAccount && turnAccount.reason !== 'single'
+        ? codexAccountsService.environmentFor(turnAccount.account)
+        : undefined;
+      codex = new Codex({
+        ...(codexPathOverride ? { codexPathOverride } : {}),
+        ...(environment ? { env: environment } : {}),
+      });
+      // After a failed first attempt the thread already exists, so the retry
+      // resumes it by the id the stream announced.
+      const resumeId = capturedSessionId || providerSessionId;
+      thread = resumeId ? codex.resumeThread(resumeId, threadOptions) : codex.startThread(threadOptions);
+    };
+    openThread();
 
     const registerSession = (id: string | null) => {
       if (!id) {
@@ -355,84 +379,144 @@ async function queryCodex(
     const turnInput = normalizedImages.length > 0
       ? buildCodexInputItems(promptWithImageFallback, normalizedImages, workingDirectory)
       : promptWithFiles;
-    const streamedTurn = await thread.runStreamed(turnInput, {
-      signal: abortController.signal
-    });
+    let retryOn: CodexTurnAccount | null = null;
+    // Whether this attempt did anything a re-run would repeat.
+    let attemptProducedWork = false;
+    for (;;) {
+      retryOn = null;
+      attemptProducedWork = false;
+      if (turnAccount) {
+        triedAccounts.add(turnAccount.account.id);
+      }
+      const streamedTurn = await thread.runStreamed(turnInput, {
+        signal: abortController.signal
+      });
 
-    for await (const event of streamedTurn.events) {
-      // Capture thread/session id lazily from the stream (Codex emits this asynchronously).
-      if (event.type === 'thread.started') {
-        const discoveredSessionId = event.thread_id || null;
-        if (discoveredSessionId && !capturedSessionId) {
-          capturedSessionId = discoveredSessionId;
-          registerSession(sessionKey());
+      for await (const event of streamedTurn.events) {
+        // Capture thread/session id lazily from the stream (Codex emits this asynchronously).
+        if (event.type === 'thread.started') {
+          const discoveredSessionId = event.thread_id || null;
+          if (discoveredSessionId && !capturedSessionId) {
+            capturedSessionId = discoveredSessionId;
+            registerSession(sessionKey());
 
-          if (ws.setSessionId && typeof ws.setSessionId === 'function') {
-            ws.setSessionId(capturedSessionId);
-          }
+            if (ws.setSessionId && typeof ws.setSessionId === 'function') {
+              ws.setSessionId(capturedSessionId);
+            }
 
-          if (!providerSessionId && !sessionCreatedSent) {
-            sessionCreatedSent = true;
-            sendMessage(ws, createNormalizedMessage({ kind: 'session_created', newSessionId: capturedSessionId, sessionId: capturedSessionId, provider: 'codex' }));
+            if (!sessionId && turnAccount && turnAccount.reason !== 'single') {
+              codexAccountsService.rememberSessionAccount(capturedSessionId, turnAccount.account.id);
+            }
+
+            if (!providerSessionId && !sessionCreatedSent) {
+              sessionCreatedSent = true;
+              sendMessage(ws, createNormalizedMessage({ kind: 'session_created', newSessionId: capturedSessionId, sessionId: capturedSessionId, provider: 'codex' }));
+            }
           }
         }
-      }
 
-      // Check if session was aborted
-      if (abortController.signal.aborted) {
-        break;
-      }
-      if (sessionKey()) {
-        const session = activeCodexSessions.get(sessionKey() || '');
-        if (session?.status === 'aborted') {
+        // Check if session was aborted
+        if (abortController.signal.aborted) {
           break;
         }
-      }
+        if (sessionKey()) {
+          const session = activeCodexSessions.get(sessionKey() || '');
+          if (session?.status === 'aborted') {
+            break;
+          }
+        }
 
-      // Progress events used to be dropped, so a long shell command or a
-      // growing plan showed nothing until it finished. They are forwarded now;
-      // every item carries a stable id, so the client replaces the row it
-      // already has rather than stacking a new one per tick. Text items are
-      // still skipped mid-flight because assistant prose arrives through the
-      // separate streaming path.
-      if (
-        (event.type === 'item.started' || event.type === 'item.updated')
-        && !PROGRESSIVE_CODEX_ITEM_TYPES.has(event.item?.type)
-      ) {
-        continue;
-      }
+        // Progress events used to be dropped, so a long shell command or a
+        // growing plan showed nothing until it finished. They are forwarded now;
+        // every item carries a stable id, so the client replaces the row it
+        // already has rather than stacking a new one per tick. Text items are
+        // still skipped mid-flight because assistant prose arrives through the
+        // separate streaming path.
+        if (
+          (event.type === 'item.started' || event.type === 'item.updated')
+          && !PROGRESSIVE_CODEX_ITEM_TYPES.has(event.item?.type)
+        ) {
+          continue;
+        }
 
-      const transformed = transformCodexEvent(event);
-      if (transformed.type === 'error' || transformed.itemType === 'error') {
-        errorSurfaced = true;
-      }
+        const transformed = transformCodexEvent(event);
 
-      // Normalize the transformed event into NormalizedMessage(s) via adapter
-      const normalizedMsgs = context.normalizeMessage(transformed, capturedSessionId || sessionId || null);
-      for (const msg of normalizedMsgs) {
-        sendMessage(ws, msg);
-      }
+        const failureText = event.type === 'turn.failed'
+          ? event.error?.message
+          : transformed.type === 'error'
+            ? transformed.message
+            : transformed.itemType === 'error'
+              ? transformed.message?.content
+              : null;
+        if (turnAccount && turnAccount.reason !== 'single' && isUsageLimitMessage(failureText)) {
+          codexAccountsService.markExhausted(turnAccount.account.id);
+          if (!attemptProducedWork && !abortController.signal.aborted) {
+            const next = await codexAccountsService
+              .resolveForTurn({ sessionId: sessionId || capturedSessionId || null, effort: resolvedEffort ?? null, exclude: triedAccounts })
+              .catch(() => null);
+            if (next && !triedAccounts.has(next.account.id)) {
+              retryOn = next;
+              break;
+            }
+          }
+        }
 
-      if (event.type === 'turn.failed' && !terminalFailure) {
-        terminalFailure = event.error || new Error('Turn failed');
-        errorSurfaced = true;
-        // Notifications are app-facing, so they carry the app session id.
-        notifyRunFailed({
-          userId: ws?.userId || null,
-          provider: 'codex',
-          sessionId: sessionId || capturedSessionId || null,
-          sessionName: sessionSummary,
-          error: terminalFailure
-        });
-      }
+        if (event.type === 'item.completed' && event.item?.type !== 'error') {
+          attemptProducedWork = true;
+        }
 
-      // Extract and send token usage if available (normalized to match Claude format)
-      if (event.type === 'turn.completed') {
-        const tokenBudget = extractCodexTokenBudget(event);
-        if (tokenBudget) {
-          sendMessage(ws, createNormalizedMessage({ kind: 'status', text: 'token_budget', tokenBudget, sessionId: capturedSessionId || sessionId || null, provider: 'codex' }));
+        if (transformed.type === 'error' || transformed.itemType === 'error') {
+          errorSurfaced = true;
+        }
+
+        // Normalize the transformed event into NormalizedMessage(s) via adapter
+        const normalizedMsgs = context.normalizeMessage(transformed, capturedSessionId || sessionId || null);
+        for (const msg of normalizedMsgs) {
+          sendMessage(ws, msg);
+        }
+
+        if (event.type === 'turn.failed' && !terminalFailure) {
+          terminalFailure = event.error || new Error('Turn failed');
+          errorSurfaced = true;
+          // Notifications are app-facing, so they carry the app session id.
+          notifyRunFailed({
+            userId: ws?.userId || null,
+            provider: 'codex',
+            sessionId: sessionId || capturedSessionId || null,
+            sessionName: sessionSummary,
+            error: terminalFailure
+          });
+        }
+
+        // Extract and send token usage if available (normalized to match Claude format)
+        if (event.type === 'turn.completed') {
+          const tokenBudget = extractCodexTokenBudget(event);
+          if (tokenBudget) {
+            sendMessage(ws, createNormalizedMessage({ kind: 'status', text: 'token_budget', tokenBudget, sessionId: capturedSessionId || sessionId || null, provider: 'codex' }));
+          }
         }
       }
+
+      if (!retryOn) {
+        break;
+      }
+      const exhausted = turnAccount!.account.label;
+      turnAccount = retryOn;
+      console.log(`[Codex] Account "${exhausted}" hit its usage limit; retrying the turn on "${turnAccount.account.label}".`);
+      sendMessage(ws, createNormalizedMessage({
+        kind: 'status',
+        text: `Codex account "${exhausted}" is out of usage; continuing on "${turnAccount.account.label}"`,
+        sessionId: capturedSessionId || sessionId || null,
+        provider: 'codex',
+      }));
+      openThread();
+      if (sessionKey()) {
+        registerSession(sessionKey());
+      }
+    }
+
+    if (turnAccount && turnAccount.reason !== 'single') {
+      codexAccountsService.refreshSoon(turnAccount.account);
     }
 
     // Send the terminal completion event — skipped for aborted runs, whose

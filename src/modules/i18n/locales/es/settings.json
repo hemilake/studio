@@ -384,7 +384,40 @@
       "button": "Iniciar sesión",
       "reLoginButton": "Volver a iniciar sesión"
     },
-    "error": "Error: {{error}}"
+    "error": "Error: {{error}}",
+    "codexAccounts": {
+      "title": "Cuentas de Codex",
+      "description": "Cada sesión se queda en una cuenta y solo pasa a otra cuando esa se queda sin cuota.",
+      "refresh": "Actualizar",
+      "add": "Añadir cuenta",
+      "labelPlaceholder": "Nombre, p. ej. Trabajo",
+      "addAndSignIn": "Añadir e iniciar sesión",
+      "mode": "Sesiones nuevas",
+      "modeBackup": "Principal + reserva",
+      "modeRoundRobin": "Round robin",
+      "modeBackupHelp": "Siempre la principal; las demás, en el orden de la lista, cuando se agota.",
+      "modeRoundRobinHelp": "Cada sesión nueva va a la siguiente cuenta con margen, en el orden de la lista.",
+      "minHeadroom": "Margen mínimo para un turno",
+      "minHeadroomHelp": "Porcentaje de una ventana de Plus; ×2 con esfuerzo high y ×3 con xhigh. Los planes grandes cuentan su margen más grande (Pro ×6).",
+      "primary": "Principal",
+      "limitReached": "Sin cuota",
+      "notSignedIn": "Sin sesión iniciada",
+      "sessions_one": "{{count}} sesión",
+      "sessions_other": "{{count}} sesiones",
+      "moveUp": "Subir",
+      "moveDown": "Bajar",
+      "rename": "Renombrar",
+      "remove": "Quitar",
+      "enabled": "Usar esta cuenta",
+      "makePrimary": "Hacer principal",
+      "resetsIn": "se reinicia en {{span}}",
+      "confirmRemove": "¿Quitar la cuenta de Codex «{{label}}»? Se borra su login; las sesiones se quedan.",
+      "window": {
+        "week": "Semana",
+        "days": "{{count}} d",
+        "hours": "{{count}} h"
+      }
+    }
   },
   "permissions": {
     "title": "Ajustes de permisos",

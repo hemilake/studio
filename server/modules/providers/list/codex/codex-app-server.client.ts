@@ -79,10 +79,11 @@ function resolveCodexLauncher(): { command: string; args: string[] } {
  */
 async function withAppServer<T>(
   run: (call: (method: string, params: unknown) => Promise<unknown>) => Promise<T>,
+  env: NodeJS.ProcessEnv = process.env,
 ): Promise<T> {
   const launcher = resolveCodexLauncher();
   const child = spawn(launcher.command, launcher.args, {
-    env: process.env,
+    env,
     stdio: ['pipe', 'pipe', 'pipe'],
   });
 
@@ -198,7 +199,30 @@ async function withAppServer<T>(
   }
 }
 
+/**
+ * What `account/read` and `account/rateLimits/read` report for one signed-in
+ * account. Both payloads are passed through untouched; the accounts module
+ * owns their normalization so this client stays a transport.
+ */
+export type CodexAccountSnapshot = {
+  account: unknown;
+  rateLimits: unknown;
+};
+
 export const codexAppServer = {
+  /**
+   * Reads the account and plan limits of whichever login lives in
+   * `codexHome`. Each account is its own CODEX_HOME, so pointing the server
+   * at one is all it takes to ask about that account instead of the default.
+   */
+  async readAccount(input: { codexHome: string }): Promise<CodexAccountSnapshot> {
+    return withAppServer(async (call) => {
+      const account = await call('account/read', {});
+      const rateLimits = await call('account/rateLimits/read', {});
+      return { account, rateLimits };
+    }, { ...process.env, CODEX_HOME: input.codexHome });
+  },
+
   /**
    * Copies a thread into a new one that ends at `lastTurnId`, or copies the
    * whole thread when it is omitted.

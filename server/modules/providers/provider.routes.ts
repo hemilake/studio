@@ -1,5 +1,6 @@
 import express, { type Request, type Response } from 'express';
 
+import { codexAccountsService } from '@/modules/providers/list/codex/accounts/codex-accounts.service.js';
 import { providerAuthService } from '@/modules/providers/services/provider-auth.service.js';
 import { providerCapabilitiesService } from '@/modules/providers/services/provider-capabilities.service.js';
 import { providerMcpService } from '@/modules/providers/services/mcp.service.js';
@@ -523,6 +524,93 @@ const parseCustomProviderModelPayload = (payload: unknown): CustomProviderModelI
 
   return { model, id };
 };
+
+// Fork (Hemilake Studio): multi-account Codex. Accounts, their plan usage
+// and how new sessions are spread across them.
+const ACCOUNT_ID_PARAM_PATTERN = /^[a-z0-9][a-z0-9-]{0,62}$/;
+
+const parseAccountId = (value: unknown): string => {
+  const accountId = readPathParam(value, 'accountId').trim();
+  if (!ACCOUNT_ID_PARAM_PATTERN.test(accountId)) {
+    throw new AppError('Invalid accountId.', { code: 'INVALID_ACCOUNT_ID', statusCode: 400 });
+  }
+  return accountId;
+};
+
+const readBody = (body: unknown): Record<string, unknown> =>
+  body !== null && typeof body === 'object' && !Array.isArray(body) ? body as Record<string, unknown> : {};
+
+router.get(
+  '/codex/accounts',
+  asyncHandler(async (req: Request, res: Response) => {
+    const view = await codexAccountsService.list({ refresh: req.query.refresh === '1' });
+    res.json(createApiSuccessResponse(view));
+  }),
+);
+
+router.post(
+  '/codex/accounts',
+  asyncHandler(async (req: Request, res: Response) => {
+    const body = readBody(req.body);
+    const result = await codexAccountsService.create(typeof body.label === 'string' ? body.label : '');
+    res.status(201).json(createApiSuccessResponse(result));
+  }),
+);
+
+router.put(
+  '/codex/accounts/settings',
+  asyncHandler(async (req: Request, res: Response) => {
+    const body = readBody(req.body);
+    const planWeights = readBody(body.planWeights);
+    await codexAccountsService.updateSettings({
+      mode: body.mode === 'round_robin' || body.mode === 'backup' ? body.mode : undefined,
+      primaryAccountId: typeof body.primaryAccountId === 'string' ? body.primaryAccountId : undefined,
+      minHeadroomPercent: typeof body.minHeadroomPercent === 'number' ? body.minHeadroomPercent : undefined,
+      planWeights: body.planWeights === undefined
+        ? undefined
+        : Object.fromEntries(Object.entries(planWeights).filter(([, weight]) => typeof weight === 'number')) as Record<string, number>,
+      order: Array.isArray(body.order) ? body.order.filter((id): id is string => typeof id === 'string') : undefined,
+    });
+    res.json(createApiSuccessResponse(await codexAccountsService.list()));
+  }),
+);
+
+router.patch(
+  '/codex/accounts/:accountId',
+  asyncHandler(async (req: Request, res: Response) => {
+    const accountId = parseAccountId(req.params.accountId);
+    const body = readBody(req.body);
+    const account = await codexAccountsService.update(accountId, {
+      label: typeof body.label === 'string' ? body.label : undefined,
+      enabled: typeof body.enabled === 'boolean' ? body.enabled : undefined,
+    });
+    res.json(createApiSuccessResponse({ account }));
+  }),
+);
+
+router.delete(
+  '/codex/accounts/:accountId',
+  asyncHandler(async (req: Request, res: Response) => {
+    await codexAccountsService.remove(parseAccountId(req.params.accountId));
+    res.json(createApiSuccessResponse({ removed: true }));
+  }),
+);
+
+router.get(
+  '/codex/accounts/:accountId/login-command',
+  asyncHandler(async (req: Request, res: Response) => {
+    const loginCommand = await codexAccountsService.getLoginCommand(parseAccountId(req.params.accountId));
+    res.json(createApiSuccessResponse({ loginCommand }));
+  }),
+);
+
+router.post(
+  '/codex/accounts/:accountId/refresh',
+  asyncHandler(async (req: Request, res: Response) => {
+    const usage = await codexAccountsService.refresh(parseAccountId(req.params.accountId));
+    res.json(createApiSuccessResponse({ usage }));
+  }),
+);
 
 router.get(
   '/:provider/auth/status',

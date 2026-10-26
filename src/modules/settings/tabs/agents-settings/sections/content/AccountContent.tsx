@@ -2,6 +2,7 @@ import { LogIn } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge, Button, LLMProviderLogo } from '@/shared/ui';
+import CodexAccountsSection from '@/modules/settings/tabs/agents-settings/sections/content/CodexAccountsSection';
 import type { AgentProvider, ProviderAuthStatus } from '@/shared/types';
 
 type AccountContentProps = {
@@ -118,6 +119,9 @@ export default function AccountContent({ agent, authStatus, onLogin }: AccountCo
           )}
         </div>
       </div>
+
+      {/* Fork (Hemilake Studio): several Codex accounts with usage-aware routing. */}
+      {agent === 'codex' && <CodexAccountsSection />}
     </div>
   );
 }
