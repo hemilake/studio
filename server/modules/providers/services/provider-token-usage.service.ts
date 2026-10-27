@@ -7,7 +7,7 @@ import Database from 'better-sqlite3';
 
 import { sessionsDb } from '@/modules/database/index.js';
 import type { AnyRecord } from '@/shared/types.js';
-import { AppError, getClaudeConfigDirectory, getOpenCodeDatabasePath } from '@/shared/utils.js';
+import { AppError, getClaudeConfigDirectory, getCodexHomeDirectory, getOpenCodeDatabasePath } from '@/shared/utils.js';
 
 type SessionRow = NonNullable<ReturnType<typeof sessionsDb.getSessionById>>;
 
@@ -410,7 +410,7 @@ export function createProviderTokenUsageService(
           ? session.jsonl_path
           : null;
         const sessionFilePath = indexedFilePath ?? await findCodexSessionFile(
-          path.join(dependencies.getHomeDirectory(), '.codex', 'sessions'),
+          path.join(getCodexHomeDirectory(dependencies.getHomeDirectory()), 'sessions'),
           providerSessionId,
           dependencies,
         );

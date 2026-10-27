@@ -6,11 +6,16 @@
  * without reading usage, so a user who never adds an account sees no change.
  */
 
+import { stat } from 'node:fs/promises';
+import path from 'node:path';
+
 import { codexSessionAccountsDb } from '@/modules/database/index.js';
+import { codexAppServer } from '@/modules/providers/list/codex/codex-app-server.client.js';
 import { AppError } from '@/shared/utils.js';
 
 import {
   DEFAULT_CODEX_ACCOUNT_ID,
+  defaultCodexHome,
   newAccountId,
   readRegistry,
   removeAccountHome,
@@ -34,6 +39,9 @@ const TURN_USAGE_WAIT_MS = 4_000;
 /** The settings page shows fresher numbers and can wait a little longer. */
 const LIST_USAGE_MAX_AGE_MS = 60_000;
 const LIST_USAGE_WAIT_MS = 10_000;
+
+/** Longest a turn waits for an account's hook trust to be brought in line (mirrorTrust). */
+const MIRROR_TURN_WAIT_MS = 5_000;
 
 /** Codex's own wording when a plan limit stops a turn. */
 const USAGE_LIMIT_PATTERN = /usage[ _]limit|hit your (usage )?limit|rate_limit_reached|usageLimitExceeded/i;
@@ -75,6 +83,9 @@ function shellQuote(value: string): string {
 export class CodexAccountsService {
   /** Serializes registry writes so concurrent turns cannot lose an update. */
   private writeQueue: Promise<unknown> = Promise.resolve();
+  /** Per account, the default home's hooks.json and config.toml times when its hook trust was last mirrored. */
+  private readonly trustSignatures = new Map<string, string>();
+  private readonly trustInFlight = new Map<string, Promise<void>>();
 
   constructor(readonly usage = new CodexAccountUsageTracker()) {}
 
@@ -158,6 +169,7 @@ export class CodexAccountsService {
     // sanitizeRegistry derives the home from the id; read it back from there.
     const stored = await this.requireAccount(await readRegistry(), account.id);
     await syncAccountHome(stored.codexHome);
+    await this.mirrorTrust(stored, true);
     return { account: stored, loginCommand: this.loginCommand(stored) };
   }
 
@@ -169,6 +181,7 @@ export class CodexAccountsService {
   async getLoginCommand(accountId: string): Promise<string> {
     const account = await this.requireAccount(await readRegistry(), accountId);
     await syncAccountHome(account.codexHome);
+    await this.mirrorTrust(account, true);
     return this.loginCommand(account);
   }
 
@@ -300,7 +313,63 @@ export class CodexAccountsService {
       }
     }
     await syncAccountHome(account.codexHome);
+    await this.mirrorTrust(account);
     return { ...selection, account };
+  }
+
+  /**
+   * Fork (Hemilake): `account`'s hook trust made the default home's
+   * (codexAppServer.mirrorHookTrust), so a turn on an extra account runs the
+   * hooks the owner trusts and no hook they revoked. Done again only when the
+   * default home's hooks.json or config.toml changed since the last success,
+   * unless `force`, and one at a time per account. A turn waits for it at most
+   * MIRROR_TURN_WAIT_MS, then goes on while it finishes. A failure is logged
+   * and retried at the next turn; meanwhile Codex skips the hooks it does not
+   * trust on that account.
+   */
+  private async mirrorTrust(account: CodexAccountRecord, force = false): Promise<void> {
+    if (account.id === DEFAULT_CODEX_ACCOUNT_ID) {
+      return;
+    }
+    const home = defaultCodexHome();
+    const signature = async () => {
+      const times = await Promise.all(['hooks.json', 'config.toml'].map(async (name) => {
+        try {
+          return String((await stat(path.join(home, name))).mtimeMs);
+        } catch {
+          return '-';
+        }
+      }));
+      return times.join(':');
+    };
+    let running = this.trustInFlight.get(account.id);
+    if (!running) {
+      const before = await signature();
+      if (!force && this.trustSignatures.get(account.id) === before) {
+        return;
+      }
+      running = codexAppServer.mirrorHookTrust({ defaultHome: home, accountHomes: [account.codexHome] })
+        .then(async () => {
+          this.trustSignatures.set(account.id, await signature());
+        })
+        .catch((error) => {
+          console.warn(`[Codex accounts] Could not give account ${account.id} the default home's hook trust:`, error);
+        })
+        .finally(() => {
+          this.trustInFlight.delete(account.id);
+        });
+      this.trustInFlight.set(account.id, running);
+    }
+    if (force) {
+      await running;
+      return;
+    }
+    let timer: NodeJS.Timeout | undefined;
+    await Promise.race([running, new Promise<void>((resolve) => {
+      timer = setTimeout(resolve, MIRROR_TURN_WAIT_MS);
+      timer.unref?.();
+    })]);
+    clearTimeout(timer);
   }
 
   /** Records the account a brand-new session got once its id is known. */

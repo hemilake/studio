@@ -86,6 +86,23 @@ export function getClaudeGlobalConfigPath(
   return configured ? path.join(path.resolve(configured), '.claude.json') : path.join(homeDirectory, '.claude.json');
 }
 
+/**
+ * Codex's home: `CODEX_HOME` when it is set, else `.codex` in the home
+ * directory. Codex keeps its config.toml, hooks.json, `auth.json`, skills and
+ * session rollouts (`sessions/`) there.
+ *
+ * Fork (Hemilake): hemi runs Studio with a `CODEX_HOME` of its own, as it does
+ * Claude Code's `CLAUDE_CONFIG_DIR`, so every module that reads Codex's files
+ * resolves the directory here instead of joining `~/.codex`.
+ */
+export function getCodexHomeDirectory(
+  homeDirectory: string = os.homedir(),
+  environment: NodeJS.ProcessEnv = process.env,
+): string {
+  const configured = environment.CODEX_HOME?.trim();
+  return configured ? path.resolve(configured) : path.join(homeDirectory, '.codex');
+}
+
 // ---------------------------
 //----------------- NORMALIZED MESSAGE HELPER INPUT TYPES ------------
 /**

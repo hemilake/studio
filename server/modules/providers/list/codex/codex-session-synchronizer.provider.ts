@@ -1,4 +1,3 @@
-import os from 'node:os';
 import path from 'node:path';
 import { readFile } from 'node:fs/promises';
 
@@ -7,6 +6,7 @@ import {
   buildLookupMap,
   extractFirstValidJsonlData,
   findFilesRecursivelyCreatedAfter,
+  getCodexHomeDirectory,
   normalizeSessionName,
   readFileTimestamps,
 } from '@/shared/utils.js';
@@ -23,7 +23,7 @@ type ParsedSession = {
  */
 export class CodexSessionSynchronizer implements IProviderSessionSynchronizer {
   private readonly provider = 'codex' as const;
-  private readonly codexHome = path.join(os.homedir(), '.codex');
+  private readonly codexHome = getCodexHomeDirectory();
 
   /**
    * Scans ~/.codex/sessions and upserts discovered sessions into DB.
