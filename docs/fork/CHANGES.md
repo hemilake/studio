@@ -2,6 +2,18 @@
 
 One entry per customization, newest first. Keep the file list accurate: it is the conflict checklist for upstream merges.
 
+## Codex's files under CODEX_HOME
+
+- **Since:** 2026-10-27.
+- **Branch:** `feat/codex-home`. Could go upstream: it is a plain bug for anyone who sets `CODEX_HOME`.
+- **Why:** hemi now runs Studio's Codex with a `CODEX_HOME` of its own (`$HEMI_HOME/studio/codex`), as it runs Claude Code with its own `CLAUDE_CONFIG_DIR`, and puts the Hemilake plugin there (ADR-047's amendment of 2026-10-27 in the Hemilake repository). Codex itself honours the variable, but Studio read Codex's files from `~/.codex` directly: with the home elsewhere it would list no Codex conversations, report Codex as signed out and edit the wrong config.toml.
+- **What:**
+  - `getCodexHomeDirectory()` in `server/shared/utils.ts`: `CODEX_HOME` when set, else `~/.codex`, the same rule as `defaultCodexHome()` of the accounts registry.
+  - Every reader goes through it: the sessions watcher and synchronizer (`sessions/`, `session_index.jsonl`), token usage, skills (`skills/`, `skills/.system`), the user-scoped MCP servers and the active model (`config.toml`), and the sign-in check (`auth.json`).
+  - Project-level `.codex/` folders inside workspaces are unchanged. With `CODEX_HOME` unset nothing changes.
+- **Files:** `server/shared/utils.ts`, `server/shared/tests/codex-home.test.ts` (new), `server/modules/providers/list/codex/{codex-auth,codex-mcp,codex-models,codex-session-synchronizer,codex-skills}.provider.ts`, `server/modules/providers/services/{sessions-watcher,provider-token-usage}.service.ts`, `server/modules/providers/tests/mcp.test.ts`, `docs/fork/hemilake-bundle.md`.
+- **Verified:** typecheck, lint, the Codex tests (33), and the server suite, whose failures are the same as on `main` (six tests that read this shell's `CLAUDE_CLI_PATH` and agent paths, and the agent routes file).
+
 ## Several Codex accounts, picked by usage
 
 - **Since:** 2026-10-26.

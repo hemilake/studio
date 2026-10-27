@@ -64,7 +64,10 @@ The bundle carries no agent CLI. Studio runs the owner's own:
 - **Claude Code**: `claude` on the service's `PATH`, or `CLAUDE_CLI_PATH`. hemi gives Studio its own pinned copy and its own `CLAUDE_CONFIG_DIR` (HEM-777); Studio reads Claude Code's sessions, settings and sign-in from there. Claude Code signs in with the owner's own Claude account or API key (ADR-047 in the Hemilake repository).
 - **Codex**: `CODEX_CLI_PATH`; the launcher fills it with `command -v codex`
   when it is unset. Without a Codex, Codex conversations fail with a clear error
-  and branching a Codex conversation answers 501.
+  and branching a Codex conversation answers 501. hemi gives Studio's Codex its
+  own `CODEX_HOME`, with the Hemilake plugin in it; Studio reads Codex's
+  sessions, config, skills and sign-in from there, and the owner signs in to
+  Codex once inside Studio.
 - **Gemini, Antigravity, Cursor, OpenCode**: their CLIs on `PATH`, as in any
   install.
 

@@ -169,6 +169,35 @@ test('providerMcpService handles codex MCP TOML config and capability validation
   }
 });
 
+// Fork (Hemilake): hemi runs Studio with a CODEX_HOME of its own.
+test('providerMcpService keeps codex user-scoped servers in CODEX_HOME when it is set', { concurrency: false }, async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'llm-mcp-codex-home-'));
+  const codexHome = path.join(tempRoot, 'studio-codex');
+  const restoreHomeDir = patchHomeDir(tempRoot);
+  const original = process.env.CODEX_HOME;
+  process.env.CODEX_HOME = codexHome;
+  try {
+    await providerMcpService.upsertProviderMcpServer('codex', {
+      name: 'codex-user-stdio',
+      scope: 'user',
+      transport: 'stdio',
+      command: 'python3',
+    });
+    const servers = (TOML.parse(await fs.readFile(path.join(codexHome, 'config.toml'), 'utf8')) as Record<string, unknown>)
+      .mcp_servers as Record<string, unknown>;
+    assert.ok(servers['codex-user-stdio']);
+    await assert.rejects(fs.access(path.join(tempRoot, '.codex', 'config.toml')));
+  } finally {
+    if (original === undefined) {
+      delete process.env.CODEX_HOME;
+    } else {
+      process.env.CODEX_HOME = original;
+    }
+    restoreHomeDir();
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
 /**
  * This test covers OpenCode MCP support for user/project config files, JSONC-compatible
  * reads, and validation for unsupported scope/transport combinations.

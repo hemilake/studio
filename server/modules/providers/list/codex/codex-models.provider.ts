@@ -1,5 +1,4 @@
 import { readFile } from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
 
 import TOML from '@iarna/toml';
@@ -11,6 +10,7 @@ import type {
 } from '@/shared/types.js';
 import {
   buildDefaultProviderCurrentActiveModel,
+  getCodexHomeDirectory,
   readObjectRecord,
   readOptionalString,
 } from '@/shared/utils.js';
@@ -112,7 +112,7 @@ export const CODEX_PREDEFINED_MODELS: ProviderModelsDefinition = {
   DEFAULT: 'gpt-5.6-sol',
 };
 
-const CODEX_CONFIG_PATH = path.join(os.homedir(), '.codex', 'config.toml');
+const CODEX_CONFIG_PATH = path.join(getCodexHomeDirectory(), 'config.toml');
 
 /** Provider registry model adapter for Codex predefined models and active config. */
 export class CodexProviderModels implements IProviderModels {

@@ -6,6 +6,7 @@ import type { ProviderSkillSource } from '@/shared/types.js';
 import {
   addUniqueProviderSkillSource,
   findTopmostGitRoot,
+  getCodexHomeDirectory,
 } from '@/shared/utils.js';
 
 export class CodexSkillsProvider extends SkillsProvider {
@@ -46,7 +47,7 @@ export class CodexSkillsProvider extends SkillsProvider {
     });
     addUniqueProviderSkillSource(sources, seenRootDirs, {
       scope: 'user',
-      rootDir: path.join(os.homedir(), '.codex', 'skills'),
+      rootDir: path.join(getCodexHomeDirectory(), 'skills'),
       commandPrefix: '$',
     });
     addUniqueProviderSkillSource(sources, seenRootDirs, {
@@ -56,7 +57,7 @@ export class CodexSkillsProvider extends SkillsProvider {
     });
     addUniqueProviderSkillSource(sources, seenRootDirs, {
       scope: 'system',
-      rootDir: path.join(os.homedir(), '.codex', 'skills', '.system'),
+      rootDir: path.join(getCodexHomeDirectory(), 'skills', '.system'),
       commandPrefix: '$',
     });
 
