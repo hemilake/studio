@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 import { stat } from 'node:fs/promises';
 import { createRequire } from 'node:module';
+import path from 'node:path';
 import readline from 'node:readline';
 
 import { AppError } from '@/shared/utils.js';
@@ -209,6 +210,53 @@ export type CodexAccountSnapshot = {
   rateLimits: unknown;
 };
 
+/**
+ * The hook trust an extra account needs to run the hooks the default home
+ * already trusts.
+ *
+ * Fork (Hemilake): an extra account's `hooks.json` and `config.toml` are
+ * symlinks to the default home's, so Codex finds the same hooks there, but it
+ * keys its trust by the path of the file that declares a hook
+ * (`<hooks.json path>:<event>:<group>:<handler>`), and a hook trusted under
+ * `~/.codex/hooks.json` is untrusted under `<account>/hooks.json`. Every user
+ * hook that `hooks/list` reports trusted in the default home gets the same
+ * hash under each account's path; nothing else is trusted.
+ */
+export function accountTrustEdits(
+  hooks: unknown,
+  defaultHome: string,
+  accountHomes: string[],
+): Record<string, { trusted_hash: string }> {
+  const edits: Record<string, { trusted_hash: string }> = {};
+  const home = path.resolve(defaultHome);
+  for (const hook of Array.isArray(hooks) ? hooks : []) {
+    const entry = hook as Record<string, unknown> | null;
+    const key = entry?.key;
+    const sourcePath = entry?.sourcePath;
+    const digest = entry?.currentHash;
+    if (
+      entry?.source !== 'user'
+      || entry?.trustStatus !== 'trusted'
+      || typeof key !== 'string'
+      || typeof sourcePath !== 'string'
+      || typeof digest !== 'string'
+      || !digest
+      || path.dirname(path.resolve(sourcePath)) !== home
+      || !key.startsWith(`${sourcePath}:`)
+    ) {
+      continue;
+    }
+    for (const account of accountHomes) {
+      if (path.resolve(account) === home) {
+        continue;
+      }
+      const mirrored = path.join(account, path.basename(sourcePath)) + key.slice(sourcePath.length);
+      edits[mirrored] = { trusted_hash: digest };
+    }
+  }
+  return edits;
+}
+
 export const codexAppServer = {
   /**
    * Reads the account and plan limits of whichever login lives in
@@ -221,6 +269,34 @@ export const codexAppServer = {
       const rateLimits = await call('account/rateLimits/read', {});
       return { account, rateLimits };
     }, { ...process.env, CODEX_HOME: input.codexHome });
+  },
+
+  /** The hooks Codex finds under `codexHome`, with their trust status and hash (`hooks/list`). */
+  async listHooks(input: { codexHome: string }): Promise<unknown[]> {
+    return withAppServer(async (call) => {
+      const listed = await call('hooks/list', { cwds: [input.codexHome] }) as { data?: unknown } | undefined;
+      return (Array.isArray(listed?.data) ? listed.data : [])
+        .flatMap((entry) => (Array.isArray((entry as { hooks?: unknown })?.hooks) ? (entry as { hooks: unknown[] }).hooks : []));
+    }, { ...process.env, CODEX_HOME: input.codexHome });
+  },
+
+  /**
+   * Gives each account home the trust the default home has in the hooks they
+   * share (accountTrustEdits), writing the default home's `config.toml`,
+   * which every account links to. Returns how many keys were written.
+   */
+  async mirrorHookTrust(input: { defaultHome: string; accountHomes: string[] }): Promise<number> {
+    const hooks = await this.listHooks({ codexHome: input.defaultHome });
+    return withAppServer(async (call) => {
+      const edits = accountTrustEdits(hooks, input.defaultHome, input.accountHomes);
+      if (Object.keys(edits).length === 0) {
+        return 0;
+      }
+      await call('config/batchWrite', {
+        edits: [{ keyPath: 'hooks.state', value: edits, mergeStrategy: 'upsert' }],
+      });
+      return Object.keys(edits).length;
+    }, { ...process.env, CODEX_HOME: input.defaultHome });
   },
 
   /**
