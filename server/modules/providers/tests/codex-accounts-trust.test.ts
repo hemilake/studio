@@ -30,13 +30,23 @@ test('config.toml hooks are mirrored under the account config.toml path', () => 
   assert.deepEqual(Object.keys(accountTrustEdits([inToml], HOME, [ACCOUNT])), [`${ACCOUNT}/config.toml:stop:0:0`]);
 });
 
-test('untrusted, modified, project and managed hooks are not mirrored, nor the default home onto itself', () => {
+test('a hook the default home does not trust is removed from each account, a turned-off one stays off', () => {
+  assert.deepEqual(accountTrustEdits([hook({ trustStatus: 'untrusted' })], HOME, [ACCOUNT]), {
+    [`${ACCOUNT}/hooks.json:user_prompt_submit:0:0`]: null,
+  });
+  assert.deepEqual(accountTrustEdits([hook({ trustStatus: 'modified' })], HOME, [ACCOUNT]), {
+    [`${ACCOUNT}/hooks.json:user_prompt_submit:0:0`]: null,
+  });
+  assert.deepEqual(accountTrustEdits([hook({ enabled: false })], HOME, [ACCOUNT]), {
+    [`${ACCOUNT}/hooks.json:user_prompt_submit:0:0`]: { trusted_hash: 'sha256:abc', enabled: false },
+  });
+});
+
+test('project, managed and system hooks are left alone, and the default home is not mirrored onto itself', () => {
   const skipped = [
-    hook({ trustStatus: 'untrusted' }),
-    hook({ trustStatus: 'modified' }),
     hook({ source: 'project', sourcePath: '/work/repo/.codex/hooks.json', key: '/work/repo/.codex/hooks.json:stop:0:0' }),
     hook({ source: 'system', trustStatus: 'managed' }),
-    hook({ currentHash: '' }),
+    hook({ sourcePath: '/elsewhere/hooks.json', key: '/elsewhere/hooks.json:stop:0:0' }),
   ];
   assert.deepEqual(accountTrustEdits(skipped, HOME, [ACCOUNT]), {});
   assert.deepEqual(accountTrustEdits([hook()], HOME, [HOME]), {});
@@ -77,6 +87,14 @@ test('an extra account home runs the hooks the default home trusts', { skip: !co
     assert.equal(after[0]?.trustStatus, 'trusted');
     const still = await codexAppServer.listHooks({ codexHome: home }) as Array<{ trustStatus: string }>;
     assert.equal(still[0]?.trustStatus, 'trusted');
+
+    // The owner revokes it in the default home: the next mirror takes it away from the account too.
+    await writeFile(path.join(home, 'config.toml'), '');
+    assert.equal(await codexAppServer.mirrorHookTrust({ defaultHome: home, accountHomes: [account] }), 1);
+    const revoked = await codexAppServer.listHooks({ codexHome: account }) as Array<{ trustStatus: string }>;
+    assert.equal(revoked[0]?.trustStatus, 'untrusted');
+    // Again, with nothing left to remove: Codex takes the removal of a missing key as done.
+    assert.equal(await codexAppServer.mirrorHookTrust({ defaultHome: home, accountHomes: [account] }), 1);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

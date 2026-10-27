@@ -40,6 +40,9 @@ const TURN_USAGE_WAIT_MS = 4_000;
 const LIST_USAGE_MAX_AGE_MS = 60_000;
 const LIST_USAGE_WAIT_MS = 10_000;
 
+/** Longest a turn waits for an account's hook trust to be brought in line (mirrorTrust). */
+const MIRROR_TURN_WAIT_MS = 5_000;
+
 /** Codex's own wording when a plan limit stops a turn. */
 const USAGE_LIMIT_PATTERN = /usage[ _]limit|hit your (usage )?limit|rate_limit_reached|usageLimitExceeded/i;
 
@@ -82,6 +85,7 @@ export class CodexAccountsService {
   private writeQueue: Promise<unknown> = Promise.resolve();
   /** Per account, the default home's hooks.json and config.toml times when its hook trust was last mirrored. */
   private readonly trustSignatures = new Map<string, string>();
+  private readonly trustInFlight = new Map<string, Promise<void>>();
 
   constructor(readonly usage = new CodexAccountUsageTracker()) {}
 
@@ -314,11 +318,14 @@ export class CodexAccountsService {
   }
 
   /**
-   * Fork (Hemilake): the hooks the default home trusts, trusted in `account`'s
-   * home too (codexAppServer.mirrorHookTrust), so a turn on an extra account
-   * runs the same hooks. Done again only when the default home's hooks.json
-   * or config.toml changed since the last time, unless `force`. A failure is
-   * logged and the turn goes on, with Codex skipping hooks it does not trust.
+   * Fork (Hemilake): `account`'s hook trust made the default home's
+   * (codexAppServer.mirrorHookTrust), so a turn on an extra account runs the
+   * hooks the owner trusts and no hook they revoked. Done again only when the
+   * default home's hooks.json or config.toml changed since the last success,
+   * unless `force`, and one at a time per account. A turn waits for it at most
+   * MIRROR_TURN_WAIT_MS, then goes on while it finishes. A failure is logged
+   * and retried at the next turn; meanwhile Codex skips the hooks it does not
+   * trust on that account.
    */
   private async mirrorTrust(account: CodexAccountRecord, force = false): Promise<void> {
     if (account.id === DEFAULT_CODEX_ACCOUNT_ID) {
@@ -335,16 +342,34 @@ export class CodexAccountsService {
       }));
       return times.join(':');
     };
-    const before = await signature();
-    if (!force && this.trustSignatures.get(account.id) === before) {
+    let running = this.trustInFlight.get(account.id);
+    if (!running) {
+      const before = await signature();
+      if (!force && this.trustSignatures.get(account.id) === before) {
+        return;
+      }
+      running = codexAppServer.mirrorHookTrust({ defaultHome: home, accountHomes: [account.codexHome] })
+        .then(async () => {
+          this.trustSignatures.set(account.id, await signature());
+        })
+        .catch((error) => {
+          console.warn(`[Codex accounts] Could not give account ${account.id} the default home's hook trust:`, error);
+        })
+        .finally(() => {
+          this.trustInFlight.delete(account.id);
+        });
+      this.trustInFlight.set(account.id, running);
+    }
+    if (force) {
+      await running;
       return;
     }
-    try {
-      await codexAppServer.mirrorHookTrust({ defaultHome: home, accountHomes: [account.codexHome] });
-      this.trustSignatures.set(account.id, await signature());
-    } catch (error) {
-      console.warn(`[Codex accounts] Could not give account ${account.id} the default home's hook trust:`, error);
-    }
+    let timer: NodeJS.Timeout | undefined;
+    await Promise.race([running, new Promise<void>((resolve) => {
+      timer = setTimeout(resolve, MIRROR_TURN_WAIT_MS);
+      timer.unref?.();
+    })]);
+    clearTimeout(timer);
   }
 
   /** Records the account a brand-new session got once its id is known. */
