@@ -212,7 +212,7 @@ describe('repeats', () => {
 });
 
 describe('errors', () => {
-  it('opens a segment with a failed step and shows its error line', () => {
+  it('keeps a segment with a failed step folded, with its error line under it', () => {
     const [segment] = segmentsOf([
       tool('Bash', { command: 'ok', description: 'Fine' }, 'ok'),
       tool('Bash', { command: 'curl https://apigw', description: 'Called the gateway' }, { content: 'Exit code 7\ncurl: (7) Failed to connect', isError: true }),
@@ -220,10 +220,31 @@ describe('errors', () => {
     expect(segment.hasError).toBe(true);
 
     const markup = renderSegment(segment);
-    expect(markup).toContain('aria-expanded="true"');
-    expect(markup).toContain('exit 7');
+    expect(markup).toContain('aria-expanded="false"');
     expect(markup).toContain('curl: (7) Failed to connect');
     expect(markup).toContain('text-destructive');
+
+    const opened = renderSegment(segment, { open: true });
+    expect(opened).toContain('exit 7');
+  });
+
+  it('says once that several steps failed, with the latest failure', () => {
+    const [segment] = segmentsOf([
+      tool('mcp__cloudcli-browser__browser_create_session', {}, { content: 'tool call failed for `cloudcli-browser/browser_create_session`', isError: true }),
+      tool('Bash', { command: 'python3 a.py' }, { content: 'Traceback (most recent call last):\n  File "a.py", line 1\nKeyError: \'messages\'', isError: true }),
+    ]);
+    const markup = renderSegment(segment);
+    expect(markup).toContain('2 failed');
+    expect(markup).toContain('KeyError: &#x27;messages&#x27;');
+    expect(markup).not.toContain('browser_create_session`');
+    expect(markup.match(/text-destructive/g)).toHaveLength(1);
+  });
+
+  it('names a traceback by its exception, not by its first line', () => {
+    const traceback = 'Traceback (most recent call last):\n  File "x.py", line 3, in <module>\nValueError: bad input';
+    expect(describeStep('Bash', { command: 'python3 x.py' }, { content: traceback, isError: true }))
+      .toMatchObject({ errorLine: 'ValueError: bad input' });
+    expect(describeStep('Bash', { command: 'grep x y' }, { content: 'Exit code 1', isError: true })).toMatchObject({ errorLine: 'Exit code 1' });
   });
 
   it('keeps a segment without errors folded', () => {

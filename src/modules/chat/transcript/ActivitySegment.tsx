@@ -226,7 +226,7 @@ export function LiveLine({ live, statusText }: { live: LiveState; statusText?: s
 
 type ActivitySegmentProps = Helpers & {
   segment: ActivitySegmentModel;
-  /** As the user left it; unset, a segment with a failed step opens itself. */
+  /** As the user left it; unset, the segment is folded. */
   open?: boolean;
   onToggle: (id: string, open: boolean) => void;
   /** The live line, when this segment is the one the running turn adds to. */
@@ -242,9 +242,15 @@ type ActivitySegmentProps = Helpers & {
 function ActivitySegment({ segment, open, onToggle, live, liveStatusText, createDiff, onFileOpen, selectedProject }: ActivitySegmentProps) {
   const { t } = useTranslation('chat');
   const isExporting = useIsExportingTranscript();
-  const isOpen = (open ?? segment.hasError) || isExporting;
+  // Folded until the user opens it, failures included: Codex exits non-zero
+  // all the time (a grep with no match, a probe), and a segment that opened
+  // itself for that buried the reply under every command of the turn.
+  const isOpen = (open ?? false) || isExporting;
   const helpers: Helpers = { createDiff, onFileOpen, selectedProject };
   const running = Boolean(live) || segment.running.length > 0;
+  // Folded, the segment says once that something failed: the latest failure,
+  // and how many there were. One line per failure read as a wall of errors.
+  const failedSteps = segment.steps.filter((step) => step.status === 'error');
   const n = segment.stepCount;
   const summary = segment.isTrailing
     ? `${n} ${t('activity.doneSoFar', { defaultValue: 'done so far' })}`
@@ -285,9 +291,12 @@ function ActivitySegment({ segment, open, onToggle, live, liveStatusText, create
           ))}
         </div>
       )}
-      {!isOpen && segment.steps.filter((step) => step.status === 'error').map((step) => (
-        <span key={step.id} className="ml-[34px] truncate pb-1 font-mono text-[11.5px] text-destructive">{step.description.errorLine}</span>
-      ))}
+      {!isOpen && failedSteps.length > 0 && (
+        <span className="ml-[34px] truncate pb-1 font-mono text-[11.5px] text-destructive">
+          {failedSteps.length > 1 && `${failedSteps.length} ${t('activity.failed', { defaultValue: 'failed' })} · `}
+          {failedSteps[failedSteps.length - 1].description.errorLine}
+        </span>
+      )}
       {live && <LiveLine live={live} statusText={liveStatusText} />}
     </div>
   );
