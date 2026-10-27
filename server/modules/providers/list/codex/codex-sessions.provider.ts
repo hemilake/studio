@@ -586,6 +586,97 @@ export function parseCodexExecScript(input: unknown): CodexExecOperation[] {
   return operations;
 }
 
+// ─── Codex live shell commands ──────────────────────────────────────────────
+
+/**
+ * Splits a POSIX shell command line into words: single quotes, double quotes
+ * with their backslash escapes, and backslashes outside quotes. Returns null
+ * when the quoting does not close, so the caller keeps the line as it came.
+ */
+function splitShellWords(line: string): string[] | null {
+  const words: string[] = [];
+  let word = '';
+  let inWord = false;
+  let index = 0;
+  while (index < line.length) {
+    const character = line[index];
+    if (character === "'") {
+      const end = line.indexOf("'", index + 1);
+      if (end === -1) return null;
+      word += line.slice(index + 1, end);
+      inWord = true;
+      index = end + 1;
+      continue;
+    }
+    if (character === '"') {
+      index += 1;
+      let closed = false;
+      while (index < line.length) {
+        const inner = line[index];
+        if (inner === '"') {
+          closed = true;
+          index += 1;
+          break;
+        }
+        if (inner === '\\' && index + 1 < line.length && '"\\$`\n'.includes(line[index + 1])) {
+          if (line[index + 1] !== '\n') word += line[index + 1];
+          index += 2;
+          continue;
+        }
+        word += inner;
+        index += 1;
+      }
+      if (!closed) return null;
+      inWord = true;
+      continue;
+    }
+    if (character === '\\' && index + 1 < line.length) {
+      if (line[index + 1] !== '\n') word += line[index + 1];
+      inWord = true;
+      index += 2;
+      continue;
+    }
+    if (/\s/.test(character)) {
+      if (inWord) words.push(word);
+      word = '';
+      inWord = false;
+      index += 1;
+      continue;
+    }
+    word += character;
+    inWord = true;
+    index += 1;
+  }
+  if (inWord) words.push(word);
+  return words;
+}
+
+const CODEX_SHELL_WRAPPER = /^(?:\/usr)?(?:\/bin\/)?(?:ba|z|da)?sh$/;
+
+/**
+ * The command a live `command_execution` item ran, without the login-shell
+ * wrapper Codex adds around it.
+ *
+ * The SDK reports `/bin/bash -lc 'sed -n 1,40p x'`, while the rollout keeps
+ * `sed -n 1,40p x`. Unwrapped, the live row reads like the persisted one (and
+ * like Claude's), and the client can tell that both are the same call when the
+ * transcript is refreshed mid-turn.
+ *
+ * Exported for tests.
+ */
+export function unwrapCodexShellCommand(command: unknown): string {
+  const words = Array.isArray(command)
+    ? command.map((word) => String(word))
+    : typeof command === 'string'
+      ? splitShellWords(command.trim())
+      : null;
+  if (words && words.length === 3 && CODEX_SHELL_WRAPPER.test(words[0]) && /^-l?c$/.test(words[1])) {
+    return words[2];
+  }
+  if (Array.isArray(command)) return command.join(' ');
+  return typeof command === 'string' ? command : '';
+}
+
 // ─── Codex shell output ─────────────────────────────────────────────────────
 
 type CodexShellOutput = {
@@ -2129,7 +2220,7 @@ export class CodexSessionsProvider implements IProviderSessions {
             provider: PROVIDER,
             kind: 'tool_use',
             toolName: 'Bash',
-            toolInput: { command: raw.command },
+            toolInput: { command: unwrapCodexShellCommand(raw.command) },
             toolId: itemId,
             status: raw.status,
           });

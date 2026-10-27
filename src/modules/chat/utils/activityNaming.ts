@@ -504,11 +504,19 @@ function describeBuiltin(toolName: string, input: Record<string, unknown>, raw: 
   }
 }
 
-/** The error line of a failed call: Bash's exit code, else the first line that says something. */
+const ERROR_WORDS = /\b(?:error|exception|failed|failure|fatal|denied|refused|forbidden|unauthori[sz]ed|not found|no such|cannot|can't|unable|invalid|timed? ?out)\b|^E\d|^\w+(?:Error|Exception):/i;
+
+/**
+ * The error line of a failed call: the last line that names an error, else the
+ * first line that says something. A Python traceback ends in the exception,
+ * not in "Traceback (most recent call last):", and a command that printed its
+ * output before failing says why at the end, not in its first line of output.
+ */
 function errorLineOf(text: string): string {
-  const lines = text.split('\n').map((line) => line.trim()).filter(Boolean);
-  const first = lines.find((line) => !/^exit code \d+$/i.test(line)) ?? lines[0] ?? 'Failed';
-  return oneLine(first, 200);
+  const all = text.split('\n').map((line) => line.trim()).filter(Boolean);
+  const lines = all.filter((line) => !/^exit code \d+$/i.test(line));
+  const named = [...lines].reverse().find((line) => ERROR_WORDS.test(line) && !/^Traceback \(most recent call last\):?$/.test(line));
+  return oneLine(named ?? lines[0] ?? all[0] ?? 'Failed', 200);
 }
 
 /**

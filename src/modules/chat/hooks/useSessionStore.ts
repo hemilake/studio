@@ -288,12 +288,107 @@ function dedupeAdjacentAssistantEchoes(merged: NormalizedMessage[]): NormalizedM
 }
 
 /**
+ * Adds a live row, or replaces the one with the same id.
+ *
+ * A provider that reports a call while it runs and again when it ends (Codex's
+ * `item.started` / `item.completed`) sends the same id twice. Appended, the
+ * chat drew the command twice ("bash ×2"). The replacement keeps the first
+ * row's place and time, so the step still measures from when it started.
+ *
+ * Exported for tests.
+ */
+export function upsertRealtimeMessage(
+  realtimeMessages: NormalizedMessage[],
+  message: NormalizedMessage,
+): NormalizedMessage[] {
+  if (message.id) {
+    for (let index = realtimeMessages.length - 1; index >= 0; index -= 1) {
+      const existing = realtimeMessages[index];
+      if (existing.id !== message.id) continue;
+      const updated = realtimeMessages.slice();
+      updated[index] = { ...message, timestamp: existing.timestamp || message.timestamp };
+      return updated;
+    }
+  }
+  return [...realtimeMessages, message];
+}
+
+/** What a tool call did, for matching a live row to its persisted copy. */
+function toolCallSignature(message: NormalizedMessage): string {
+  let input = message.toolInput;
+  if (typeof input === 'string') {
+    // History may carry the input as the JSON text the provider wrote.
+    try {
+      input = JSON.parse(input);
+    } catch {
+      // Plain text input: compared as it is.
+    }
+  }
+  const record = input && typeof input === 'object' ? (input as Record<string, unknown>) : null;
+  const command = record && typeof record.command === 'string' ? record.command : null;
+  const body = command ?? (typeof input === 'string' ? input : JSON.stringify(input ?? null));
+  return `${message.toolName ?? ''}\u0000${body.trim()}`;
+}
+
+/**
+ * Codex's live rows and its persisted rows never share an id: the SDK names
+ * an item `item_3`, the rollout names the call `call_…`. So the id check of
+ * the prune below kept every live command after the refresh, next to its
+ * persisted copy, and a turn read every command twice. This finds the live
+ * tool rows whose call the server already has in the same turn: same tool,
+ * same command, matched one for one in order, so a command run twice and
+ * persisted once keeps its second live row.
+ */
+function codexLiveToolRowsOnServer(
+  serverMessages: NormalizedMessage[],
+  realtimeMessages: NormalizedMessage[],
+): Set<string> {
+  const echoed = new Set<string>();
+  const serverToolIds = new Set(serverMessages.filter((message) => message.kind === 'tool_use').map((message) => message.toolId));
+  const live = realtimeMessages.filter((message) =>
+    message.provider === 'codex'
+    && message.kind === 'tool_use'
+    && message.toolId
+    && !serverToolIds.has(message.toolId),
+  );
+  if (live.length === 0) return echoed;
+
+  const available = new Map<string, number>();
+  const take = (key: string) => {
+    const left = available.get(key);
+    if (left === undefined) return false;
+    if (left <= 1) available.delete(key);
+    else available.set(key, left - 1);
+    return true;
+  };
+  const seenTurns = new Set<number>();
+  for (const message of live) {
+    const turnOrdinal = getUserTurnOrdinalBefore(message, serverMessages, realtimeMessages);
+    if (!seenTurns.has(turnOrdinal)) {
+      seenTurns.add(turnOrdinal);
+      const range = findServerTurnRangeByOrdinal(serverMessages, turnOrdinal);
+      if (range) {
+        for (const serverMessage of serverMessages.slice(range.start + 1, range.end)) {
+          if (serverMessage.kind !== 'tool_use') continue;
+          const key = `${turnOrdinal}\u0000${toolCallSignature(serverMessage)}`;
+          available.set(key, (available.get(key) ?? 0) + 1);
+        }
+      }
+    }
+    if (take(`${turnOrdinal}\u0000${toolCallSignature(message)}`)) {
+      echoed.add(message.toolId as string);
+    }
+  }
+  return echoed;
+}
+
+/**
  * After a server refresh, drop only the realtime rows the persisted transcript
  * already owns. Anything not yet on disk (common right after `complete`, while
  * JSONL indexing lags) stays in `realtimeMessages` so the chat pane never
  * flashes the empty "Continue your conversation" state.
  */
-function pruneRealtimeSupersededByServer(
+export function pruneRealtimeSupersededByServer(
   serverMessages: NormalizedMessage[],
   realtimeMessages: NormalizedMessage[],
 ): NormalizedMessage[] {
@@ -303,9 +398,14 @@ function pruneRealtimeSupersededByServer(
 
   const serverIds = new Set(serverMessages.map((message) => message.id));
   const reconciledRealtimeMessages = removeOptimisticUserEchoes(serverMessages, realtimeMessages);
+  const codexEchoes = codexLiveToolRowsOnServer(serverMessages, reconciledRealtimeMessages);
 
   return reconciledRealtimeMessages.filter((message) => {
     if (serverIds.has(message.id)) {
+      return false;
+    }
+
+    if ((message.kind === 'tool_use' || message.kind === 'tool_result') && message.toolId && codexEchoes.has(message.toolId)) {
       return false;
     }
 
@@ -754,7 +854,7 @@ export function useSessionStore() {
       msg.sessionId === sessionId
         ? msg
         : { ...msg, sessionId };
-    let updated = [...slot.realtimeMessages, normalizedMessage];
+    let updated = upsertRealtimeMessage(slot.realtimeMessages, normalizedMessage);
     if (updated.length > MAX_REALTIME_MESSAGES) {
       updated = updated.slice(-MAX_REALTIME_MESSAGES);
     }

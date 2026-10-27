@@ -391,6 +391,11 @@ async function queryCodex(
       const streamedTurn = await thread.runStreamed(turnInput, {
         signal: abortController.signal
       });
+      // The SDK numbers a turn's items from zero (`item_0`, `item_1`...), so
+      // the same id comes back every turn. Prefixed per attempt, an id names
+      // one row: the client replaces a row by id, and without this a command
+      // of the second turn would take over the first turn's row and result.
+      const itemIdPrefix = `${Date.now().toString(36)}-`;
 
       for await (const event of streamedTurn.events) {
         // Capture thread/session id lazily from the stream (Codex emits this asynchronously).
@@ -440,6 +445,9 @@ async function queryCodex(
         }
 
         const transformed = transformCodexEvent(event);
+        if (typeof transformed.itemId === 'string' && transformed.itemId) {
+          transformed.itemId = `${itemIdPrefix}${transformed.itemId}`;
+        }
 
         const failureText = event.type === 'turn.failed'
           ? event.error?.message

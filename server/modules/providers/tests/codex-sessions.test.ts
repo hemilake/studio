@@ -6,7 +6,7 @@ import test from 'node:test';
 
 import { closeConnection, initializeDatabase, sessionsDb } from '@/modules/database/index.js';
 import { CodexSessionSynchronizer } from '@/modules/providers/list/codex/codex-session-synchronizer.provider.js';
-import { CodexSessionsProvider, parseCodexExecScript, readCodexMemoryCitations } from '@/modules/providers/list/codex/codex-sessions.provider.js';
+import { CodexSessionsProvider, parseCodexExecScript, readCodexMemoryCitations, unwrapCodexShellCommand } from '@/modules/providers/list/codex/codex-sessions.provider.js';
 
 const patchHomeDir = (nextHomeDir: string) => {
   const original = os.homedir;
@@ -609,4 +609,34 @@ test('Codex history restores user prompts from typed item_completed rows', { con
     restoreHomeDir();
     await rm(tempRoot, { recursive: true, force: true });
   }
+});
+
+test('unwrapCodexShellCommand drops the login shell Codex wraps a live command in', () => {
+  assert.equal(unwrapCodexShellCommand("/bin/bash -lc 'echo hola'"), 'echo hola');
+  assert.equal(unwrapCodexShellCommand(`/bin/bash -lc "sed -n '1,240p' /x/SKILL.md"`), "sed -n '1,240p' /x/SKILL.md");
+  assert.equal(
+    unwrapCodexShellCommand(`/bin/bash -lc 'function acli(){ "$HOME/bin/acli" "$@"; }\nacli auth status'`),
+    'function acli(){ "$HOME/bin/acli" "$@"; }\nacli auth status',
+  );
+  assert.equal(unwrapCodexShellCommand(`/bin/zsh -lc 'echo '"'"'quoted'"'"''`), "echo 'quoted'");
+  assert.equal(unwrapCodexShellCommand(`bash -c "echo \\"hi\\" \\$HOME"`), 'echo "hi" $HOME');
+  assert.equal(unwrapCodexShellCommand(['/bin/bash', '-lc', 'ls -la']), 'ls -la');
+  // Anything else is left as it came.
+  assert.equal(unwrapCodexShellCommand('git status'), 'git status');
+  assert.equal(unwrapCodexShellCommand("/bin/bash -lc 'unterminated"), "/bin/bash -lc 'unterminated");
+  assert.equal(unwrapCodexShellCommand('/bin/bash -lc echo hi'), '/bin/bash -lc echo hi');
+});
+
+test('a live command_execution row shows the command without the shell wrapper', () => {
+  const provider = new CodexSessionsProvider();
+  const [toolUse] = provider.normalizeMessage({
+    type: 'item',
+    itemType: 'command_execution',
+    itemId: 'abc-item_1',
+    command: "/bin/bash -lc 'sed -n 1,40p a.md'",
+    output: '',
+    status: 'in_progress',
+  }, 's');
+  assert.deepEqual(toolUse.toolInput, { command: 'sed -n 1,40p a.md' });
+  assert.equal(toolUse.toolId, 'abc-item_1');
 });
