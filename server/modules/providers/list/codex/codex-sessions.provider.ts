@@ -355,7 +355,8 @@ type CodexExecOperation =
   | { kind: 'stdin'; chars: string }
   | { kind: 'patch'; patch: string }
   | { kind: 'search'; queries: string[] }
-  | { kind: 'plan'; todos: CodexPlanTodo[] };
+  | { kind: 'plan'; todos: CodexPlanTodo[] }
+  | { kind: 'mcp'; toolName: string; input: unknown };
 
 /** One step of a checklist, in the shape the shared todo renderer consumes. */
 type CodexPlanTodo = { content: string; status: string };
@@ -382,6 +383,52 @@ function decodeJavaScriptStringLiteral(literal: string): string {
     .replace(/\\r/g, '\r')
     .replace(/\\t/g, '\t')
     .replace(/\\([\\'`])/g, '$1');
+}
+
+/**
+ * Reads the argument of an MCP call made from an exec script: a JavaScript
+ * object literal, so unquoted keys, single quotes and trailing commas. Strings
+ * are re-encoded and bare keys quoted until it is JSON. Anything that still is
+ * not (a variable, an expression) comes back as the source text, which reads
+ * better than nothing.
+ */
+function readObjectLiteral(source: string): unknown {
+  const trimmed = source.trim();
+  if (!trimmed) return {};
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    // Not JSON as written; normalized below.
+  }
+
+  let json = '';
+  let index = 0;
+  while (index < trimmed.length) {
+    const character = trimmed[index];
+    if (character === '"' || character === "'" || character === '`') {
+      let end = index + 1;
+      while (end < trimmed.length && trimmed[end] !== character) {
+        end += trimmed[end] === '\\' ? 2 : 1;
+      }
+      json += JSON.stringify(decodeJavaScriptStringLiteral(trimmed.slice(index, end + 1)));
+      index = end + 1;
+      continue;
+    }
+    const key = /^[A-Za-z_$][\w$]*(?=\s*:)/.exec(trimmed.slice(index));
+    if (key && /[{,]\s*$/.test(json)) {
+      json += JSON.stringify(key[0]);
+      index += key[0].length;
+      continue;
+    }
+    json += character;
+    index += 1;
+  }
+  json = json.replace(/,\s*([}\]])/g, '$1');
+  try {
+    return JSON.parse(json);
+  } catch {
+    return trimmed;
+  }
 }
 
 /**
@@ -579,6 +626,13 @@ export function parseCodexExecScript(input: unknown): CodexExecOperation[] {
         break;
       }
       default:
+        // MCP tools are called by their full name (`tools.mcp__hemilake__recall`).
+        // Named that way, the persisted row reads like the live one ("Recalled",
+        // not "Exec") and the client can tell they are the same call.
+        if (toolName.startsWith('mcp__')) {
+          const inner = argumentSource.trim().replace(/^\(/, '').replace(/\)$/, '');
+          operations.push({ kind: 'mcp', toolName, input: readObjectLiteral(inner) });
+        }
         break;
     }
   }
@@ -1196,6 +1250,8 @@ function translateCodexToolCall(payload: AnyRecord, callId: string): SubagentAct
             },
           });
         }
+      } else if (operation.kind === 'mcp') {
+        rows.push({ kind: 'tool', toolId: callId, toolName: operation.toolName, toolInput: operation.input });
       } else if (operation.kind === 'search') {
         rows.push({
           kind: 'tool',
@@ -1296,6 +1352,8 @@ async function getCodexSessionMessages(sessionId: string): Promise<CodexHistoryR
   const ignoredToolCallIds = new Set<string>();
   /** Exec calls that own a shell row, so their output can be routed back. */
   const shellCallMessages = new Map<string, AnyRecord>();
+  /** Every exec call, so a non-shell row's output loses the sandbox envelope too. */
+  const execCallIds = new Set<string>();
   /**
    * File rows produced by each patch call, so the authoritative
    * `patch_apply_end` diffs can replace what was reconstructed from the call
@@ -1660,12 +1718,14 @@ async function getCodexSessionMessages(sessionId: string): Promise<CodexHistoryR
       }
 
       if (name === 'exec') {
+        execCallIds.add(callId);
         const operations = parseCodexExecScript(rawInput);
         const shellCommands = operations.filter((operation) => operation.kind === 'shell');
         const stdinWrites = operations.filter((operation) => operation.kind === 'stdin');
         const patches = operations.filter((operation) => operation.kind === 'patch');
         const searches = operations.filter((operation) => operation.kind === 'search');
         const plans = operations.filter((operation) => operation.kind === 'plan');
+        const mcpCalls = operations.filter((operation) => operation.kind === 'mcp');
 
         // A bare stdin poll continues whatever command is still running; it is
         // a continuation, not an action of its own.
@@ -1717,6 +1777,22 @@ async function getCodexSessionMessages(sessionId: string): Promise<CodexHistoryR
           };
           messages.push(shellMessage);
           shellCallMessages.set(callId, shellMessage);
+        }
+
+        for (const call of mcpCalls) {
+          const mcpCallId = nextRowId();
+          messages.push({
+            type: 'tool_use',
+            timestamp,
+            toolName: call.toolName,
+            toolInput: JSON.stringify(call.input),
+            toolCallId: mcpCallId,
+          });
+          if (mcpCallId !== callId) {
+            // The script has one output and the first row took it; this call's
+            // answer is inside it, so the row is closed rather than left running.
+            messages.push({ type: 'tool_result', timestamp, toolCallId: mcpCallId, output: '' });
+          }
         }
 
         for (const search of searches) {
@@ -1858,6 +1934,15 @@ async function getCodexSessionMessages(sessionId: string): Promise<CodexHistoryR
           accumulated,
           cleaned.exitCode !== undefined && cleaned.exitCode !== 0,
         );
+        continue;
+      }
+
+      if (execCallIds.has(callId)) {
+        // An exec script that called an MCP tool (or nothing recognizable): its
+        // output carries the same sandbox envelope as a shell's, which would
+        // otherwise hide the JSON the lake and channel rows are named from.
+        const cleaned = cleanCodexShellOutput(rawOutput);
+        pushToolResult(callId, timestamp, cleaned.output, /^Script failed/i.test(rawOutput.trimStart()));
         continue;
       }
 

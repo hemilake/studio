@@ -61,6 +61,14 @@ describe('a refresh during a Codex turn', () => {
     expect(pruneRealtimeSupersededByServer(server, live).map((message) => message.id)).toEqual(['t-item_1']);
   });
 
+  it('matches an MCP call by its tool, whatever form its arguments took', () => {
+    const mcp = (id: string, seconds: number, toolInput: unknown) =>
+      row({ id, kind: 'tool_use', toolName: 'mcp__hemilake__recall', toolId: id, toolInput, timestamp: at(seconds) });
+    const server = [prompt('u1', 0), mcp('call_r', 1, '{"query":"avisa a elena"}')];
+    const live = [mcp('t-item_4', 1, { query: 'avisa a elena', max_facts: 5 }), result('t-item_4', 2)];
+    expect(pruneRealtimeSupersededByServer(server, live)).toEqual([]);
+  });
+
   it('leaves other providers to the id match', () => {
     const server = [prompt('u1', 0), bash('toolu_1', 1, 'date', { provider: 'claude' })];
     const live = [bash('toolu_2', 1, 'date', { provider: 'claude' })];

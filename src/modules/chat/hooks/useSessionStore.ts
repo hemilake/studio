@@ -315,6 +315,10 @@ export function upsertRealtimeMessage(
 
 /** What a tool call did, for matching a live row to its persisted copy. */
 function toolCallSignature(message: NormalizedMessage): string {
+  // An MCP call made from a Codex exec script is persisted with the script's
+  // own object literal, the live row with the arguments Codex sent: the tool
+  // name is what both say the same way.
+  if (message.toolName?.startsWith('mcp__')) return message.toolName;
   let input = message.toolInput;
   if (typeof input === 'string') {
     // History may carry the input as the JSON text the provider wrote.
