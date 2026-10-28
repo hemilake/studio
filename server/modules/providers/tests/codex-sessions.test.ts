@@ -640,3 +640,14 @@ test('a live command_execution row shows the command without the shell wrapper',
   assert.deepEqual(toolUse.toolInput, { command: 'sed -n 1,40p a.md' });
   assert.equal(toolUse.toolId, 'abc-item_1');
 });
+
+test('parseCodexExecScript names an MCP call by its tool and reads its object literal', () => {
+  const operations = parseCodexExecScript(
+    `const r=await tools.mcp__hemilake__recall({query:"avisa a elena", max_facts: 5, 'deep': true,}); text(JSON.stringify(r));`,
+  );
+  assert.deepEqual(operations, [
+    { kind: 'mcp', toolName: 'mcp__hemilake__recall', input: { query: 'avisa a elena', max_facts: 5, deep: true } },
+  ]);
+  const [call] = parseCodexExecScript('await tools.mcp__hemilake__slack_send_message(args);');
+  assert.deepEqual(call, { kind: 'mcp', toolName: 'mcp__hemilake__slack_send_message', input: 'args' });
+});
