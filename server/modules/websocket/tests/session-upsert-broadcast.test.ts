@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 
-import { closeConnection, initializeDatabase, sessionsDb } from '@/modules/database/index.js';
+import { closeConnection, initializeDatabase, projectsDb, sessionsDb } from '@/modules/database/index.js';
 import {
   broadcastSessionUpserted,
   broadcastSessionUpsertedBatch,
@@ -134,5 +134,20 @@ test('a closed socket is skipped', async () => {
 
     assert.equal(open.frames.length, 1);
     assert.deepEqual(closing.frames, []);
+  });
+});
+
+test('a session of an archived project is not announced to the sidebar', async () => {
+  await withIsolatedDatabase(async () => {
+    sessionsDb.createAppSession('app-archived', 'claude', '/workspace/archived');
+    sessionsDb.createAppSession('app-active', 'claude', '/workspace/active');
+    projectsDb.updateProjectIsArchived('/workspace/archived', true);
+
+    const connection = new FakeConnection();
+    connectedClients.add(connection as never);
+
+    await broadcastSessionUpsertedBatch(['app-archived', 'app-active']);
+
+    assert.deepEqual(connection.frames.map((frame) => frame.sessionId), ['app-active']);
   });
 });

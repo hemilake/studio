@@ -1,5 +1,6 @@
 import { getConnection } from '@/modules/database/connection.js';
 import { projectsDb } from '@/modules/database/repositories/projects.db.js';
+import { isAutoArchivedProjectPath } from '@/shared/project-auto-archive.js';
 import { normalizeProjectPath } from '@/shared/utils.js';
 
 type SessionRow = {
@@ -115,8 +116,13 @@ export const sessionsDb = {
     const normalizedProjectPath = normalizeProjectPathForProvider(provider, projectPath);
 
     // First, ensure the project path is recorded in the projects table,
-    // since it's a foreign key in the sessions table.
-    projectsDb.createProjectPath(normalizedProjectPath);
+    // since it's a foreign key in the sessions table. Fork: automated paths
+    // are filed archived and are not reactivated by new activity on disk.
+    if (isAutoArchivedProjectPath(normalizedProjectPath)) {
+      projectsDb.ensureAutoArchivedProjectPath(normalizedProjectPath);
+    } else {
+      projectsDb.createProjectPath(normalizedProjectPath);
+    }
 
     const existing = db
       .prepare(

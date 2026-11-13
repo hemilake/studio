@@ -33,6 +33,11 @@ async function buildSessionUpsertedEvent(
 
   const projectPath = row.project_path;
   const project = projectPath ? projectsDb.getProjectPath(projectPath) : null;
+  // Fork: an archived project stays out of the sidebar, as it does in the
+  // project list, even while its sessions keep changing on disk.
+  if (project?.isArchived) {
+    return null;
+  }
   const displayName = project?.custom_project_name?.trim()
     ? project.custom_project_name
     : await generateDisplayName(path.basename(projectPath ?? '') || (projectPath ?? ''), projectPath);

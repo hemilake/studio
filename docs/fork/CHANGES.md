@@ -2,6 +2,18 @@
 
 One entry per customization, newest first. Keep the file list accurate: it is the conflict checklist for upstream merges.
 
+## Auto-archive projects of automated runs
+
+- **Since:** 2026-11-13.
+- **Branch:** `feat/auto-archive-project-paths`. Could go upstream: it is opt-in and changes nothing while the variable is unset.
+- **Why:** on think every issue of the agent pipeline runs `claude -p` in a worktree of its own, so each one became a new active project. The sidebar reached 1,163 projects and Studio walked all of them at every load. Archiving them by hand did not last: indexing a session from disk calls `createProjectPath`, which reactivates an archived project, so the next run of an agent brought its project back.
+- **What:**
+  - `CLOUDCLI_AUTO_ARCHIVE_PROJECT_PATHS` holds comma- or newline-separated globs (`~` is the home directory, `*` stays inside a segment, `**` crosses segments, a trailing `/**` also matches the directory). The matcher is `server/shared/project-auto-archive.ts`.
+  - `sessionsDb.createSession` (sessions indexed from disk) registers a matching path with `projectsDb.ensureAutoArchivedProjectPath`: a new row is created archived and an existing row is left alone. So agent activity never reopens the project, and a project the user reopened from the UI stays open. Other archived projects still come back with new activity, as upstream does. Chats started from the UI (`createAppSession`, forks) are unchanged.
+  - `session_upserted` is no longer sent for a session whose project is archived, so the live sidebar matches the project list, which already leaves archived projects out.
+- **Files:** `server/shared/project-auto-archive.ts` (new), `server/shared/tests/project-auto-archive.test.ts` (new), `server/modules/database/repositories/{projects.db.ts,sessions.db.ts}`, `server/modules/database/tests/projects-auto-archive.integration.test.ts` (new), `server/modules/websocket/services/session-upsert-broadcast.service.ts`, `server/modules/websocket/tests/session-upsert-broadcast.test.ts`, `.oxlintrc.json`, `docs/fork/CHANGES.md`.
+- **Verified:** typecheck, lint (no errors), the new tests (4 matcher, 5 database, 1 broadcast) and the server suite: 588 of 594 pass. The 5 failures are the same as on `main` (the Antigravity path test and four `resolveClaudeCodeExecutablePath` tests that read this shell's environment).
+
 ## Codex's files under CODEX_HOME
 
 - **Since:** 2026-10-27.
