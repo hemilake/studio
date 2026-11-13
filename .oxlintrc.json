@@ -74,7 +74,8 @@
           "server/shared/adversarial-review.ts",
           "server/shared/studio-visuals-prompt.ts",
           "server/shared/themes.ts",
-          "server/shared/message-unification.ts"
+          "server/shared/message-unification.ts",
+          "server/shared/project-auto-archive.ts"
         ],
         "mode": "file"
       },

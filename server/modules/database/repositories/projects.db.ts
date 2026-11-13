@@ -44,6 +44,22 @@ export const projectsDb = {
         };
     },
 
+    /**
+     * Fork: registers a project for a session found on disk whose path matches
+     * CLOUDCLI_AUTO_ARCHIVE_PROJECT_PATHS. The row is created archived and an
+     * existing row is left as it is, so automated runs never bring the project
+     * back to the sidebar, and one the user reopened stays open.
+     */
+    ensureAutoArchivedProjectPath(projectPath: string): void {
+        const db = getConnection();
+        const normalizedProjectPath = normalizeProjectPath(projectPath);
+        db.prepare(`
+            INSERT INTO projects (project_id, project_path, custom_project_name, isArchived)
+            VALUES (?, ?, ?, 1)
+            ON CONFLICT(project_path) DO NOTHING
+        `).run(randomUUID(), normalizedProjectPath, normalizeProjectDisplayName(normalizedProjectPath, null));
+    },
+
     getProjectPath(projectPath: string): ProjectRepositoryRow | null {
         const db = getConnection();
         const normalizedProjectPath = normalizeProjectPath(projectPath);
