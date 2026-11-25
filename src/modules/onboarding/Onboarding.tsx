@@ -9,6 +9,7 @@ import { ProviderLoginModal, useProviderAuthStatus } from '@/modules/provider-au
 import AgentConnectionsStep from '@/modules/onboarding/AgentConnectionsStep';
 import GitConfigurationStep from '@/modules/onboarding/GitConfigurationStep';
 import OnboardingStepProgress from '@/modules/onboarding/OnboardingStepProgress';
+import { HemilakeLakePanel, useHemilakeSetup } from '@/modules/hemilake-setup';
 
 const gitEmailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -39,6 +40,10 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
     checkProviderAuthStatus,
     refreshProviderAuthStatuses,
   } = useProviderAuthStatus();
+
+  // Fork (Hemilake): without hemi (no console around Studio), a third step connects the owner's Hemilake.
+  const setup = useHemilakeSetup();
+  const lastStep = setup.available ? 2 : 1;
 
   const previousActiveLoginProviderRef = useRef<LLMProvider | null | undefined>(undefined);
 
@@ -169,7 +174,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
 
         <div className="relative mx-auto flex min-h-full w-full max-w-2xl items-center justify-center p-4">
           <div className="w-full py-6">
-          <OnboardingStepProgress currentStep={currentStep} />
+          <OnboardingStepProgress currentStep={currentStep} withLake={setup.available} />
 
           <div className="rounded-2xl border border-border/70 bg-card/90 p-6 shadow-[0_24px_60px_-20px_hsl(var(--foreground)/0.18)] ring-1 ring-foreground/5 backdrop-blur-xl">
             {currentStep === 0 ? (
@@ -180,11 +185,24 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                 onGitNameChange={setGitName}
                 onGitEmailChange={setGitEmail}
               />
-            ) : (
+            ) : currentStep === 1 ? (
               <AgentConnectionsStep
                 providerStatuses={providerAuthStatus}
                 onOpenProviderLogin={handleProviderLoginOpen}
+                setup={setup}
+                onSetupChanged={() => void refreshProviderAuthStatuses()}
               />
+            ) : (
+              <div className="space-y-4">
+                <div className="text-center">
+                  <h2 className="text-xl font-bold tracking-tight text-foreground">{t('hemilakeSetup.lake.stepTitle')}</h2>
+                  <p className="mx-auto mt-1 max-w-sm text-sm leading-relaxed text-muted-foreground">
+                    {t('hemilakeSetup.lake.stepDescription')}
+                  </p>
+                </div>
+                <HemilakeLakePanel setup={setup} />
+                <p className="text-center text-xs text-muted-foreground">{t('hemilakeSetup.lake.skipHint')}</p>
+              </div>
             )}
 
               {errorMessage && (
@@ -207,7 +225,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
               </button>
 
               <div className="flex items-center gap-3">
-                {currentStep < 1 ? (
+                {currentStep < lastStep ? (
                   <button
                     onClick={handleNextStep}
                     disabled={!isCurrentStepValid || isSubmitting}

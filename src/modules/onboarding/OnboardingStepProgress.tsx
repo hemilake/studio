@@ -1,22 +1,26 @@
-import { Check, GitBranch, LogIn } from 'lucide-react';
+import { Check, Database, GitBranch, LogIn } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 type OnboardingStepProgressProps = {
   currentStep: number;
+  /** Fork (Hemilake): a standalone Studio adds the step that connects the owner's Hemilake. */
+  withLake?: boolean;
 };
 
 const onboardingSteps = [
   { titleKey: 'onboarding.gitStepTitle', icon: GitBranch, required: true },
   { titleKey: 'onboarding.stepConnectAgents', icon: LogIn, required: false },
 ];
+const lakeStep = { titleKey: 'hemilakeSetup.lake.stepTitleShort', icon: Database, required: false };
 
 /** Rendered by Onboarding above the active step to show progress through the setup wizard. */
-export default function OnboardingStepProgress({ currentStep }: OnboardingStepProgressProps) {
+export default function OnboardingStepProgress({ currentStep, withLake = false }: OnboardingStepProgressProps) {
   const { t } = useTranslation('auth');
+  const steps = withLake ? [...onboardingSteps, lakeStep] : onboardingSteps;
   return (
     <div className="mb-5">
       <div className="flex items-center justify-between">
-        {onboardingSteps.map((step, index) => {
+        {steps.map((step, index) => {
           const isCompleted = index < currentStep;
           const isActive = index === currentStep;
           const Icon = step.icon;
@@ -44,7 +48,7 @@ export default function OnboardingStepProgress({ currentStep }: OnboardingStepPr
                 </div>
               </div>
 
-              {index < onboardingSteps.length - 1 && (
+              {index < steps.length - 1 && (
                 <div className={`mx-2 h-0.5 flex-1 transition-colors duration-200 ${isCompleted ? 'bg-hemi-ok' : 'bg-border'}`} />
               )}
             </div>

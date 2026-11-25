@@ -121,6 +121,11 @@ export async function readApiJson<T>(response: Response): Promise<T> {
   }
   return data as T;
 }
+export type HemilakeClaudeConnectionInput =
+  | { mode: 'account' }
+  | { mode: 'api-key'; apiKey: string }
+  | { mode: 'gateway'; baseUrl: string; token: string };
+
 const get = (url: string, options: ApiRequestOptions = {}) => authenticatedFetch(url, options);
 
 const withBody =
@@ -522,6 +527,13 @@ export const api = {
     saveDraft: (scope: string, draft: { text: string; queuedMessage?: unknown }) =>
       put('/api/user/drafts', { scope, ...draft }),
     deleteDraft: (scope: string) => del('/api/user/drafts', { scope }),
+  },
+
+  // Fork (Hemilake): first-run setup of a Studio that runs without hemi.
+  hemilakeSetup: {
+    status: () => get('/api/hemilake-setup/status'),
+    saveClaudeConnection: (body: HemilakeClaudeConnectionInput) => post('/api/hemilake-setup/claude-connection', body),
+    connectLake: (address: string) => post('/api/hemilake-setup/lake', { address }),
   },
 
   // Server-side settings: API keys, stored credentials, notifications, web push
