@@ -60,6 +60,7 @@ import browserUseRoutes from './modules/browser-use/browser-use.routes.js';
 import { assetsRoutes } from './modules/assets/index.js';
 import { fileTreeRoutes } from './modules/file-tree/index.js';
 import { worktreesRoutes } from './modules/worktrees/index.js';
+import { createHemilakeSetupRouter } from './modules/hemilake-setup/index.js';
 import browserUseMcpRoutes from './modules/browser-use/browser-use-mcp.routes.js';
 import { browserUseService } from './modules/browser-use/browser-use.service.js';
 import { initializeDatabase, sessionsDb } from './modules/database/index.js';
@@ -217,6 +218,8 @@ app.use('/api/providers', authenticateToken, providerRoutes);
 app.use('/api/scheduled-messages', authenticateToken, scheduledMessagesRoutes);
 // Fork (session share): owner management routes for public session links (protected)
 app.use('/api/shares', authenticateToken, shareRoutes);
+// Fork (Hemilake): first-run setup of a Studio that runs without hemi (protected; off when hemi runs it)
+app.use('/api/hemilake-setup', authenticateToken, createHemilakeSetupRouter());
 
 // Agent API Routes (uses API key authentication)
 app.use('/api/agent', agentRoutes);

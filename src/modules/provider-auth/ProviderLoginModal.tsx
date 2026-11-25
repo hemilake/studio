@@ -28,6 +28,8 @@ type ProviderLoginModalProps = {
   onComplete?: (exitCode: number) => void;
   customCommand?: string;
   isAuthenticated?: boolean;
+  /** Fork (Hemilake): a title for a custom command (installing Claude Code, signing in to the lake). */
+  title?: string;
 };
 
 const getProviderCommand = ({
@@ -83,6 +85,7 @@ export default function ProviderLoginModal({
   onComplete,
   customCommand,
   isAuthenticated = false,
+  title: customTitle,
 }: ProviderLoginModalProps) {
   const { t } = useTranslation();
   if (!isOpen) {
@@ -90,7 +93,7 @@ export default function ProviderLoginModal({
   }
 
   const command = getProviderCommand({ provider, customCommand, isAuthenticated });
-  const title = getProviderTitle(provider);
+  const title = customTitle || getProviderTitle(provider);
 
   const handleComplete = (exitCode: number) => {
     onComplete?.(exitCode);

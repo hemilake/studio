@@ -2,6 +2,7 @@ import { LogIn } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge, Button, LLMProviderLogo } from '@/shared/ui';
+import { ClaudeConnectionPanel, HemilakeLakePanel, useHemilakeSetup } from '@/modules/hemilake-setup';
 import CodexAccountsSection from '@/modules/settings/tabs/agents-settings/sections/content/CodexAccountsSection';
 import type { AgentProvider, ProviderAuthStatus } from '@/shared/types';
 
@@ -122,6 +123,25 @@ export default function AccountContent({ agent, authStatus, onLogin }: AccountCo
 
       {/* Fork (Hemilake Studio): several Codex accounts with usage-aware routing. */}
       {agent === 'codex' && <CodexAccountsSection />}
+
+      {/* Fork (Hemilake): without hemi, how Claude connects and the owner's Hemilake, as in the first-run setup. */}
+      {agent === 'claude' && <StandaloneClaudeSetup />}
+    </div>
+  );
+}
+
+/** Fork (Hemilake): renders nothing inside the console, where hemi owns Claude Code's configuration. */
+function StandaloneClaudeSetup() {
+  const { t } = useTranslation('auth');
+  const setup = useHemilakeSetup();
+  if (!setup.available || !setup.status) return null;
+  return (
+    <div className="space-y-4">
+      <ClaudeConnectionPanel setup={setup} />
+      <div className="space-y-2">
+        <h4 className="text-sm font-medium text-foreground">{t('hemilakeSetup.lake.stepTitle')}</h4>
+        <HemilakeLakePanel setup={setup} />
+      </div>
     </div>
   );
 }

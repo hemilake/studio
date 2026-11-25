@@ -2,10 +2,14 @@ import { useTranslation } from 'react-i18next';
 
 import type { LLMProvider, ProviderAuthStatusMap } from '@/shared/types';
 import AgentConnectionCard from '@/modules/onboarding/AgentConnectionCard';
+import { ClaudeConnectionPanel, type useHemilakeSetup } from '@/modules/hemilake-setup';
 
 type AgentConnectionsStepProps = {
   providerStatuses: ProviderAuthStatusMap;
   onOpenProviderLogin: (provider: LLMProvider) => void;
+  /** Fork (Hemilake): a standalone Studio's Claude setup (install, account, API key or gateway). */
+  setup?: ReturnType<typeof useHemilakeSetup>;
+  onSetupChanged?: () => void;
 };
 
 const providerCards = [
@@ -50,6 +54,8 @@ const providerCards = [
 export default function AgentConnectionsStep({
   providerStatuses,
   onOpenProviderLogin,
+  setup,
+  onSetupChanged,
 }: AgentConnectionsStepProps) {
   const { t } = useTranslation('auth');
   return (
@@ -60,6 +66,8 @@ export default function AgentConnectionsStep({
           {t('onboarding.agentsStepDescription')}
         </p>
       </div>
+
+      {setup?.available && setup.status && <ClaudeConnectionPanel setup={setup} onChanged={onSetupChanged} />}
 
       <div className="-mr-1 max-h-[38vh] space-y-2 overflow-y-auto pr-1">
         {providerCards.map((providerCard) => (

@@ -2,6 +2,20 @@
 
 One entry per customization, newest first. Keep the file list accurate: it is the conflict checklist for upstream merges.
 
+## Standalone first-run setup: Claude Code, its model connection and the owner's Hemilake
+
+- **Since:** 2026-11-25.
+- **Branch:** `main`. Fork-only. Off inside the console (`CLOUDCLI_EMBED_ONLY=1` on the server, embed mode in the client): there hemi owns Claude Code's configuration (`hemi studio credentials`) and the lake connection.
+- **Why:** Studio can now be installed on its own, from the release archive, on a computer with no hemi (an owner whose lake is in Hemilake Cloud). Such a Studio had no Claude Code (the archive carries none), no way to use an Anthropic API key or a LiteLLM gateway short of editing Claude Code's settings by hand, and no way to reach the owner's lake.
+- **What:**
+  - `server/modules/hemilake-setup/` serves `/api/hemilake-setup`: `GET /status` (Claude Code installed, how it connects, the lake's MCP address and its sign-in state from `claude mcp get hemilake`), `POST /claude-connection` (account, API key or gateway; the key and the gateway go into the `env` of Claude Code's user `settings.json`, mode 600, after one models listing that refuses a wrong key before it is saved) and `POST /lake` (an address becomes the lake's MCP address, checked against its `/.well-known/oauth-protected-resource`, then `claude mcp add --transport http --scope user hemilake`). The lake's OAuth sign-in is `claude mcp login hemilake`, run in Studio's terminal: Claude Code keeps the token, Studio never sees it.
+  - The onboarding's agents step gets `ClaudeConnectionPanel` (install Claude Code with Anthropic's installer when it is missing; Claude account, API key or LiteLLM / gateway), and a third step, "Connect your Hemilake", gets `HemilakeLakePanel`. Settings › Agents › Claude shows both again.
+  - `ProviderLoginModal` takes a `title` for custom commands.
+  - `claude-auth.provider.ts`: Claude Code counts as installed only when `claude --version` runs (`spawn.sync` reports a missing binary in `error` instead of throwing, so every machine read as having it), and on macOS a login kept in the Keychain (`Claude Code-credentials`, only its presence is checked) counts as signed in.
+  - `scripts/fork/install-standalone.sh`: one-line install and update from the latest release (sha256 checked), as a LaunchAgent on macOS or a systemd user unit on Linux, on 127.0.0.1:8197; `--uninstall` keeps `~/.cloudcli`. See `docs/fork/hemilake-bundle.md`.
+- **Files:** `server/modules/hemilake-setup/` (new: `index.ts`, `hemilake-setup.{routes,service}.ts`, `tests/`), `server/index.ts`, `server/modules/providers/list/claude/claude-auth.provider.ts`, `src/modules/hemilake-setup/` (new: `index.ts`, `useHemilakeSetup.ts`, `ClaudeConnectionPanel.tsx`, `HemilakeLakePanel.tsx`, `tests/`), `src/modules/onboarding/{Onboarding,AgentConnectionsStep,OnboardingStepProgress}.tsx`, `src/modules/provider-auth/ProviderLoginModal.tsx`, `src/modules/settings/tabs/agents-settings/sections/content/AccountContent.tsx`, `src/shared/api.ts`, `src/modules/i18n/locales/{en,es}/auth.json`, `scripts/fork/install-standalone.sh` (new), `docs/fork/hemilake-bundle.md`, `docs/fork/CHANGES.md`.
+- **Verified:** typecheck, lint (no new errors), vitest (529 pass, 4 new), the server suite (9 new pass; the failures are the 6 already on `main` plus the intermittent agent routes file). End to end on a clean `HOME` with no `claude` on `PATH`: the onboarding installed Claude Code, refused a wrong gateway key (401), saved LiteLLM's address and key and a `claude -p` through it answered, refused `example.org` as a lake, added `pablo3.cloud.hemilake.app` and opened its OAuth authorization in the terminal. The installer ran on Linux (unpack only) and on macOS 15.7 (archive, plist that `plutil -lint` accepts, Studio answering).
+
 ## Auto-archive projects of automated runs
 
 - **Since:** 2026-11-13.

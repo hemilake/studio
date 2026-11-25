@@ -103,3 +103,25 @@ the embed end-to-end run against a fake console on another origin (20 checks,
 see `docs/fork/embed.md`), register and login, a terminal over `/shell`, and a
 real Claude Code conversation through the owner's `claude` (reply received, the
 provider session id reported).
+
+## Without hemi
+
+An owner whose lake runs elsewhere (Hemilake Cloud) can run Studio on its own:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hemilake/studio/main/scripts/fork/install-standalone.sh | sh
+```
+
+`scripts/fork/install-standalone.sh` downloads the latest release's archive for the machine, checks it against
+its `.sha256`, unpacks it into `~/.hemilake-studio/versions/<version>` (`current` points at it; the version
+before is kept) and runs it as a service of the user: the LaunchAgent `com.hemilake.studio` on macOS, the
+systemd user unit `hemilake-studio` on Linux, on `127.0.0.1:8197` with `~/.local/bin` (where Claude Code's
+installer puts `claude`) and Homebrew on its `PATH`. Running it again updates; `--uninstall` removes the
+service and the archives and leaves `~/.cloudcli`. `HEMILAKE_STUDIO_VERSION`, `HEMILAKE_STUDIO_PORT`,
+`HEMILAKE_STUDIO_HOME` and `HEMILAKE_STUDIO_SERVICE=0` change what it does.
+
+Such a Studio signs in with its own username and password, and its first-run setup does the rest
+(`server/modules/hemilake-setup/`, `docs/fork/CHANGES.md`): it installs Claude Code when it is missing,
+connects it to the owner's Claude account, an Anthropic API key or a LiteLLM gateway, and connects the
+owner's Hemilake as Claude Code's MCP server `hemilake`, signed in with OAuth in the browser.
+

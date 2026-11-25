@@ -29,8 +29,29 @@ export class ClaudeProviderAuth implements IProviderAuth {
     // usable fallback here even where the SDK's raw spawn could not use it.
     const cliPath = resolveClaudeCodeExecutablePath(process.env.CLAUDE_CLI_PATH) ?? 'claude';
     try {
-      spawn.sync(cliPath, ['--version'], { stdio: 'ignore', timeout: 5000 });
-      return true;
+      // Fork (Hemilake): spawn.sync reports a missing binary in `error` instead of throwing, so this read every
+      // machine as having Claude Code.
+      const result = spawn.sync(cliPath, ['--version'], { stdio: 'ignore', timeout: 5000 });
+      return !result.error && result.status === 0;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Whether macOS's login Keychain holds Claude Code's sign-in. Only for the default configuration directory:
+   * with CLAUDE_CONFIG_DIR set, Claude Code names the item after the directory.
+   */
+  private hasMacKeychainLogin(): boolean {
+    if (process.platform !== 'darwin' || process.env.CLAUDE_CONFIG_DIR?.trim()) {
+      return false;
+    }
+    try {
+      const result = spawn.sync('security', ['find-generic-password', '-s', 'Claude Code-credentials'], {
+        stdio: 'ignore',
+        timeout: 5000,
+      });
+      return result.status === 0;
     } catch {
       return false;
     }
@@ -176,6 +197,12 @@ export class ClaudeProviderAuth implements IProviderAuth {
       let errorMessage = 'Unable to read Claude credentials. Run claude /login again.';
 
       if (hasErrorCode(error, 'ENOENT')) {
+        // Fork (Hemilake): on macOS Claude Code keeps its login in the Keychain, not in .credentials.json, so a
+        // standalone Studio on a Mac read a signed-in Claude as signed out. The item's presence is enough; its
+        // secret is never read.
+        if (this.hasMacKeychainLogin()) {
+          return { authenticated: true, email: null, method: 'keychain' };
+        }
         errorMessage = missingCredentialsError;
       } else if (error instanceof SyntaxError) {
         errorMessage = 'Claude credentials are unreadable. Run claude /login again.';
