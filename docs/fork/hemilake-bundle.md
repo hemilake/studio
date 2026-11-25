@@ -123,5 +123,7 @@ service and the archives and leaves `~/.cloudcli`. `HEMILAKE_STUDIO_VERSION`, `H
 Such a Studio signs in with its own username and password, and its first-run setup does the rest
 (`server/modules/hemilake-setup/`, `docs/fork/CHANGES.md`): it installs Claude Code when it is missing,
 connects it to the owner's Claude account, an Anthropic API key or a LiteLLM gateway, and connects the
-owner's Hemilake as Claude Code's MCP server `hemilake`, signed in with OAuth in the browser.
+owner's Hemilake: the Hemilake plugin (skills, recall and session-memory hooks, the lake's tools) installed
+into Claude Code from `~/.cloudcli/hemilake-marketplace` and pointed at the lake, signed in with OAuth in the
+browser.
 

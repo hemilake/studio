@@ -6,7 +6,7 @@ import { getEmbedMode } from '@/shared/embedBridge';
 export type HemilakeSetupStatus = {
   claude: { installed: boolean; installCommand: string };
   connection: { mode: 'account' | 'api-key' | 'gateway' | null; baseUrl: string | null };
-  lake: { url: string | null; state: 'connected' | 'needs-sign-in' | 'failed' | 'unknown' | null; loginCommand: string };
+  lake: { url: string | null; state: 'connected' | 'needs-sign-in' | 'failed' | 'unknown' | null; loginCommand: string; plugin: boolean };
 };
 
 const errorOf = async (response: Response, fallback: string) => {
@@ -56,7 +56,9 @@ export function useHemilakeSetup() {
   const connectLake = useCallback(async (address: string) => {
     const response = await api.hemilakeSetup.connectLake(address);
     if (!response.ok) throw new Error(await errorOf(response, 'Could not connect your Hemilake.'));
+    const result = (await response.json()) as { replaced?: string[] };
     await refresh();
+    return { replaced: result.replaced ?? [] };
   }, [refresh]);
 
   return { available, status, loading, refresh, saveConnection, connectLake };

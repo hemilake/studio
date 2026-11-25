@@ -15,9 +15,10 @@ const primaryButton =
   'inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60';
 
 /**
- * Fork (Hemilake): connects a standalone Studio to the owner's Hemilake. The address becomes Claude Code's
- * user-scoped MCP server `hemilake`, and `claude mcp login hemilake` runs the lake's OAuth sign-in (passkey, then
- * Approve) in the browser; Claude Code keeps the token, Studio never sees it.
+ * Fork (Hemilake): connects a standalone Studio to the owner's Hemilake: the Hemilake plugin (skills, recall and
+ * session-memory hooks, the lake's tools) installed into Claude Code and pointed at the lake, then
+ * `claude mcp login plugin:hemilake:hemilake` runs the lake's OAuth sign-in (passkey, then Approve) in the browser;
+ * Claude Code keeps the token, Studio never sees it.
  */
 export default function HemilakeLakePanel({ setup }: HemilakeLakePanelProps) {
   const { t } = useTranslation('auth');
@@ -26,6 +27,7 @@ export default function HemilakeLakePanel({ setup }: HemilakeLakePanelProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [signingIn, setSigningIn] = useState(false);
+  const [replaced, setReplaced] = useState<string[]>([]);
 
   if (!setup.available || !status) return null;
 
@@ -36,7 +38,8 @@ export default function HemilakeLakePanel({ setup }: HemilakeLakePanelProps) {
     setBusy(true);
     setError('');
     try {
-      await setup.connectLake(address);
+      const result = await setup.connectLake(address);
+      setReplaced(result.replaced);
       setAddress('');
       setSigningIn(true);
     } catch (caught) {
@@ -74,12 +77,17 @@ export default function HemilakeLakePanel({ setup }: HemilakeLakePanelProps) {
         </div>
       )}
 
+      {lake.url && !lake.plugin && <p className="text-xs text-muted-foreground">{t('hemilakeSetup.lake.upgradeHint')}</p>}
+      {replaced.length > 0 && (
+        <p className="text-xs text-muted-foreground">{t('hemilakeSetup.lake.replaced', { plugins: replaced.join(', ') })}</p>
+      )}
+
       {!status.claude.installed ? (
         <p className="text-xs text-muted-foreground">{t('hemilakeSetup.lake.needsClaude')}</p>
       ) : (
         <div className="space-y-2">
           <label className="block text-xs text-muted-foreground" htmlFor="hemilake-address">
-            {lake.url ? t('hemilakeSetup.lake.otherAddress') : t('hemilakeSetup.lake.addressHint')}
+            {lake.url && lake.plugin ? t('hemilakeSetup.lake.otherAddress') : t('hemilakeSetup.lake.addressHint')}
           </label>
           <div className="flex gap-2">
             <input
