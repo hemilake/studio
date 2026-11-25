@@ -18,7 +18,7 @@ other than `scripts/fork/hemilake-node-version`, because the native modules are
 built for the running Node and must match the one the archive carries.
 
 The workflow `.github/workflows/hemilake-bundle.yml` builds `darwin-arm64`
-(macos-14), `linux-x64` (ubuntu-22.04, so glibc 2.35 and newer) and
+(macos-15), `linux-x64` (ubuntu-22.04, so glibc 2.35 and newer) and
 `linux-arm64` (ubuntu-22.04-arm). A push of a tag `v<version>-hemilake.<n>`
 publishes a release with the three archives, their `.sha256` files and
 `SHA256SUMS`; the release is the source offer for that version (AGPL). A manual
