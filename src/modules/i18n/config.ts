@@ -138,6 +138,15 @@ const getSavedLanguage = (): string => {
   if (saved && languages.some(lang => lang.value === saved)) {
     return saved;
   }
+  // Fork (Hemilake): until the user picks one, the browser's language when Studio has it (es-ES -> es),
+  // so a first run, onboarding included, is in the owner's language.
+  const browser = typeof navigator === 'undefined' ? [] : navigator.languages ?? [navigator.language];
+  for (const tag of browser) {
+    const match = languages.find(lang => lang.value === tag) ?? languages.find(lang => lang.value === tag?.split('-')[0]);
+    if (match) {
+      return match.value;
+    }
+  }
   return 'en';
 };
 

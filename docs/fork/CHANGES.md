@@ -2,6 +2,14 @@
 
 One entry per customization, newest first. Keep the file list accurate: it is the conflict checklist for upstream merges.
 
+## First run in the owner's language, and the sign-in and onboarding in Spanish
+
+- **Since:** 2026-11-25.
+- **Branch:** `main`. Fork-only for now.
+- **Why:** a standalone Studio's first screens (account, git, agents) are what someone with no technical background meets first, and they were in English for everyone: Studio started in English until a language was picked in Settings, and the Spanish catalogue had no onboarding, registration hints or auth errors, so even a Spanish Studio showed those in English.
+- **What:** `getSavedLanguage` falls back to the first of the browser's languages Studio has (`es-ES` -> `es`) before English; a language picked in Settings still wins. `es/auth.json` gains `onboarding`, `errors`, the registration description, placeholders, hint and errors, and the password show/hide labels.
+- **Files:** `src/modules/i18n/config.ts`, `src/modules/i18n/locales/es/auth.json`, `docs/fork/CHANGES.md`.
+
 ## Standalone setup: Connect your Hemilake installs the Hemilake plugin
 
 - **Since:** 2026-11-25.
