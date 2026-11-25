@@ -27,11 +27,15 @@ export default function AgentConnectionCard({
   const { t } = useTranslation('auth');
   const containerClassName = status.authenticated ? connectedClassName : 'border-border bg-card';
 
+  // Fork (Hemilake): plain words in the owner's language; the CLI's own message stays in the tooltip.
   const statusText = status.loading
     ? t('onboarding.checking')
     : status.authenticated
       ? status.email || t('onboarding.connected')
-      : status.error || t('onboarding.notConnected');
+      : status.installed === false
+        ? t('onboarding.notInstalled')
+        : t('onboarding.notConnected');
+  const statusTitle = !status.loading && !status.authenticated && status.error ? status.error : statusText;
 
   return (
     <div className={`rounded-xl border px-3 py-2.5 transition-colors ${containerClassName}`}>
@@ -46,7 +50,7 @@ export default function AgentConnectionCard({
               {title}
               {status.authenticated && <Check className="h-3.5 w-3.5 flex-shrink-0 text-hemi-ok" />}
             </div>
-            <div className="truncate text-xs text-muted-foreground" title={statusText}>{statusText}</div>
+            <div className="truncate text-xs text-muted-foreground" title={statusTitle}>{statusText}</div>
           </div>
         </div>
 
