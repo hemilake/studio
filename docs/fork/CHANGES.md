@@ -2,6 +2,15 @@
 
 One entry per customization, newest first. Keep the file list accurate: it is the conflict checklist for upstream merges.
 
+## Standalone setup: Connect your Hemilake installs the Hemilake plugin
+
+- **Since:** 2026-11-25.
+- **Branch:** `main`. Fork-only, on top of the standalone first-run setup below.
+- **Why:** connecting the lake as a plain MCP server gave a standalone Studio the lake's tools and nothing else: no recall before each prompt, no session memory, no skills (writing, visualize, documents, the channel skills).
+- **What:** `POST /api/hemilake-setup/lake` now downloads the Hemilake plugin's directory build (`https://hemilake.com/stable/hemilake-plugin.zip`, checked against the `.sha256` next to it; `CLOUDCLI_HEMILAKE_PLUGIN_URL` overrides it), unpacks it into the local marketplace `~/.cloudcli/hemilake-marketplace` (`hemilake-studio`) with its `.mcp.json` pointed at the owner's lake, and installs `hemilake@hemilake-studio` into Claude Code (`claude plugin marketplace add|update`, `claude plugin install`). The plugin loads in place, so connecting again replaces the folder and updates it. Its server is `plugin:hemilake:hemilake`, which the plugin's `mcp_tool` hooks and skills name; the sign-in is `claude mcp login plugin:hemilake:hemilake`. Any other enabled `hemilake@*` plugin (`hemi client`'s, whose bridge points at a lake on this computer) is disabled, because two plugins named `hemilake` do not load together and Claude Code prefers the other; the panel says which. A plain `hemilake` server that 1.37.3-hemilake.13 added for the same lake is removed. Status reports `plugin: false` for such a lake, and the panel asks to connect again.
+- **Files:** `server/modules/hemilake-setup/hemilake-setup.service.ts`, `server/modules/hemilake-setup/tests/hemilake-setup.service.test.ts`, `src/modules/hemilake-setup/{useHemilakeSetup.ts,HemilakeLakePanel.tsx,tests/hemilakeSetupPanels.test.tsx}`, `src/modules/i18n/locales/{en,es}/auth.json`, `docs/fork/hemilake-bundle.md`, `docs/fork/CHANGES.md`.
+- **Verified:** server tests (12) and client tests (4). End to end on a clean `HOME`: Connect for `pablo3.cloud.hemilake.app` left the marketplace with the plugin's skills and hooks and `.mcp.json` on that lake, `claude plugin list` showed `hemilake@hemilake-studio` read from it, `claude mcp list` showed `plugin:hemilake:hemilake` needing authentication, and the terminal opened its OAuth authorization. Through the Agent SDK (Studio's path) the plugin's skills load, its hooks fire, and its server reports `needs-auth` until signed in. Not verified: a full passkey sign-in and recall on a real prompt.
+
 ## Standalone first-run setup: Claude Code, its model connection and the owner's Hemilake
 
 - **Since:** 2026-11-25.

@@ -41,8 +41,8 @@ vi.mock('@/shared/api', () => {
         },
         connectLake: (address: string) => {
           calls.push({ name: 'lake', body: address });
-          status = { ...status, lake: { ...status.lake, url: 'https://elena.cloud.hemilake.app/mcp', state: 'needs-sign-in' } };
-          return json({ url: 'https://elena.cloud.hemilake.app/mcp' });
+          status = { ...status, lake: { ...status.lake, url: 'https://elena.cloud.hemilake.app/mcp', state: 'needs-sign-in', plugin: true } };
+          return json({ url: 'https://elena.cloud.hemilake.app/mcp', replaced: ['hemilake@hemilake'] });
         },
       },
     },
@@ -61,7 +61,7 @@ beforeEach(() => {
   status = {
     claude: { installed: true, installCommand: 'curl -fsSL https://claude.ai/install.sh | bash' },
     connection: { mode: null, baseUrl: null },
-    lake: { url: null, state: null, loginCommand: 'claude mcp login hemilake' },
+    lake: { url: null, state: null, loginCommand: 'claude mcp login plugin:hemilake:hemilake', plugin: false },
   };
 });
 
@@ -87,7 +87,8 @@ test('connecting the lake adds it, then opens its sign-in in the terminal', asyn
   render(<Harness which="lake" />);
   fireEvent.change(await screen.findByPlaceholderText('nombre.cloud.hemilake.app'), { target: { value: 'elena.cloud.hemilake.app' } });
   fireEvent.click(screen.getByText('hemilakeSetup.lake.connect'));
-  await waitFor(() => assert.equal(screen.getByTestId('terminal').textContent, 'claude mcp login hemilake'));
+  await waitFor(() => assert.equal(screen.getByTestId('terminal').textContent, 'claude mcp login plugin:hemilake:hemilake'));
+  await screen.findByText('hemilakeSetup.lake.replaced');
   assert.deepEqual(calls.find((call) => call.name === 'lake')?.body, 'elena.cloud.hemilake.app');
   await screen.findByText('elena.cloud.hemilake.app');
 });
