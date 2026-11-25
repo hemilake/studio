@@ -2,6 +2,14 @@
 
 One entry per customization, newest first. Keep the file list accurate: it is the conflict checklist for upstream merges.
 
+## Onboarding agent cards say their state in plain words
+
+- **Since:** 2026-11-25.
+- **Branch:** `main`. Fork-only.
+- **Why:** the cards showed each CLI's own message in English ("Claude CLI is not authenticated. Run claude /login or configure ANTHROPIC_API_KEY."), which tells someone with no technical background nothing, in any language.
+- **What:** a card says "Not installed on this computer", "Not connected", or who is signed in, from the catalogue; the CLI's message moves to the tooltip. The client keeps the server's `installed` flag in `ProviderAuthStatus`.
+- **Files:** `src/modules/onboarding/AgentConnectionCard.tsx`, `src/modules/provider-auth/hooks/useProviderAuthStatus.ts`, `src/shared/types.ts`, `src/modules/i18n/locales/{en,es}/auth.json`, `docs/fork/CHANGES.md`.
+
 ## First run in the owner's language, and the sign-in and onboarding in Spanish
 
 - **Since:** 2026-11-25.

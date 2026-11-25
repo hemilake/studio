@@ -1114,6 +1114,8 @@ export type ProjectWorkspaceShellProps = RealtimeProps & {
 
 /** Sign-in state of one LLM provider CLI - whether it is authenticated, the account email and method, plus in-flight loading and error state - polled by the provider-auth module and rendered by the settings and onboarding account views. */
 export type ProviderAuthStatus = {
+  /** Fork (Hemilake): whether the provider's CLI is on this computer, when the server says. */
+  installed?: boolean;
   authenticated: boolean;
   email: string | null;
   method: string | null;
