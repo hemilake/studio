@@ -134,6 +134,7 @@ test('connecting the lake installs the Hemilake plugin pointed at it, and its si
     state: 'needs-sign-in',
     loginCommand: 'claude mcp login plugin:hemilake:hemilake',
     plugin: true,
+    duplicates: [],
   });
   assert.deepEqual(h.claudeCalls.at(-1), ['mcp', 'get', 'plugin:hemilake:hemilake']);
   await h.cleanup();
@@ -145,10 +146,61 @@ test("connecting replaces hemi client's plugin and the plain server an earlier S
     '.claude.json': JSON.stringify({ mcpServers: { hemilake: { type: 'http', url: `${LAKE}/mcp` } } }),
   });
   const result = await h.service.connectLake(LAKE);
-  assert.deepEqual(result.replaced, ['hemilake@hemilake']);
+  assert.deepEqual(result.replaced, ['hemilake@hemilake', 'MCP server hemilake']);
   assert.ok(h.claudeCalls.some((call) => call.join(' ') === 'plugin disable hemilake@hemilake'));
   assert.ok(h.claudeCalls.some((call) => call.join(' ') === 'mcp remove --scope user hemilake'));
   assert.ok(!h.claudeCalls.some((call) => call.join(' ') === 'plugin disable other@x'));
+  await h.cleanup();
+});
+
+test('any server the owner configured for the same lake goes, whatever its name and scope (Claude Code hides the plugin server otherwise)', async () => {
+  const h = await harness({}, {
+    '.claude.json': JSON.stringify({
+      mcpServers: { 'hemilake-cloud': { type: 'http', url: `${LAKE}/mcp` }, other: { type: 'http', url: 'https://other.example.com/mcp' } },
+      projects: { '/Users/elena/work': { mcpServers: { lake: { type: 'http', url: `${LAKE}/mcp` } } } },
+    }),
+  });
+  const calls: { args: string[]; cwd?: string }[] = [];
+  const service = createHemilakeSetupService({
+    ...defaultHemilakeSetupDependencies({}),
+    homeDirectory: h.home,
+    environment: {},
+    claudeInstalled: async () => true,
+    fetch: (async (url: string) => {
+      const answer = h.responses[url];
+      if (!answer) throw new TypeError('fetch failed');
+      return new Response(answer.raw ?? JSON.stringify(answer.body ?? {}), { status: answer.status });
+    }) as unknown as typeof fetch,
+    unzip: async (_zip, destination) => {
+      await mkdir(path.join(destination, '.claude-plugin'), { recursive: true });
+      await writeFile(path.join(destination, '.claude-plugin', 'plugin.json'), JSON.stringify({ name: 'hemilake' }));
+    },
+    runClaude: async (args, cwd) => {
+      calls.push({ args, cwd });
+      return { exitCode: 0, stdout: '', stderr: '' };
+    },
+  });
+
+  const before = await service.getStatus();
+  assert.deepEqual(before.lake.duplicates, []); // no plugin yet: nothing to collide with
+
+  const result = await service.connectLake(LAKE);
+  assert.deepEqual(result.replaced, ['MCP server hemilake-cloud', 'MCP server lake']);
+  const removes = calls.filter((call) => call.args[0] === 'mcp' && call.args[1] === 'remove');
+  assert.deepEqual(removes, [
+    { args: ['mcp', 'remove', '--scope', 'user', 'hemilake-cloud'], cwd: undefined },
+    { args: ['mcp', 'remove', '--scope', 'local', 'lake'], cwd: '/Users/elena/work' },
+  ]);
+  await h.cleanup();
+});
+
+test('status names the servers that hide the plugin', async () => {
+  const h = await harness({}, {
+    '.claude.json': JSON.stringify({ mcpServers: { 'hemilake-cloud': { type: 'http', url: `${LAKE}/mcp` } } }),
+    '.cloudcli/hemilake-marketplace/hemilake/.mcp.json': JSON.stringify({ hemilake: { type: 'http', url: `${LAKE}/mcp` } }),
+  });
+  const status = await h.service.getStatus();
+  assert.deepEqual(status.lake.duplicates, ['hemilake-cloud']);
   await h.cleanup();
 });
 
