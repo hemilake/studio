@@ -6,7 +6,7 @@ import { getEmbedMode } from '@/shared/embedBridge';
 export type HemilakeSetupStatus = {
   claude: { installed: boolean; installCommand: string };
   connection: { mode: 'account' | 'api-key' | 'gateway' | null; baseUrl: string | null };
-  lake: { url: string | null; state: 'connected' | 'needs-sign-in' | 'failed' | 'unknown' | null; loginCommand: string; plugin: boolean };
+  lake: { url: string | null; state: 'connected' | 'needs-sign-in' | 'failed' | 'unknown' | null; loginCommand: string; plugin: boolean; duplicates?: string[] };
 };
 
 const errorOf = async (response: Response, fallback: string) => {

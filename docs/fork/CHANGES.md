@@ -2,6 +2,15 @@
 
 One entry per customization, newest first. Keep the file list accurate: it is the conflict checklist for upstream merges.
 
+## Connect your Hemilake clears servers that hide the plugin's
+
+- **Since:** 2026-11-26.
+- **Branch:** `main`. Fork-only.
+- **Why:** Claude Code drops a plugin's MCP server when a server configured by hand has the same URL. An owner with a `hemilake-cloud` user server for their lake got "No MCP server named \"plugin:hemilake:hemilake\". Configured servers: hemilake-cloud" at sign-in, and the plugin's hooks could never reach the lake.
+- **What:** connecting removes every user-scope or local-scope (per project) MCP server whose URL is on the lake's origin, whatever its name, and lists it in `replaced`; servers for other addresses stay. Status reports them as `lake.duplicates`, and the panel's Sign in connects again first when there are any. `runClaude` takes a `cwd` for local-scope removals and drops an empty `CLAUDE_CONFIG_DIR`, with which Claude Code writes its configuration into the working directory.
+- **Files:** `server/modules/hemilake-setup/hemilake-setup.service.ts`, `server/modules/hemilake-setup/tests/hemilake-setup.service.test.ts`, `src/modules/hemilake-setup/{HemilakeLakePanel.tsx,useHemilakeSetup.ts}`, `src/modules/i18n/locales/{en,es}/auth.json`, `docs/fork/CHANGES.md`.
+- **Verified:** server tests (14), client tests. End to end on a clean HOME with a `hemilake-cloud` user server for `pablo3.cloud.hemilake.app`: before, `claude mcp login plugin:hemilake:hemilake` failed with that message; after Connect, `hemilake-cloud` was gone, `plugin:hemilake:hemilake` listed, and its OAuth sign-in started.
+
 ## Onboarding agent cards say their state in plain words
 
 - **Since:** 2026-11-25.

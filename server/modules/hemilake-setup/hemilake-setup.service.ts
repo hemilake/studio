@@ -48,7 +48,7 @@ export type LakeState = 'connected' | 'needs-sign-in' | 'failed' | 'unknown';
 export type HemilakeSetupStatus = {
   claude: { installed: boolean; installCommand: string };
   connection: { mode: ClaudeConnectionMode | null; baseUrl: string | null };
-  lake: { url: string | null; state: LakeState | null; loginCommand: string; plugin: boolean };
+  lake: { url: string | null; state: LakeState | null; loginCommand: string; plugin: boolean; duplicates: string[] };
 };
 
 export class SetupError extends Error {
@@ -64,17 +64,20 @@ export type HemilakeSetupDependencies = {
   environment: NodeJS.ProcessEnv;
   readText: (filePath: string) => Promise<string>;
   writeText: (filePath: string, content: string) => Promise<void>;
-  runClaude: (args: string[]) => Promise<CommandResult>;
+  /** Runs Claude Code; `cwd` matters for its local-scope MCP servers, which belong to a project directory. */
+  runClaude: (args: string[], cwd?: string) => Promise<CommandResult>;
   claudeInstalled: () => Promise<boolean>;
   fetch: typeof fetch;
   /** Unpacks a zip into a directory that exists and is empty. */
   unzip: (zipPath: string, destination: string) => Promise<void>;
 };
 
-const defaultRunClaude = (environment: NodeJS.ProcessEnv) => (args: string[]): Promise<CommandResult> => {
+const defaultRunClaude = (environment: NodeJS.ProcessEnv) => (args: string[], cwd?: string): Promise<CommandResult> => {
   const cli = resolveClaudeCodeExecutablePath(environment.CLAUDE_CLI_PATH) ?? 'claude';
+  // An empty CLAUDE_CONFIG_DIR makes Claude Code write its configuration into the working directory.
+  const env = environment.CLAUDE_CONFIG_DIR?.trim() ? environment : { ...environment, CLAUDE_CONFIG_DIR: undefined };
   return new Promise((resolve) => {
-    execFile(cli, args, { timeout: 30_000, env: environment }, (error, stdout, stderr) => {
+    execFile(cli, args, { timeout: 30_000, env, ...(cwd ? { cwd } : {}) }, (error, stdout, stderr) => {
       const code = error && typeof (error as { code?: unknown }).code === 'number' ? (error as { code: number }).code : 0;
       resolve({ exitCode: error ? code || 1 : 0, stdout: String(stdout), stderr: String(stderr || (error && !code ? error.message : '')) });
     });
@@ -187,6 +190,30 @@ export function createHemilakeSetupService(deps: HemilakeSetupDependencies) {
     return { url: legacyUrl, server: LEGACY_SERVER_NAME, plugin: false };
   };
 
+  /**
+   * MCP servers the owner configured by hand (user scope, or local scope in a project) for the same lake as the
+   * plugin. Claude Code drops a plugin's server when a configured one has the same URL, so with any of these the
+   * plugin's `plugin:hemilake:hemilake` does not exist: its sign-in fails ("No MCP server named …") and its hooks
+   * never reach the lake. Seen on 2026-11-26 with a user server named `hemilake-cloud`.
+   */
+  const sameLakeServers = async (lakeOrigin: string): Promise<{ name: string; scope: 'user' | 'local'; cwd?: string }[]> => {
+    const config = await readJson(globalConfigPath);
+    const found: { name: string; scope: 'user' | 'local'; cwd?: string }[] = [];
+    const sameOrigin = (server: unknown) => {
+      const url = readOptionalString(readObjectRecord(server)?.url);
+      return Boolean(url && URL.canParse(url) && new URL(url).origin === lakeOrigin);
+    };
+    for (const [name, server] of Object.entries(readObjectRecord(config.mcpServers) ?? {})) {
+      if (sameOrigin(server)) found.push({ name, scope: 'user' });
+    }
+    for (const [dir, project] of Object.entries(readObjectRecord(config.projects) ?? {})) {
+      for (const [name, server] of Object.entries(readObjectRecord(readObjectRecord(project)?.mcpServers) ?? {})) {
+        if (sameOrigin(server)) found.push({ name, scope: 'local', cwd: dir });
+      }
+    }
+    return found;
+  };
+
   const lakeState = async (server: string): Promise<LakeState> => {
     const result = await deps.runClaude(['mcp', 'get', server]);
     const statusLine = `${result.stdout}\n${result.stderr}`.split('\n').find((line) => /^\s*Status:/i.test(line)) ?? '';
@@ -207,6 +234,9 @@ export function createHemilakeSetupService(deps: HemilakeSetupDependencies) {
         state: lake.url && installed ? await lakeState(lake.server) : null,
         loginCommand: lake.plugin ? LAKE_LOGIN_COMMAND : `claude mcp login ${LEGACY_SERVER_NAME}`,
         plugin: lake.plugin,
+        duplicates: lake.plugin && lake.url && URL.canParse(lake.url)
+          ? (await sameLakeServers(new URL(lake.url).origin)).map((server) => server.name)
+          : [],
       },
     };
   };
@@ -354,12 +384,12 @@ export function createHemilakeSetupService(deps: HemilakeSetupDependencies) {
         if ((await deps.runClaude(['plugin', 'disable', id])).exitCode === 0) replaced.push(id);
       }
     }
-    // The plain server an earlier Studio added for this lake would serve the same tools twice; one of the
-    // owner's own with that name, for another address, stays.
-    const servers = readObjectRecord((await readJson(globalConfigPath)).mcpServers) ?? {};
-    const legacyUrl = readOptionalString(readObjectRecord(servers[LEGACY_SERVER_NAME])?.url);
-    if (legacyUrl && URL.canParse(legacyUrl) && new URL(legacyUrl).origin === origin) {
-      await deps.runClaude(['mcp', 'remove', '--scope', 'user', LEGACY_SERVER_NAME]);
+    // Every server configured by hand for this lake goes (the plain `hemilake` an earlier Studio added, a
+    // `hemilake-cloud` the owner added): while one is there, Claude Code hides the plugin's server. Servers for
+    // other addresses stay.
+    for (const server of await sameLakeServers(origin)) {
+      const removed = await deps.runClaude(['mcp', 'remove', '--scope', server.scope, server.name], server.cwd);
+      if (removed.exitCode === 0) replaced.push(`MCP server ${server.name}`);
     }
 
     return { url: resource, loginCommand: LAKE_LOGIN_COMMAND, replaced };

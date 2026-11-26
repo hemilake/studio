@@ -34,11 +34,14 @@ export default function HemilakeLakePanel({ setup }: HemilakeLakePanelProps) {
   const lake = status.lake;
   const host = lake.url ? new URL(lake.url).host : '';
 
-  const connect = async () => {
+  const duplicates = lake.duplicates ?? [];
+
+  // With `target`, connects that address again: the way to clear servers that hide the plugin's (duplicates).
+  const connect = async (target: string = address) => {
     setBusy(true);
     setError('');
     try {
-      const result = await setup.connectLake(address);
+      const result = await setup.connectLake(target);
       setReplaced(result.replaced);
       setAddress('');
       setSigningIn(true);
@@ -69,7 +72,11 @@ export default function HemilakeLakePanel({ setup }: HemilakeLakePanelProps) {
             </div>
           </div>
           {lake.state !== 'connected' && (
-            <button className={primaryButton} onClick={() => setSigningIn(true)}>
+            <button
+              className={primaryButton}
+              disabled={busy}
+              onClick={() => (duplicates.length > 0 && lake.url ? void connect(lake.url) : setSigningIn(true))}
+            >
               <LogIn className="h-4 w-4" />
               {t('hemilakeSetup.lake.signIn')}
             </button>
@@ -78,6 +85,9 @@ export default function HemilakeLakePanel({ setup }: HemilakeLakePanelProps) {
       )}
 
       {lake.url && !lake.plugin && <p className="text-xs text-muted-foreground">{t('hemilakeSetup.lake.upgradeHint')}</p>}
+      {duplicates.length > 0 && (
+        <p className="text-xs text-muted-foreground">{t('hemilakeSetup.lake.duplicatesHint', { servers: duplicates.join(', ') })}</p>
+      )}
       {replaced.length > 0 && (
         <p className="text-xs text-muted-foreground">{t('hemilakeSetup.lake.replaced', { plugins: replaced.join(', ') })}</p>
       )}
