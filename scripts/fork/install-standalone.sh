@@ -35,6 +35,12 @@ esac
 stop_service() {
   if [ "$sys" = darwin ]; then
     launchctl bootout "gui/$(id -u)/$LABEL" >/dev/null 2>&1 || true
+    # bootout returns before the service is gone; a bootstrap meanwhile fails with "5: Input/output error".
+    i=0
+    while launchctl print "gui/$(id -u)/$LABEL" >/dev/null 2>&1 && [ "$i" -lt 40 ]; do
+      sleep 0.5
+      i=$((i + 1))
+    done
   else
     systemctl --user stop hemilake-studio.service >/dev/null 2>&1 || true
   fi
@@ -134,7 +140,17 @@ if [ "$sys" = darwin ]; then
 </dict>
 </plist>
 EOF
-  launchctl bootstrap "gui/$(id -u)" "$PLIST"
+  n=0
+  until launchctl bootstrap "gui/$(id -u)" "$PLIST" 2>"$DEST/bootstrap.err"; do
+    n=$((n + 1))
+    if [ "$n" -ge 5 ]; then
+      cat "$DEST/bootstrap.err" >&2
+      die "macOS did not start the Studio service; run this installer again in a minute"
+    fi
+    stop_service
+    sleep 2
+  done
+  rm -f "$DEST/bootstrap.err"
 else
   mkdir -p "$(dirname "$UNIT")"
   cat > "$UNIT" <<EOF

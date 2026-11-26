@@ -2,6 +2,15 @@
 
 One entry per customization, newest first. Keep the file list accurate: it is the conflict checklist for upstream merges.
 
+## Standalone installer: updating no longer fails with "Bootstrap failed: 5"
+
+- **Since:** 2026-11-26.
+- **Branch:** `main`. Fork-only.
+- **Why:** running `install-standalone.sh` again to update a Studio already running on a Mac failed with `Bootstrap failed: 5: Input/output error`: `launchctl bootout` returns before the LaunchAgent is gone, and the `bootstrap` right after it hits the one still unloading. A first install never saw it.
+- **What:** after `bootout` the installer waits (up to 20 s) until `launchctl print` no longer finds the service, and retries `bootstrap` up to five times, stopping the service again between tries.
+- **Files:** `scripts/fork/install-standalone.sh`, `docs/fork/CHANGES.md`.
+- **Verified:** on macOS (the M2) with a `launchctl` stand-in whose service lingers two `print`s and whose first `bootstrap` fails with error 5: the installer waited, retried and Studio answered.
+
 ## Connect your Hemilake clears servers that hide the plugin's
 
 - **Since:** 2026-11-26.
